@@ -8,8 +8,9 @@ public class Veiculo {
     private String status;
     private Concessionaria concessionaria;
     private Boolean moto; //Veículo é moto ou carro, true = moto, false = carro
+    private Boolean vendido; //Veículo foi vendido ou não, true = vendido, false = não vendido
 
-    public Veiculo(String marca, String modelo, Integer ano, String placa, Double preco, String status, Concessionaria concessionaria, Boolean moto) {
+    public Veiculo(String marca, String modelo, Integer ano, String placa, Double preco, String status, Concessionaria concessionaria, Boolean moto, Boolean vendido) {
         this.marca = marca;
         this.modelo = modelo;
         this.ano = ano;
@@ -18,6 +19,7 @@ public class Veiculo {
         this.status = status;
         this.concessionaria = concessionaria;
         this.moto = moto;
+        this.vendido = vendido;
     }
     /**
      * Os setter criados são apenas para os atributos que podem ser alterados após a criação do objeto, como placa, preço, status e concessionária.
@@ -74,5 +76,27 @@ public class Veiculo {
 
     public void setConcessionaria(Concessionaria concessionaria) {
         this.concessionaria = concessionaria;
+    }
+
+    public Boolean getVendido() {
+        return vendido;
+    }
+
+    public void setVendido(Boolean vendido) {
+        this.vendido = vendido;
+    }
+
+    public double calcularValorComDesconto(double percentual) {
+        return this.preco - (this.preco * (percentual / 100));
+    }
+    public boolean verificarDisponibilidade() {
+        return vendido == false;    
+    }
+    public void vender(){
+        if(verificarDisponibilidade()){
+            this.vendido = true;
+        } else {
+            System.out.println("Veículo já foi vendido.");
+        }
     }
 }
