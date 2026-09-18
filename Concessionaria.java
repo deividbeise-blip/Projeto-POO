@@ -7,3 +7,4 @@ public class Concessionaria {
         this.name = name;
         this.address = address;
     }
+}
