@@ -9,4 +9,9 @@ public class Vendedor {
         this.cpf = cpf;
         this.comissaoPercentual = comissaoPercentual;
     }
+
+    //caucula o valor da comissão de acordo com o valor da venda
+    public double caucularcomissao(double valorVenda){
+        return valorVenda * comissaoPercentual/100;
+    }
 }
