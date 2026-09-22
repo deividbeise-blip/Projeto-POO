@@ -1,3 +1,5 @@
+package modelo;
+
 public class Concessionaria {
     private Long id;
     private String name;
