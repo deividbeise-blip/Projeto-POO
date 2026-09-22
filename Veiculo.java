@@ -1,3 +1,5 @@
+import modelo.Concessionaria;
+
 public class Veiculo {
     private Long id;
     private String marca;
