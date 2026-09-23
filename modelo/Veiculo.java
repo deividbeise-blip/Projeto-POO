@@ -1,4 +1,6 @@
-import modelo.Concessionaria;
+package modelo;
+
+import excecao.VeiculoIndisponivelException;
 
 public class Veiculo {
     private Long id;
@@ -7,12 +9,12 @@ public class Veiculo {
     private Integer ano;
     private String placa;
     private Double preco;
-    private String status;
+    private StatusVeiculo status;
     private Concessionaria concessionaria;
     private Boolean moto; //Veículo é moto ou carro, true = moto, false = carro
     private Boolean vendido; //Veículo foi vendido ou não, true = vendido, false = não vendido
 
-    public Veiculo(String marca, String modelo, Integer ano, String placa, Double preco, String status, Concessionaria concessionaria, Boolean moto, Boolean vendido) {
+    public Veiculo(String marca, String modelo, Integer ano, String placa, Double preco, StatusVeiculo status, Concessionaria concessionaria, Boolean moto, Boolean vendido) {
         this.marca = marca;
         this.modelo = modelo;
         this.ano = ano;
@@ -52,7 +54,7 @@ public class Veiculo {
         return preco;
     }
 
-    public String getStatus() {
+    public StatusVeiculo getStatus() {
         return status;
     }
 
@@ -72,7 +74,7 @@ public class Veiculo {
         this.preco = preco;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(StatusVeiculo status) {
         this.status = status;
     }
 
@@ -91,14 +93,21 @@ public class Veiculo {
     public double calcularValorComDesconto(double percentual) {
         return this.preco - (this.preco * (percentual / 100));
     }
+
     public boolean verificarDisponibilidade() {
-        return vendido == false;    
+        return status != StatusVeiculo.VENDIDO;
     }
-    public void vender(){
-        if(verificarDisponibilidade()){
-            this.vendido = true;
-        } else {
-            System.out.println("Veículo já foi vendido.");
+
+    /**
+     * Realiza a venda do veículo, alterando seu estado para VENDIDO.
+     * Caso o veículo já esteja vendido, a operação é considerada inválida
+     * e uma VeiculoIndisponivelException é lançada, impedindo a alteração de estado.
+     */
+    public void vender() throws VeiculoIndisponivelException {
+        if (!verificarDisponibilidade()) {
+            throw new VeiculoIndisponivelException("Veículo já foi vendido e não pode ser vendido novamente.");
         }
+        this.status = StatusVeiculo.VENDIDO;
+        this.vendido = true;
     }
 }

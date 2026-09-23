@@ -1,5 +1,6 @@
 import java.time.LocalDate;
 import modelo.Cliente;
+import modelo.Veiculo;
 
 public class Venda {
     private Long id;
