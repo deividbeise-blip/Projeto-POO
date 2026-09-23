@@ -60,7 +60,7 @@ public class Pagamento {
     public void exibirResumo() {
         System.out.println("Resumo do Pagamento:");
         System.out.println("ID: " + id);
-        System.out.println("Venda ID: " + venda.getId());
+        System.out.println("Venda: " + venda);
         System.out.println("Forma de Pagamento: " + formaPagamento);
         System.out.println("Valor Pago: " + valorPago);
         System.out.println("Data do Pagamento: " + dataPagamento);
