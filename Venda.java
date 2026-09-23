@@ -16,10 +16,29 @@ public class Venda {
         this.dataVenda = dataVenda;
         this.valorFinal = valorFinal;
     }
+    // obtem o id da venda
+    public Long getId() {
+        return id;
+    }
+    public Cliente getCliente() {
+        return cliente;
+    }
+    public Vendedor getVendedor() {
+        return vendedor;
+    }
+    public Veiculo getVeiculo() {
+        return veiculo;
+    }
+    public LocalDate getDataVenda() {
+        return dataVenda;
+    }
+    public double getValorFinal() {
+        return valorFinal;
+    }
 
     // obtem a comissão do funcionário de acordo com o valor da venda
     public double getcomissao(){
-        return vendedor.caucularcomissao(valorFinal);
+        return vendedor.caucularcomissao(valorFinal, veiculo);
     }
 
     // modifica a variável para um valor com desconto
@@ -29,7 +48,19 @@ public class Venda {
 
     //validação da venda
     public boolean validarVenda(){
-        return cliente != null && veiculo != null && vendedor != null;
+        return cliente != null
+                && veiculo != null
+                && vendedor != null
+                && dataVenda != null
+                && valorFinal > 0
+                && veiculo.verificarDisponibilidade()
+                && vendedor.validarVendedor();
+    }
+
+    // venda de veiculo
+    public void finalizarVenda () {
+        veiculo.vender();
+        validarVenda();
     }
 }
 
