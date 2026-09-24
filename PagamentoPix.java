@@ -1,4 +1,5 @@
 import java.time.LocalDate;
+
 public class PagamentoPix extends Pagamento {
     private String chavePix;
     private String tipoChave; // CPF, CNPJ, E-mail, Telefone ou Aleatória
@@ -7,6 +8,9 @@ public class PagamentoPix extends Pagamento {
         super(venda, formaPagamento, valorPago, dataPagamento);
         this.chavePix = chavePix;
         this.tipoChave = tipoChave;
+
+        // Regra automática: todo pagamento via PIX recebe 5% de desconto assim que é criado.
+        aplicarDesconto(5.0);
     }
 
     public String getChavePix() {
@@ -23,5 +27,13 @@ public class PagamentoPix extends Pagamento {
     public void setTipoChave(String tipoChave) {
         this.tipoChave = tipoChave;
     }
-    
+
+    @Override
+    public String obterReciboDetalhado() {
+        return "===== Recibo de Pagamento (PIX) =====\n" +
+                "Chave PIX: " + chavePix + " (" + tipoChave + ")\n" +
+                "Valor pago (com 5% de desconto já aplicado): " + getValorPago() + "\n" +
+                "Data do pagamento: " + getDataPagamento() + "\n" +
+                "======================================";
+    }
 }
