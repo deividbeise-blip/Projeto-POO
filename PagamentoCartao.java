@@ -41,7 +41,7 @@ public class PagamentoCartao extends Pagamento {
         return numeroParcelas;
     }
     public void setnumeroParcelas(int numeroParcelas) {
-        numeroParcelas = numeroParcelas;
+        this.numeroParcelas = numeroParcelas;
     }
     public Double getValorParcela() {
         return valorParcela;
@@ -59,5 +59,26 @@ public class PagamentoCartao extends Pagamento {
         this.numeroParcelas = numeroParcelas;
         this.valorParcela = getValorPago() / numeroParcelas;
         return (getValorPago() / numeroParcelas);
+    }
+
+    @Override
+    public String obterReciboDetalhado() {
+        String numeroMascarado = numeroCartao != null && numeroCartao.length() >= 4
+                ? "**** **** **** " + numeroCartao.substring(numeroCartao.length() - 4)
+                : numeroCartao;
+
+        StringBuilder recibo = new StringBuilder();
+        recibo.append("===== Recibo de Pagamento (Cartão) =====\n");
+        recibo.append("Titular: ").append(nomeTitular).append("\n");
+        recibo.append("Cartão: ").append(numeroMascarado).append("\n");
+        recibo.append("Valor pago: ").append(getValorPago()).append("\n");
+        if (numeroParcelas > 0) {
+            recibo.append("Parcelado em: ").append(numeroParcelas).append("x de ").append(valorParcela).append("\n");
+        } else {
+            recibo.append("Pagamento à vista\n");
+        }
+        recibo.append("Data do pagamento: ").append(getDataPagamento()).append("\n");
+        recibo.append("=========================================");
+        return recibo.toString();
     }
 }

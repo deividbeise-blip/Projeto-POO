@@ -1,6 +1,6 @@
 import java.time.LocalDate;
 
-public class Pagamento {
+public abstract class Pagamento {
     private Long id;
     private Venda venda;
     private String formaPagamento;
@@ -65,4 +65,12 @@ public class Pagamento {
         System.out.println("Valor Pago: " + valorPago);
         System.out.println("Data do Pagamento: " + dataPagamento);
     }
+
+    /**
+     * Método abstrato que obriga cada subclasse (PagamentoPix, PagamentoCartao)
+     * a fornecer sua própria versão do recibo, de acordo com suas particularidades.
+     * Garante o critério de Polimorfismo (cada forma de pagamento gera um recibo diferente)
+     * e reforça a Abstração (a classe mãe não sabe "como" o recibo é montado, só que ele existe).
+     */
+    public abstract String obterReciboDetalhado();
 }

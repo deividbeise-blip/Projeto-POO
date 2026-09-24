@@ -1,3 +1,4 @@
+import modelo.Veiculo;
 public class Vendedor {
     private Long id;
     private String name;
