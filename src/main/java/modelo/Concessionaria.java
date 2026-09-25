@@ -1,7 +1,7 @@
 package modelo;
 
 public class Concessionaria {
-    private Long id;
+    private Long id_concessionaria;
     private String name;
     private String address;
 
@@ -10,12 +10,12 @@ public class Concessionaria {
         this.address = address;
     }
 
-    public Long getId() {  
-        return id;
+    public Long getId_concessionaria() {
+        return id_concessionaria;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setId_concessionaria(Long id_concessionaria) {
+        this.id_concessionaria = id_concessionaria;
     }
 
     public String getName() {

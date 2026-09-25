@@ -2,7 +2,7 @@ package modelo;
 import java.time.LocalDate;
 
 public abstract class Pagamento {
-    private Long id;
+    private Long id_pagamento; //AUTO_INCREMENT
     private Venda venda;
     private String formaPagamento;
     private Double valorPago;
@@ -15,8 +15,12 @@ public abstract class Pagamento {
         this.dataPagamento = dataPagamento;
     }
 
-    public Long getId() {
-        return id;
+    public Long getId_pagamento() {
+        return id_pagamento;
+    }
+
+    public void setId_pagamento(Long id_pagamento) {
+        this.id_pagamento = id_pagamento;
     }
 
     public Venda getVenda() {
@@ -60,7 +64,7 @@ public abstract class Pagamento {
     }
     public void exibirResumo() {
         System.out.println("Resumo do Pagamento:");
-        System.out.println("ID: " + id);
+        System.out.println("ID: " + id_pagamento);
         System.out.println("Venda: " + venda);
         System.out.println("Forma de Pagamento: " + formaPagamento);
         System.out.println("Valor Pago: " + valorPago);

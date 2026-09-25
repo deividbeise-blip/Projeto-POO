@@ -1,6 +1,7 @@
 package dao;
 
 import conexao.ConexaoBanco;
+import modelo.PagamentoPix;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -8,12 +9,12 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 public class PagamentoPixDAO {
-    public void salvar(Cliente cliente) {
+    public void salvar(PagamentoPix pagamentoPix) {
 
         String sql = """
-                INSERT INTO cliente
-                (name_cliente, cpf, email, phone)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO pagamentopix
+                (chave_pix, tipo_chave_pix, pagamento_pix)
+                VALUES (?, ?, ?)
                 """;
 
         try (Connection conexao = ConexaoBanco.conectar();
@@ -21,10 +22,9 @@ public class PagamentoPixDAO {
                      sql,
                      Statement.RETURN_GENERATED_KEYS)) {
 
-            comando.setString(1, cliente.getName());
-            comando.setString(2, cliente.getCpf());
-            comando.setString(3, cliente.getEmail());
-            comando.setString(4, cliente.getPhone());
+            comando.setString(1, pagamentoPix.getChavePix());
+            comando.setString(2, pagamentoPix.getTipoChave());
+            comando.setLong(3, pagamentoPix.getId_pagamento());
 
             comando.executeUpdate();
 
@@ -32,12 +32,12 @@ public class PagamentoPixDAO {
             try (ResultSet resultado = comando.getGeneratedKeys()) {
 
                 if (resultado.next()) {
-                    cliente.setId(resultado.getLong(1));
+                    pagamentoPix.setId_pagamentoPix(resultado.getLong(1));
                 }
             }
 
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao salvar cliente no banco.", e);
+            throw new RuntimeException("Erro ao salvar pagamento pix no banco.", e);
         }
     }
 }

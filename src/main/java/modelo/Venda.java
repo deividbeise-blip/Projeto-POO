@@ -5,23 +5,34 @@ import modelo.Veiculo;
 import excecao.*;
 
 public class Venda {
-    private Long id;
+    private Long id_venda;
     private Cliente cliente;
     private Vendedor vendedor;
     private Veiculo veiculo;
     private LocalDate dataVenda;
     private Double valorFinal;
+    private Pagamento pagamento;
 
-    public Venda(Cliente cliente, Vendedor vendedor, Veiculo veiculo, LocalDate dataVenda, Double valorFinal) {
+    public Venda(Cliente cliente, Vendedor vendedor, Veiculo veiculo, LocalDate dataVenda, Double valorFinal, Pagamento pagamento) {
         this.cliente = cliente;
         this.vendedor = vendedor;
         this.veiculo = veiculo;
         this.dataVenda = dataVenda;
         this.valorFinal = valorFinal;
+        this.pagamento = pagamento;
+    }
+    public Pagamento getPagamento() {
+        return pagamento;
+    }
+    public void setPagamento(Pagamento pagamento) {
+        this.pagamento = pagamento;
     }
     // obtem o id da venda
-    public Long getId() {
-        return id;
+    public Long getId_venda() {
+        return id_venda;
+    }
+    public void setId_venda(Long id_venda) {
+        this.id_venda = id_venda;
     }
     public Cliente getCliente() {
         return cliente;

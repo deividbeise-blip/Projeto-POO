@@ -1,7 +1,10 @@
 package modelo;
 import java.time.LocalDate;
+import modelo.Venda;
 
 public class PagamentoCartao extends Pagamento {
+    private Long id_PagamentoCartao;
+    private Venda venda;
     private String numeroCartao;
     private String nomeTitular;
     private String validade;
@@ -12,6 +15,7 @@ public class PagamentoCartao extends Pagamento {
     public PagamentoCartao(Venda venda, String formaPagamento, Double valorPago, LocalDate dataPagamento,
                            String numeroCartao, String nomeTitular, String validade, String cvv) {
         super(venda, formaPagamento, valorPago, dataPagamento);
+        this.venda = venda;
         this.numeroCartao = numeroCartao;
         this.nomeTitular = nomeTitular;
         this.validade = validade;
@@ -19,6 +23,18 @@ public class PagamentoCartao extends Pagamento {
     }
     // Foi criado o set somente para o atributo validade, pois é o único que pode ser alterado após a criação do objeto.
     // Os outros atributos são considerados imutáveis e não possuem métodos set. 
+    public Venda getVenda() {
+        return venda;
+    }
+    public void setVenda(Venda venda) {
+        this.venda = venda;
+    }
+    public Long getId_PagamentoCartao() {
+        return id_PagamentoCartao;
+    }
+    public void setId_PagamentoCartao(Long id_PagamentoCartao) {
+        this.id_PagamentoCartao = id_PagamentoCartao;
+    }
     public String getNumeroCartao() {
         return numeroCartao;
     }

@@ -2,7 +2,7 @@ package modelo;
 import dao.ClienteDAO;
 
 public class Cliente {
-    private Long id;
+    private Long id_cliente;
     private String name;
     private String cpf;
     private String email;
@@ -21,12 +21,12 @@ public class Cliente {
         }
     }
 
-    public Long getId() {
-        return id;
+    public Long getId_cliente() {
+        return id_cliente;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setId_cliente(Long id) {
+        this.id_cliente = id;
     }
 
     public String getName() {

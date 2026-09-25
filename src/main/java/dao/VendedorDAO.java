@@ -1,6 +1,7 @@
 package dao;
 
 import conexao.ConexaoBanco;
+import modelo.Vendedor;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -8,11 +9,11 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 public class VendedorDAO {
-    public void salvar(Cliente cliente) {
+    public void salvar(Vendedor vendedor) {
 
         String sql = """
-                INSERT INTO cliente
-                (name_cliente, cpf, email, phone)
+                INSERT INTO vendedor
+                (name_vendedor, cpf_vendedor, comissao_percentual, concessionaria_vendedor)
                 VALUES (?, ?, ?, ?)
                 """;
 
@@ -21,10 +22,10 @@ public class VendedorDAO {
                      sql,
                      Statement.RETURN_GENERATED_KEYS)) {
 
-            comando.setString(1, cliente.getName());
-            comando.setString(2, cliente.getCpf());
-            comando.setString(3, cliente.getEmail());
-            comando.setString(4, cliente.getPhone());
+            comando.setString(1, vendedor.getName());
+            comando.setString(2, vendedor.getCpf());
+            comando.setDouble(3, vendedor.getComissaoPercentual());
+            comando.setLong(4, vendedor.getConcessionaria().getId_concessionaria());
 
             comando.executeUpdate();
 
@@ -32,12 +33,12 @@ public class VendedorDAO {
             try (ResultSet resultado = comando.getGeneratedKeys()) {
 
                 if (resultado.next()) {
-                    cliente.setId(resultado.getLong(1));
+                    vendedor.setId_vendedor(resultado.getLong(1));
                 }
             }
 
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao salvar cliente no banco.", e);
+            throw new RuntimeException("Erro ao salvar Vendedor no banco.", e);
         }
     }
 }

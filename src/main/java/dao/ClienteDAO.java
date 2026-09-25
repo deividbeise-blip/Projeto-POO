@@ -34,7 +34,7 @@ public class ClienteDAO {
             try (ResultSet resultado = comando.getGeneratedKeys()) {
 
                 if (resultado.next()) {
-                    cliente.setId(resultado.getLong(1));
+                    cliente.setId_cliente(resultado.getLong(1));
                 }
             }
 

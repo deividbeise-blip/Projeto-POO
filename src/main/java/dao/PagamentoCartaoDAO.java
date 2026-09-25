@@ -13,8 +13,8 @@ public class PagamentoCartaoDAO {
 
         String sql = """
                 INSERT INTO pagamentocartao
-                (numero_cartao, validade_cartao, codigo_seguranca, numero_parcelas, valor_parcela, pagamento_cartao)
-                VALUES (?, ?, ?, ?, ?, ?)
+                (numero_cartao, nomeTitular, validade_cartao, codigo_seguranca, numero_parcelas, valor_parcela, id_venda)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (Connection conexao = ConexaoBanco.conectar();
@@ -23,11 +23,12 @@ public class PagamentoCartaoDAO {
                      Statement.RETURN_GENERATED_KEYS)) {
 
             comando.setString(1, pagamentoCartao.getNumeroCartao());
-            comando.setString(2, pagamentoCartao.getValidade());
-            comando.setString(3, pagamentoCartao.getCvv());
-            comando.setInt(4, pagamentoCartao.getnumeroParcelas());
-            comando.setDouble(5, pagamentoCartao.getValorParcela());
-            comando.setDouble(6, pagamentoCartao.getPagamentoCartao());
+            comando.setString(2, pagamentoCartao.getNomeTitular());
+            comando.setString(3, pagamentoCartao.getValidade());
+            comando.setString(4, pagamentoCartao.getCvv());
+            comando.setInt(5, pagamentoCartao.getnumeroParcelas());
+            comando.setDouble(6, pagamentoCartao.getValorParcela());
+            comando.setLong(7, pagamentoCartao.getVenda().getId_venda());
 
             comando.executeUpdate();
 
@@ -35,12 +36,12 @@ public class PagamentoCartaoDAO {
             try (ResultSet resultado = comando.getGeneratedKeys()) {
 
                 if (resultado.next()) {
-                    cliente.setId(resultado.getLong(1));
+                    pagamentoCartao.setId_PagamentoCartao(resultado.getLong(1));
                 }
             }
 
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao salvar cliente no banco.", e);
+            throw new RuntimeException("Erro ao salvar pagamento no banco.", e);
         }
     }
 }

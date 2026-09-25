@@ -1,6 +1,7 @@
 package dao;
 
 import conexao.ConexaoBanco;
+import modelo.Venda;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -8,12 +9,12 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 public class VendaDAO {
-    public void salvar(Cliente cliente) {
+    public void salvar(Venda venda) {
 
         String sql = """
-                INSERT INTO cliente
-                (name_cliente, cpf, email, phone)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO venda
+                (data_venda, cliente_venda, veiculo_venda, vendedor_venda, pagamento_venda)
+                VALUES (?, ?, ?, ?, ?)
                 """;
 
         try (Connection conexao = ConexaoBanco.conectar();
@@ -21,10 +22,11 @@ public class VendaDAO {
                      sql,
                      Statement.RETURN_GENERATED_KEYS)) {
 
-            comando.setString(1, cliente.getName());
-            comando.setString(2, cliente.getCpf());
-            comando.setString(3, cliente.getEmail());
-            comando.setString(4, cliente.getPhone());
+            comando.setDate(1, java.sql.Date.valueOf(venda.getDataVenda()));
+            comando.setLong(2, venda.getCliente().getId_cliente());
+            comando.setLong(3, venda.getVeiculo().getId_veiculo());
+            comando.setLong(4, venda.getVendedor().getId_vendedor());
+            comando.setDouble(5, venda.getPagamento().getId_pagamento());
 
             comando.executeUpdate();
 
@@ -32,12 +34,12 @@ public class VendaDAO {
             try (ResultSet resultado = comando.getGeneratedKeys()) {
 
                 if (resultado.next()) {
-                    cliente.setId(resultado.getLong(1));
+                    venda.setId_venda(resultado.getLong(1));
                 }
             }
 
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao salvar cliente no banco.", e);
+            throw new RuntimeException("Erro ao salvar venda no banco.", e);
         }
     }
 }

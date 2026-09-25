@@ -2,6 +2,7 @@ package modelo;
 import java.time.LocalDate;
 
 public class PagamentoPix extends Pagamento {
+    private Long id_pagamentoPix; //AUTO_INCREMENT
     private String chavePix;
     private String tipoChave; // CPF, CNPJ, E-mail, Telefone ou Aleatória
 
@@ -36,5 +37,13 @@ public class PagamentoPix extends Pagamento {
                 "Valor pago (com 5% de desconto já aplicado): " + getValorPago() + "\n" +
                 "Data do pagamento: " + getDataPagamento() + "\n" +
                 "======================================";
+    }
+
+    public Long getId_pagamentoPix() {
+        return id_pagamentoPix;
+    }
+
+    public void setId_pagamentoPix(Long id_pagamentoPix) {
+        this.id_pagamentoPix = id_pagamentoPix;
     }
 }

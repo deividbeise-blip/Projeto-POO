@@ -9,12 +9,12 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 public class VeiculoDAO {
-    public void salvar(Cliente cliente) {
+    public void salvar(Veiculo veiculo) {
 
         String sql = """
-                INSERT INTO cliente
-                (name_cliente, cpf, email, phone)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO veiculo
+                (marca_veiculo, modelo_veiculo, ano_veiculo, placa_veiculo, preco_veiculo, status_veiculo, moto, concessionaria_veiculo)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (Connection conexao = ConexaoBanco.conectar();
@@ -22,10 +22,15 @@ public class VeiculoDAO {
                      sql,
                      Statement.RETURN_GENERATED_KEYS)) {
 
-            comando.setString(1, cliente.getName());
-            comando.setString(2, cliente.getCpf());
-            comando.setString(3, cliente.getEmail());
-            comando.setString(4, cliente.getPhone());
+            comando.setString(1, veiculo.getMarca());
+            comando.setString(2, veiculo.getModelo());
+            comando.setInt(3, veiculo.getAno());
+            comando.setString(4, veiculo.getPlaca());
+            comando.setDouble(5, veiculo.getPreco());
+            comando.setString(6, veiculo.getStatus().name());
+            comando.setBoolean(7, veiculo.isMoto());
+            comando.setLong(8, veiculo.getConcessionaria().getId_concessionaria());
+            comando.setString(4, veiculo.getPlaca());
 
             comando.executeUpdate();
 
@@ -33,12 +38,12 @@ public class VeiculoDAO {
             try (ResultSet resultado = comando.getGeneratedKeys()) {
 
                 if (resultado.next()) {
-                    cliente.setId(resultado.getLong(1));
+                    veiculo.setId_veiculo(resultado.getLong(1));
                 }
             }
 
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao salvar cliente no banco.", e);
+            throw new RuntimeException("Erro ao salvar veículo no banco.", e);
         }
     }
 }

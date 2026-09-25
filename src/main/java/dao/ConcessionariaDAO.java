@@ -31,7 +31,7 @@ public class ConcessionariaDAO {
             try (ResultSet resultado = comando.getGeneratedKeys()) {
 
                 if (resultado.next()) {
-                    concessionaria.setId(resultado.getLong(1));
+                    concessionaria.setId_concessionaria(resultado.getLong(1));
                 }
             }
 

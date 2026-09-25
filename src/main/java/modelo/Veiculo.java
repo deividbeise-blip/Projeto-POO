@@ -3,7 +3,7 @@ package modelo;
 import excecao.VeiculoIndisponivelException;
 
 public class Veiculo {
-    private Long id;
+    private Long id_veiculo; //AUTO_INCREMENT
     private String marca;
     private String modelo;
     private Integer ano;
@@ -30,8 +30,11 @@ public class Veiculo {
      * Os outros atributos são considerados imutáveis e não possuem métodos set.
      */
 
-    public Long getId() {
-        return id;
+    public Long getId_veiculo() {
+        return id_veiculo;
+    }
+    public void setId_veiculo(Long id_veiculo) {
+        this.id_veiculo = id_veiculo;
     }
 
     public String getMarca() {
@@ -62,7 +65,7 @@ public class Veiculo {
         return concessionaria;
     }
 
-    public Boolean getMoto() {
+    public Boolean isMoto() {
         return moto;
     }
 

@@ -1,20 +1,25 @@
 package modelo;
-import modelo.Veiculo;
+import modelo.Concessionaria;
 public class Vendedor {
-    private Long id;
+    private Long id_vendedor;
     private String name;
     private String cpf;
     private Double comissaoPercentual;
+    private Concessionaria concessionaria;
 
-    public Vendedor(String name, String cpf, Double comissaoPercentual) {
+    public Vendedor(String name, String cpf, Double comissaoPercentual, Concessionaria concessionaria) {
         this.name = name;
         this.cpf = cpf;
         this.comissaoPercentual = comissaoPercentual;
+        this.concessionaria = concessionaria;
     }
-
+    
     // pega o id do vendedor
-    public Long getId() {
-        return id;
+    public Long getId_vendedor() {
+        return id_vendedor;
+    }
+    public void setId_vendedor(Long id_vendedor) {
+        this.id_vendedor = id_vendedor;
     }
     // pega o nome do vendedor
     public String getName() {
@@ -48,7 +53,7 @@ public class Vendedor {
         double percentual = comissaoPercentual;
         double reducaoComissaoMoto = 3;
 
-        if (veiculo.getMoto() == false) {
+        if (veiculo.isMoto() == false) {
             return valorVenda * percentual/100;
         }
         else {
@@ -62,6 +67,14 @@ public class Vendedor {
         return name != null
                 && cpf != null
                 && comissaoPercentual > 0;
+    }
+
+    public Concessionaria getConcessionaria() {
+        return concessionaria;
+    }
+
+    public void setConcessionaria(Concessionaria concessionaria) {
+        this.concessionaria = concessionaria;
     }
 }
 
