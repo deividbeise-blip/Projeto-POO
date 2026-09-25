@@ -1,4 +1,5 @@
 package modelo;
+import dao.ClienteDAO;
 
 public class Cliente {
     private Long id;
@@ -12,6 +13,12 @@ public class Cliente {
         this.cpf = cpf;
         this.email = email;
         this.phone = phone;
+        try {
+            ClienteDAO clienteDAO = new ClienteDAO();
+            clienteDAO.salvar(this);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar cliente no banco. Banco deve estar offline", e);
+        }
     }
 
     public Long getId() {

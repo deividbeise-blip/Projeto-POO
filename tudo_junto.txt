@@ -1,0 +1,747 @@
+============================================================================== 
+INÍCIO DO ARQUIVO: Pagamento.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\) 
+============================================================================== 
+ 
+import java.time.LocalDate;
+
+public abstract class Pagamento {
+    private Long id;
+    private Venda venda;
+    private String formaPagamento;
+    private Double valorPago;
+    private LocalDate dataPagamento;
+
+    public Pagamento(Venda venda, String formaPagamento, Double valorPago, LocalDate dataPagamento) {
+        this.venda = venda;
+        this.formaPagamento = formaPagamento;
+        this.valorPago = valorPago;
+        this.dataPagamento = dataPagamento;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public Venda getVenda() {
+        return venda;
+    }
+
+    public String getFormaPagamento() {
+        return formaPagamento;
+    }
+
+    public Double getValorPago() {
+        return valorPago;
+    }
+
+    public LocalDate getDataPagamento() {
+        return dataPagamento;
+    }
+
+    public void setFormaPagamento(String formaPagamento) {
+        this.formaPagamento = formaPagamento;
+    }
+
+    public void setValorPago(Double valorPago) {
+        this.valorPago = valorPago;
+    }
+
+    public void setDataPagamento(LocalDate dataPagamento) {
+        this.dataPagamento = dataPagamento;
+    }
+
+    public boolean validarPagamento() {
+        return valorPago>0;
+    }
+    public boolean validarFormaPagamento() {
+        return formaPagamento.equalsIgnoreCase("pix") || formaPagamento.equalsIgnoreCase("cartão");
+    }
+    public void aplicarDesconto(Double desconto) {
+        if (desconto > 0 && desconto <= 100) {
+            valorPago -= valorPago * (desconto / 100);
+        }
+    }
+    public void exibirResumo() {
+        System.out.println("Resumo do Pagamento:");
+        System.out.println("ID: " + id);
+        System.out.println("Venda: " + venda);
+        System.out.println("Forma de Pagamento: " + formaPagamento);
+        System.out.println("Valor Pago: " + valorPago);
+        System.out.println("Data do Pagamento: " + dataPagamento);
+    }
+
+    /**
+     * Método abstrato que obriga cada subclasse (PagamentoPix, PagamentoCartao)
+     * a fornecer sua própria versão do recibo, de acordo com suas particularidades.
+     * Garante o critério de Polimorfismo (cada forma de pagamento gera um recibo diferente)
+     * e reforça a Abstração (a classe mãe não sabe "como" o recibo é montado, só que ele existe).
+     */
+    public abstract String obterReciboDetalhado();
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: Pagamento.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: PagamentoCartao.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\) 
+============================================================================== 
+ 
+import java.time.LocalDate;
+
+public class PagamentoCartao extends Pagamento {
+    private String numeroCartao;
+    private String nomeTitular;
+    private String validade;
+    private String cvv;
+    private int numeroParcelas;
+    private Double valorParcela;
+
+    public PagamentoCartao(Venda venda, String formaPagamento, Double valorPago, LocalDate dataPagamento,
+                           String numeroCartao, String nomeTitular, String validade, String cvv) {
+        super(venda, formaPagamento, valorPago, dataPagamento);
+        this.numeroCartao = numeroCartao;
+        this.nomeTitular = nomeTitular;
+        this.validade = validade;
+        this.cvv = cvv;
+    }
+    // Foi criado o set somente para o atributo validade, pois é o único que pode ser alterado após a criação do objeto.
+    // Os outros atributos são considerados imutáveis e não possuem métodos set. 
+    public String getNumeroCartao() {
+        return numeroCartao;
+    }
+
+    public String getNomeTitular() {
+        return nomeTitular;
+    }
+
+    public String getValidade() {
+        return validade;
+    }
+
+    public String getCvv() {
+        return cvv;
+    }
+
+    public void setValidade(String validade) {
+        this.validade = validade;
+    }
+    public int getnumeroParcelas() {
+        return numeroParcelas;
+    }
+    public void setnumeroParcelas(int numeroParcelas) {
+        this.numeroParcelas = numeroParcelas;
+    }
+    public Double getValorParcela() {
+        return valorParcela;
+    }
+    public void setValorParcela(Double valorParcela) {
+        this.valorParcela = valorParcela;
+    }
+    public boolean validarNumeroCartao() {
+        return numeroCartao.matches("\\d{16}");
+    }
+    public Double calcularParcelas(int numeroParcelas) {
+        if (numeroParcelas < 1 || numeroParcelas > 12) {
+            throw new IllegalArgumentException("Número de parcelas inválido. Deve ser entre 1 e 12.");
+        }
+        this.numeroParcelas = numeroParcelas;
+        this.valorParcela = getValorPago() / numeroParcelas;
+        return (getValorPago() / numeroParcelas);
+    }
+
+    @Override
+    public String obterReciboDetalhado() {
+        String numeroMascarado = numeroCartao != null && numeroCartao.length() >= 4
+                ? "**** **** **** " + numeroCartao.substring(numeroCartao.length() - 4)
+                : numeroCartao;
+
+        StringBuilder recibo = new StringBuilder();
+        recibo.append("===== Recibo de Pagamento (Cartão) =====\n");
+        recibo.append("Titular: ").append(nomeTitular).append("\n");
+        recibo.append("Cartão: ").append(numeroMascarado).append("\n");
+        recibo.append("Valor pago: ").append(getValorPago()).append("\n");
+        if (numeroParcelas > 0) {
+            recibo.append("Parcelado em: ").append(numeroParcelas).append("x de ").append(valorParcela).append("\n");
+        } else {
+            recibo.append("Pagamento à vista\n");
+        }
+        recibo.append("Data do pagamento: ").append(getDataPagamento()).append("\n");
+        recibo.append("=========================================");
+        return recibo.toString();
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: PagamentoCartao.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: PagamentoPix.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\) 
+============================================================================== 
+ 
+import java.time.LocalDate;
+
+public class PagamentoPix extends Pagamento {
+    private String chavePix;
+    private String tipoChave; // CPF, CNPJ, E-mail, Telefone ou Aleatória
+
+    public PagamentoPix(Venda venda, String formaPagamento, Double valorPago, LocalDate dataPagamento, String chavePix, String tipoChave) {
+        super(venda, formaPagamento, valorPago, dataPagamento);
+        this.chavePix = chavePix;
+        this.tipoChave = tipoChave;
+
+        // Regra automática: todo pagamento via PIX recebe 5% de desconto assim que é criado.
+        aplicarDesconto(5.0);
+    }
+
+    public String getChavePix() {
+        return chavePix;
+    }
+    public void setChavePix(String chavePix) {
+        this.chavePix = chavePix;
+    }
+
+    public String getTipoChave() {
+        return tipoChave;
+    }
+
+    public void setTipoChave(String tipoChave) {
+        this.tipoChave = tipoChave;
+    }
+
+    @Override
+    public String obterReciboDetalhado() {
+        return "===== Recibo de Pagamento (PIX) =====\n" +
+                "Chave PIX: " + chavePix + " (" + tipoChave + ")\n" +
+                "Valor pago (com 5% de desconto já aplicado): " + getValorPago() + "\n" +
+                "Data do pagamento: " + getDataPagamento() + "\n" +
+                "======================================";
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: PagamentoPix.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: TesteBanco.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\) 
+============================================================================== 
+ 
+import conexao.ConexaoBanco;
+public class TesteBanco {
+
+    public static void main(String[] args) {
+
+        try {
+            ConexaoBanco.conectar();
+
+            System.out.println("Conexão com o MySQL realizada com sucesso!");
+
+        } catch (Exception e) {
+            System.out.println("Erro ao conectar com o MySQL:");
+            e.printStackTrace();
+        }
+    }
+} 
+============================================================================== 
+FIM DO ARQUIVO: TesteBanco.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: Venda.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\) 
+============================================================================== 
+ 
+import java.time.LocalDate;
+import modelo.Cliente;
+import modelo.Veiculo;
+import excecao.*;
+
+public class Venda {
+    private Long id;
+    private Cliente cliente;
+    private Vendedor vendedor;
+    private Veiculo veiculo;
+    private LocalDate dataVenda;
+    private Double valorFinal;
+
+    public Venda(Cliente cliente, Vendedor vendedor, Veiculo veiculo, LocalDate dataVenda, Double valorFinal) {
+        this.cliente = cliente;
+        this.vendedor = vendedor;
+        this.veiculo = veiculo;
+        this.dataVenda = dataVenda;
+        this.valorFinal = valorFinal;
+    }
+    // obtem o id da venda
+    public Long getId() {
+        return id;
+    }
+    public Cliente getCliente() {
+        return cliente;
+    }
+    public Vendedor getVendedor() {
+        return vendedor;
+    }
+    public Veiculo getVeiculo() {
+        return veiculo;
+    }
+    public LocalDate getDataVenda() {
+        return dataVenda;
+    }
+    public double getValorFinal() {
+        return valorFinal;
+    }
+
+    // obtem a comissão do funcionário de acordo com o valor da venda
+    public double getcomissao(){
+        return vendedor.caucularcomissao(valorFinal, veiculo);
+    }
+
+    // modifica a variável para um valor com desconto
+    public void  desconto(double percentual){
+        valorFinal = valorFinal -  valorFinal * percentual/100;
+    }
+
+    //validação da venda
+    public boolean validarVenda(){
+        return cliente != null
+                && veiculo != null
+                && vendedor != null
+                && dataVenda != null
+                && valorFinal > 0
+                && veiculo.verificarDisponibilidade()
+                && vendedor.validarVendedor();
+    }
+
+    // venda de veiculo
+    public void finalizarVenda () throws VeiculoIndisponivelException {
+        veiculo.vender();
+        validarVenda();
+    }
+}
+
+ 
+============================================================================== 
+FIM DO ARQUIVO: Venda.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: Vendedor.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\) 
+============================================================================== 
+ 
+import modelo.Veiculo;
+public class Vendedor {
+    private Long id;
+    private String name;
+    private String cpf;
+    private Double comissaoPercentual;
+
+    public Vendedor(String name, String cpf, Double comissaoPercentual) {
+        this.name = name;
+        this.cpf = cpf;
+        this.comissaoPercentual = comissaoPercentual;
+    }
+
+    // pega o id do vendedor
+    public Long getId() {
+        return id;
+    }
+    // pega o nome do vendedor
+    public String getName() {
+        return name;
+    }
+    // pega o cpf do vendedor
+    public String getCpf() {
+        return cpf;
+    }
+    // pega o valor da comissao em porcentagem
+    public Double getComissaoPercentual() {
+        return comissaoPercentual;
+    }
+
+    // modifica o valor da variavel nome
+    public void setName(String name) {
+        this.name = name;
+    }
+    // modifica o valor da variavel cpf
+    public void setCpf(String cpf) {
+        this.cpf = cpf;
+    }
+    // muda o valor da variavel comissaoPercentual
+    public void setComissaoPercentual(Double comissaoPercentual) {
+        this.comissaoPercentual = comissaoPercentual;
+    }
+
+    //caucula o valor da comissão de acordo com o valor da venda
+    public double caucularcomissao(double valorVenda, Veiculo veiculo){
+
+        double percentual = comissaoPercentual;
+        double reducaoComissaoMoto = 3;
+
+        if (veiculo.getMoto() == false) {
+            return valorVenda * percentual/100;
+        }
+        else {
+            percentual = percentual - reducaoComissaoMoto;
+            return valorVenda * percentual/100;
+        }
+
+    }
+
+    public boolean validarVendedor() {
+        return name != null
+                && cpf != null
+                && comissaoPercentual > 0;
+    }
+}
+
+ 
+============================================================================== 
+FIM DO ARQUIVO: Vendedor.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: ConexaoBanco.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\conexao\) 
+============================================================================== 
+ 
+package conexao;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+public class ConexaoBanco {
+
+    private static final String URL =
+            "jdbc:mysql://localhost:3306/projeto_poo";
+
+    private static final String USUARIO = "root";
+
+    private static final String SENHA = "";
+
+    public static Connection conectar() throws SQLException {
+        return DriverManager.getConnection(
+                URL,
+                USUARIO,
+                SENHA
+        );
+    }
+} 
+============================================================================== 
+FIM DO ARQUIVO: ConexaoBanco.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: VeiculoIndisponivelException.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\excecao\) 
+============================================================================== 
+ 
+package excecao;
+
+public class VeiculoIndisponivelException extends Exception {
+
+    public VeiculoIndisponivelException(String mensagem) {
+        super(mensagem);
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: VeiculoIndisponivelException.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: Cliente.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\modelo\) 
+============================================================================== 
+ 
+package modelo;
+
+public class Cliente {
+    private Long id;
+    private String name;
+    private String cpf;
+    private String email;
+    private String phone;
+
+    public Cliente(String name, String cpf, String email, String phone) {
+        this.name = name;
+        this.cpf = cpf;
+        this.email = email;
+        this.phone = phone;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getCpf() {
+        return cpf;
+    }
+
+    public void setCpf(String cpf) {
+        this.cpf = cpf;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: Cliente.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: Concessionaria.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\modelo\) 
+============================================================================== 
+ 
+package modelo;
+
+public class Concessionaria {
+    private Long id;
+    private String name;
+    private String address;
+
+    public Concessionaria(String name, String address) {
+        this.name = name;
+        this.address = address;
+    }
+
+    public Long getId() {  
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: Concessionaria.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: StatusVeiculo.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\modelo\) 
+============================================================================== 
+ 
+package modelo;
+
+public enum StatusVeiculo {
+    DISPONIVEL,
+    VENDIDO,
+    EM_MANUTENCAO
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: StatusVeiculo.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: Veiculo.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\modelo\) 
+============================================================================== 
+ 
+package modelo;
+
+import excecao.VeiculoIndisponivelException;
+
+public class Veiculo {
+    private Long id;
+    private String marca;
+    private String modelo;
+    private Integer ano;
+    private String placa;
+    private Double preco;
+    private StatusVeiculo status;
+    private Concessionaria concessionaria;
+    private Boolean moto; //Veículo é moto ou carro, true = moto, false = carro
+    private Boolean vendido; //Veículo foi vendido ou não, true = vendido, false = não vendido
+
+    public Veiculo(String marca, String modelo, Integer ano, String placa, Double preco, StatusVeiculo status, Concessionaria concessionaria, Boolean moto, Boolean vendido) {
+        this.marca = marca;
+        this.modelo = modelo;
+        this.ano = ano;
+        this.placa = placa;
+        this.preco = preco;
+        this.status = status;
+        this.concessionaria = concessionaria;
+        this.moto = moto;
+        this.vendido = vendido;
+    }
+    /**
+     * Os setter criados são apenas para os atributos que podem ser alterados após a criação do objeto, como placa, preço, status e concessionária.
+     * Os outros atributos são considerados imutáveis e não possuem métodos set.
+     */
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getMarca() {
+        return marca;
+    }
+
+    public String getModelo() {
+        return modelo;
+    }
+
+    public Integer getAno() {
+        return ano;
+    }
+
+    public String getPlaca() {
+        return placa;
+    }
+
+    public Double getPreco() {
+        return preco;
+    }
+
+    public StatusVeiculo getStatus() {
+        return status;
+    }
+
+    public Concessionaria getConcessionaria() {
+        return concessionaria;
+    }
+
+    public Boolean getMoto() {
+        return moto;
+    }
+
+    public void setPlaca(String placa) {
+        this.placa = placa;
+    }
+
+    public void setPreco(Double preco) {
+        this.preco = preco;
+    }
+
+    public void setStatus(StatusVeiculo status) {
+        this.status = status;
+    }
+
+    public void setConcessionaria(Concessionaria concessionaria) {
+        this.concessionaria = concessionaria;
+    }
+
+    public Boolean getVendido() {
+        return vendido;
+    }
+
+    public void setVendido(Boolean vendido) {
+        this.vendido = vendido;
+    }
+
+    public double calcularValorComDesconto(double percentual) {
+        return this.preco - (this.preco * (percentual / 100));
+    }
+
+    public boolean verificarDisponibilidade() {
+        return status != StatusVeiculo.VENDIDO;
+    }
+
+    /**
+     * Realiza a venda do veículo, alterando seu estado para VENDIDO.
+     * Caso o veículo já esteja vendido, a operação é considerada inválida
+     * e uma VeiculoIndisponivelException é lançada, impedindo a alteração de estado.
+     */
+    public void vender() throws VeiculoIndisponivelException {
+        if (!verificarDisponibilidade()) {
+            throw new VeiculoIndisponivelException("Veículo já foi vendido e não pode ser vendido novamente.");
+        }
+        this.status = StatusVeiculo.VENDIDO;
+        this.vendido = true;
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: Veiculo.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: VeiculoIndisponivelException.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\modelo\) 
+============================================================================== 
+ 
+package modelo;
+
+public class VeiculoIndisponivelException extends Exception {
+    
+    
+    public VeiculoIndisponivelException() {
+        super("O veículo selecionado não está disponível no estoque.");
+    }
+
+   
+    public VeiculoIndisponivelException(String mensagem) {
+        super(mensagem);
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: VeiculoIndisponivelException.java 
+============================================================================== 
+ 
+ 
