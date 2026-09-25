@@ -1,4 +1,7 @@
 import java.time.LocalDate;
+import modelo.Cliente;
+import modelo.Veiculo;
+import excecao.*;
 
 public class Venda {
     private Long id;
@@ -57,7 +60,7 @@ public class Venda {
     }
 
     // venda de veiculo
-    public void finalizarVenda () {
+    public void finalizarVenda () throws VeiculoIndisponivelException {
         veiculo.vender();
         validarVenda();
     }

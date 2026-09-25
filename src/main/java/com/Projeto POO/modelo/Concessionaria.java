@@ -1,3 +1,5 @@
+package modelo;
+
 public class Concessionaria {
     private Long id;
     private String name;
@@ -8,7 +10,7 @@ public class Concessionaria {
         this.address = address;
     }
 
-    public Long getId() {
+    public Long getId() {  
         return id;
     }
 
