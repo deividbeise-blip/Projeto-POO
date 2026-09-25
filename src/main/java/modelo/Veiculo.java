@@ -1,6 +1,7 @@
 package modelo;
 
 import excecao.VeiculoIndisponivelException;
+import dao.VeiculoDAO;
 
 public class Veiculo {
     private Long id_veiculo; //AUTO_INCREMENT
@@ -24,6 +25,12 @@ public class Veiculo {
         this.concessionaria = concessionaria;
         this.moto = moto;
         this.vendido = vendido;
+        try {
+            VeiculoDAO veiculoDAO = new VeiculoDAO();
+            veiculoDAO.salvar(this);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar veículo no banco. Banco deve estar offline", e);
+        }
     }
     /**
      * Os setter criados são apenas para os atributos que podem ser alterados após a criação do objeto, como placa, preço, status e concessionária.

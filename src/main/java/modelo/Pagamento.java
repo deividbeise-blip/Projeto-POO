@@ -1,6 +1,8 @@
 package modelo;
 import java.time.LocalDate;
 
+import dao.PagamentoDAO;
+
 public abstract class Pagamento {
     private Long id_pagamento; //AUTO_INCREMENT
     private Venda venda;
@@ -13,6 +15,12 @@ public abstract class Pagamento {
         this.formaPagamento = formaPagamento;
         this.valorPago = valorPago;
         this.dataPagamento = dataPagamento;
+        try {
+            PagamentoDAO pagamentoDAO = new PagamentoDAO();
+            pagamentoDAO.salvar(this);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar pagamento no banco. Banco deve estar offline", e);
+        }
     }
 
     public Long getId_pagamento() {

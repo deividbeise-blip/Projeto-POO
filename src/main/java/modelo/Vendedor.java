@@ -1,4 +1,5 @@
 package modelo;
+import dao.VendedorDAO;
 public class Vendedor {
     private Long id_vendedor;
     private String name;
@@ -11,6 +12,12 @@ public class Vendedor {
         this.cpf = cpf;
         this.comissaoPercentual = comissaoPercentual;
         this.concessionaria = concessionaria;
+        try {
+            VendedorDAO vendedorDAO = new VendedorDAO();
+            vendedorDAO.salvar(this);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar vendedor no banco. Banco deve estar offline", e);
+        }
     }
     
     // pega o id do vendedor

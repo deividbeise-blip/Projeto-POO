@@ -1,6 +1,8 @@
 package modelo;
 import java.time.LocalDate;
 
+import dao.VendaDAO;
+
 public class Venda {
     private Long id_venda;
     private Cliente cliente;
@@ -17,6 +19,12 @@ public class Venda {
         this.dataVenda = dataVenda;
         this.valorFinal = valorFinal;
         this.pagamento = pagamento;
+        try {
+            VendaDAO vendaDAO = new VendaDAO();
+            vendaDAO.salvar(this);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar venda no banco. Banco deve estar offline", e);
+        }
     }
     public Pagamento getPagamento() {
         return pagamento;

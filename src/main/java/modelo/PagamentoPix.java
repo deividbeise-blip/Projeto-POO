@@ -1,6 +1,9 @@
 package modelo;
 import java.time.LocalDate;
 
+import dao.PagamentoPixDAO;
+
+
 public class PagamentoPix extends Pagamento {
     private Long id_pagamentoPix; //AUTO_INCREMENT
     private String chavePix;
@@ -10,7 +13,12 @@ public class PagamentoPix extends Pagamento {
         super(venda, formaPagamento, valorPago, dataPagamento);
         this.chavePix = chavePix;
         this.tipoChave = tipoChave;
-
+        try {
+            PagamentoPixDAO pagamentoPixDAO = new PagamentoPixDAO();
+            pagamentoPixDAO.salvar(this);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar pagamento no banco. Banco deve estar offline", e);
+        }
         // Regra automática: todo pagamento via PIX recebe 5% de desconto assim que é criado.
         aplicarDesconto(5.0);
     }

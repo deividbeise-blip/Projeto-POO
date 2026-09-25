@@ -1,6 +1,8 @@
 package modelo;
 import java.time.LocalDate;
 
+import dao.PagamentoCartaoDAO;
+
 public class PagamentoCartao extends Pagamento {
     private Long id_PagamentoCartao;
     private Venda venda;
@@ -19,6 +21,12 @@ public class PagamentoCartao extends Pagamento {
         this.nomeTitular = nomeTitular;
         this.validade = validade;
         this.cvv = cvv;
+        try {
+            PagamentoCartaoDAO pagamentoCartaoDAO = new PagamentoCartaoDAO();
+            pagamentoCartaoDAO.salvar(this);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar pagamento no banco. Banco deve estar offline", e);
+        }
     }
     // Foi criado o set somente para o atributo validade, pois é o único que pode ser alterado após a criação do objeto.
     // Os outros atributos são considerados imutáveis e não possuem métodos set. 

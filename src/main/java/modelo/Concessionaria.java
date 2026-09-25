@@ -1,4 +1,5 @@
 package modelo;
+import dao.ConcessionariaDAO;
 
 public class Concessionaria {
     private Long id_concessionaria;
@@ -8,6 +9,12 @@ public class Concessionaria {
     public Concessionaria(String name, String address) {
         this.name = name;
         this.address = address;
+        try {
+            ConcessionariaDAO concessionariaDAO = new ConcessionariaDAO();
+            concessionariaDAO.salvar(this);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar concessionária no banco. Banco deve estar offline", e);
+        }
     }
 
     public Long getId_concessionaria() {
