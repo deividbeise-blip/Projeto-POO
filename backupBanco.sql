@@ -1,13 +1,13 @@
--- MariaDB dump 10.19  Distrib 10.4.32-MariaDB, for Win64 (AMD64)
+-- MySQL dump 10.13  Distrib 8.0.33, for Win64 (x86_64)
 --
--- Host: localhost    Database: projeto poo
+-- Host: 127.0.0.1    Database: projeto_poo
 -- ------------------------------------------------------
--- Server version	10.4.32-MariaDB
+-- Server version	5.5.5-10.4.32-MariaDB
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8mb4 */;
+/*!50503 SET NAMES utf8mb4 */;
 /*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
 /*!40103 SET TIME_ZONE='+00:00' */;
 /*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
@@ -21,7 +21,7 @@
 
 DROP TABLE IF EXISTS `cliente`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `cliente` (
   `id_cliente` int(11) NOT NULL AUTO_INCREMENT,
   `name_cliente` varchar(50) NOT NULL,
@@ -37,21 +37,12 @@ CREATE TABLE `cliente` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `cliente`
---
-
-LOCK TABLES `cliente` WRITE;
-/*!40000 ALTER TABLE `cliente` DISABLE KEYS */;
-/*!40000 ALTER TABLE `cliente` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `concessionaria`
 --
 
 DROP TABLE IF EXISTS `concessionaria`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `concessionaria` (
   `id_concessionaria` int(11) NOT NULL AUTO_INCREMENT,
   `name_concessionaria` varchar(50) NOT NULL,
@@ -63,21 +54,12 @@ CREATE TABLE `concessionaria` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `concessionaria`
---
-
-LOCK TABLES `concessionaria` WRITE;
-/*!40000 ALTER TABLE `concessionaria` DISABLE KEYS */;
-/*!40000 ALTER TABLE `concessionaria` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `pagamento`
 --
 
 DROP TABLE IF EXISTS `pagamento`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `pagamento` (
   `id_pagamento` int(11) NOT NULL AUTO_INCREMENT,
   `forma_pagamento` enum('Dinheiro','Cartao','Pix') NOT NULL,
@@ -94,24 +76,16 @@ CREATE TABLE `pagamento` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `pagamento`
---
-
-LOCK TABLES `pagamento` WRITE;
-/*!40000 ALTER TABLE `pagamento` DISABLE KEYS */;
-/*!40000 ALTER TABLE `pagamento` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `pagamentocartao`
 --
 
 DROP TABLE IF EXISTS `pagamentocartao`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `pagamentocartao` (
   `id_pagamento_cartao` int(11) NOT NULL AUTO_INCREMENT,
   `numero_cartao` varchar(16) NOT NULL,
+  `nomeTitular` varchar(255) DEFAULT NULL,
   `validade_cartao` date NOT NULL,
   `codigo_seguranca` varchar(4) NOT NULL,
   `numero_parcelas` int(11) NOT NULL,
@@ -124,21 +98,12 @@ CREATE TABLE `pagamentocartao` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `pagamentocartao`
---
-
-LOCK TABLES `pagamentocartao` WRITE;
-/*!40000 ALTER TABLE `pagamentocartao` DISABLE KEYS */;
-/*!40000 ALTER TABLE `pagamentocartao` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `pagamentopix`
 --
 
 DROP TABLE IF EXISTS `pagamentopix`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `pagamentopix` (
   `id_pagamento_pix` int(11) NOT NULL AUTO_INCREMENT,
   `chave_pix` varchar(50) NOT NULL,
@@ -151,34 +116,16 @@ CREATE TABLE `pagamentopix` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `pagamentopix`
---
-
-LOCK TABLES `pagamentopix` WRITE;
-/*!40000 ALTER TABLE `pagamentopix` DISABLE KEYS */;
-/*!40000 ALTER TABLE `pagamentopix` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `statusveiculo`
 --
 
 DROP TABLE IF EXISTS `statusveiculo`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `statusveiculo` (
   `StatusVeiculo` enum('Disponivel','Vendido','Em_Manutencao') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `statusveiculo`
---
-
-LOCK TABLES `statusveiculo` WRITE;
-/*!40000 ALTER TABLE `statusveiculo` DISABLE KEYS */;
-/*!40000 ALTER TABLE `statusveiculo` ENABLE KEYS */;
-UNLOCK TABLES;
 
 --
 -- Table structure for table `veiculo`
@@ -186,7 +133,7 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `veiculo`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `veiculo` (
   `id_veiculo` int(11) NOT NULL AUTO_INCREMENT,
   `marca_veiculo` varchar(50) NOT NULL,
@@ -205,21 +152,12 @@ CREATE TABLE `veiculo` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `veiculo`
---
-
-LOCK TABLES `veiculo` WRITE;
-/*!40000 ALTER TABLE `veiculo` DISABLE KEYS */;
-/*!40000 ALTER TABLE `veiculo` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `venda`
 --
 
 DROP TABLE IF EXISTS `venda`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `venda` (
   `id_venda` int(11) NOT NULL AUTO_INCREMENT,
   `data_venda` date NOT NULL,
@@ -240,47 +178,25 @@ CREATE TABLE `venda` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `venda`
---
-
-LOCK TABLES `venda` WRITE;
-/*!40000 ALTER TABLE `venda` DISABLE KEYS */;
-/*!40000 ALTER TABLE `venda` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `vendedor`
 --
 
 DROP TABLE IF EXISTS `vendedor`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `vendedor` (
   `id_vendedor` int(11) NOT NULL AUTO_INCREMENT,
   `name_vendedor` varchar(50) NOT NULL,
-  `email_vendedor` varchar(100) NOT NULL,
-  `phone_vendedor` varchar(15) NOT NULL,
   `cpf_vendedor` varchar(11) NOT NULL,
   `comissao_percentual` decimal(5,2) NOT NULL,
   `concessionario_vendedor` int(11) NOT NULL,
   PRIMARY KEY (`id_vendedor`),
   UNIQUE KEY `name_vendedor` (`name_vendedor`),
-  UNIQUE KEY `email_vendedor` (`email_vendedor`),
-  UNIQUE KEY `phone_vendedor` (`phone_vendedor`),
   UNIQUE KEY `cpf_vendedor` (`cpf_vendedor`),
   KEY `concessionario_vendedor` (`concessionario_vendedor`),
   CONSTRAINT `vendedor_ibfk_1` FOREIGN KEY (`concessionario_vendedor`) REFERENCES `concessionaria` (`id_concessionaria`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `vendedor`
---
-
-LOCK TABLES `vendedor` WRITE;
-/*!40000 ALTER TABLE `vendedor` DISABLE KEYS */;
-/*!40000 ALTER TABLE `vendedor` ENABLE KEYS */;
-UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -291,4 +207,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-09-24 19:53:05
+-- Dump completed on 2026-09-25 20:50:35
