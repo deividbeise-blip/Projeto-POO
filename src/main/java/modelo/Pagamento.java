@@ -1,3 +1,4 @@
+package modelo;
 import java.time.LocalDate;
 
 public abstract class Pagamento {
