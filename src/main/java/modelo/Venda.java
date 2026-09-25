@@ -1,8 +1,5 @@
 package modelo;
 import java.time.LocalDate;
-import modelo.Cliente;
-import modelo.Veiculo;
-import excecao.*;
 
 public class Venda {
     private Long id_venda;
@@ -72,9 +69,9 @@ public class Venda {
     }
 
     // venda de veiculo
-    public void finalizarVenda () throws VeiculoIndisponivelException {
-        veiculo.vender();
+    public void finalizarVenda () throws excecao.VeiculoIndisponivelException {
         validarVenda();
+        veiculo.vender();
     }
 }
 

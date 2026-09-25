@@ -1,5 +1,4 @@
 package modelo;
-import modelo.Concessionaria;
 public class Vendedor {
     private Long id_vendedor;
     private String name;

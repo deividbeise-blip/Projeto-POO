@@ -1,6 +1,5 @@
 package modelo;
 import java.time.LocalDate;
-import modelo.Venda;
 
 public class PagamentoCartao extends Pagamento {
     private Long id_PagamentoCartao;
