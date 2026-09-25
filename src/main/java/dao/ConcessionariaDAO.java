@@ -14,7 +14,7 @@ public class ConcessionariaDAO {
         String sql = """
                 INSERT INTO concessionaria
                 (name_concessionaria, address_concessionaria)
-                VALUES (?, ?, ?, ?)
+                VALUES (?, ?)
                 """;
 
         try (Connection conexao = ConexaoBanco.conectar();

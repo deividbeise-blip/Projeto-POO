@@ -12,9 +12,9 @@ public class PagamentoCartaoDAO {
     public void salvar(PagamentoCartao pagamentoCartao) {
 
         String sql = """
-                INSERT INTO cliente
-                (name_cliente, cpf, email, phone)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO pagamentocartao
+                (numero_cartao, validade_cartao, codigo_seguranca, numero_parcelas, valor_parcela, pagamento_cartao)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """;
 
         try (Connection conexao = ConexaoBanco.conectar();
@@ -22,10 +22,12 @@ public class PagamentoCartaoDAO {
                      sql,
                      Statement.RETURN_GENERATED_KEYS)) {
 
-            comando.setString(1, cliente.getName());
-            comando.setString(2, cliente.getCpf());
-            comando.setString(3, cliente.getEmail());
-            comando.setString(4, cliente.getPhone());
+            comando.setString(1, pagamentoCartao.getNumeroCartao());
+            comando.setString(2, pagamentoCartao.getValidade());
+            comando.setString(3, pagamentoCartao.getCvv());
+            comando.setInt(4, pagamentoCartao.getnumeroParcelas());
+            comando.setDouble(5, pagamentoCartao.getValorParcela());
+            comando.setDouble(6, pagamentoCartao.getPagamentoCartao());
 
             comando.executeUpdate();
 
