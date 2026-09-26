@@ -29,6 +29,8 @@ public abstract class Pagamento {
 
     public void setId_pagamento(Long id_pagamento) {
         this.id_pagamento = id_pagamento;
+        PagamentoDAO pagamentoDAO = new PagamentoDAO();
+        pagamentoDAO.atualizar(this, "id_pagamento", String.valueOf(id_pagamento));
     }
 
     public Venda getVenda() {
@@ -49,14 +51,20 @@ public abstract class Pagamento {
 
     public void setFormaPagamento(String formaPagamento) {
         this.formaPagamento = formaPagamento;
+        PagamentoDAO pagamentoDAO = new PagamentoDAO();
+        pagamentoDAO.atualizar(this, "forma_pagamento", formaPagamento);
     }
 
     public void setValorPago(Double valorPago) {
         this.valorPago = valorPago;
+        PagamentoDAO pagamentoDAO = new PagamentoDAO();
+        pagamentoDAO.atualizar(this, "valor_pago", String.valueOf(valorPago));
     }
 
     public void setDataPagamento(LocalDate dataPagamento) {
         this.dataPagamento = dataPagamento;
+        PagamentoDAO pagamentoDAO = new PagamentoDAO();
+        pagamentoDAO.atualizar(this, "data_pagamento", dataPagamento.toString());
     }
 
     public boolean validarPagamento() {

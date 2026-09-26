@@ -42,4 +42,24 @@ public class PagamentoDAO {
             throw new RuntimeException("Erro ao salvar pagamento no banco.", e);
         }
     }
+    public void atualizar(Pagamento pagamento, String atributo, String novoValor) {
+        String sql = """
+                UPDATE pagamento
+                SET ? = ?
+                WHERE id_pagamento = ?
+                """;
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+
+            comando.setString(1, atributo);
+            comando.setString(2, novoValor);
+            comando.setLong(3, pagamento.getId_pagamento());
+
+            comando.executeUpdate();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao atualizar pagamento no banco.", e);
+        }
+    }
 }

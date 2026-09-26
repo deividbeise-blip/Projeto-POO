@@ -35,12 +35,16 @@ public class PagamentoCartao extends Pagamento {
     }
     public void setVenda(Venda venda) {
         this.venda = venda;
+        PagamentoCartaoDAO pagamentoCartaoDAO = new PagamentoCartaoDAO();
+        pagamentoCartaoDAO.atualizar(this, "id_venda", String.valueOf(venda.getId_venda()));
     }
     public Long getId_PagamentoCartao() {
         return id_PagamentoCartao;
     }
     public void setId_PagamentoCartao(Long id_PagamentoCartao) {
         this.id_PagamentoCartao = id_PagamentoCartao;
+        PagamentoCartaoDAO pagamentoCartaoDAO = new PagamentoCartaoDAO();
+        pagamentoCartaoDAO.atualizar(this, "id_pagamentocartao", String.valueOf(id_PagamentoCartao));
     }
     public String getNumeroCartao() {
         return numeroCartao;
@@ -60,18 +64,24 @@ public class PagamentoCartao extends Pagamento {
 
     public void setValidade(String validade) {
         this.validade = validade;
+        PagamentoCartaoDAO pagamentoCartaoDAO = new PagamentoCartaoDAO();
+        pagamentoCartaoDAO.atualizar(this, "validade_cartao", validade);
     }
     public int getnumeroParcelas() {
         return numeroParcelas;
     }
     public void setnumeroParcelas(int numeroParcelas) {
         this.numeroParcelas = numeroParcelas;
+        PagamentoCartaoDAO pagamentoCartaoDAO = new PagamentoCartaoDAO();
+        pagamentoCartaoDAO.atualizar(this, "numero_parcelas", String.valueOf(numeroParcelas));
     }
     public Double getValorParcela() {
         return valorParcela;
     }
     public void setValorParcela(Double valorParcela) {
         this.valorParcela = valorParcela;
+        PagamentoCartaoDAO pagamentoCartaoDAO = new PagamentoCartaoDAO();
+        pagamentoCartaoDAO.atualizar(this, "valor_parcela", String.valueOf(valorParcela));
     }
     public boolean validarNumeroCartao() {
         return numeroCartao.matches("\\d{16}");

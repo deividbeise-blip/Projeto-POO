@@ -46,4 +46,24 @@ public class VeiculoDAO {
             throw new RuntimeException("Erro ao salvar veículo no banco.", e);
         }
     }
+    public void atualizar(Veiculo veiculo, String atributo, String novoValor) {
+        String sql = """
+                UPDATE veiculo
+                SET ? = ?
+                WHERE id_veiculo = ?
+                """;
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+
+            comando.setString(1, atributo);
+            comando.setString(2, novoValor);
+            comando.setLong(3, veiculo.getId_veiculo());
+
+            comando.executeUpdate();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao atualizar veículo no banco.", e);
+        }
+    }
 }

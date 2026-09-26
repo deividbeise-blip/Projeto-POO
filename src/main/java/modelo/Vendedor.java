@@ -26,6 +26,8 @@ public class Vendedor {
     }
     public void setId_vendedor(Long id_vendedor) {
         this.id_vendedor = id_vendedor;
+        VendedorDAO vendedorDAO = new VendedorDAO();
+        vendedorDAO.atualizar(this, "id_vendedor", String.valueOf(id_vendedor));
     }
     // pega o nome do vendedor
     public String getName() {
@@ -43,14 +45,20 @@ public class Vendedor {
     // modifica o valor da variavel nome
     public void setName(String name) {
         this.name = name;
+        VendedorDAO vendedorDAO = new VendedorDAO();
+        vendedorDAO.atualizar(this, "name_vendedor", name);
     }
     // modifica o valor da variavel cpf
     public void setCpf(String cpf) {
         this.cpf = cpf;
+        VendedorDAO vendedorDAO = new VendedorDAO();
+        vendedorDAO.atualizar(this, "cpf_vendedor", cpf);
     }
     // muda o valor da variavel comissaoPercentual
     public void setComissaoPercentual(Double comissaoPercentual) {
         this.comissaoPercentual = comissaoPercentual;
+        VendedorDAO vendedorDAO = new VendedorDAO();
+        vendedorDAO.atualizar(this, "comissao_percentual", String.valueOf(comissaoPercentual));
     }
 
     //caucula o valor da comissão de acordo com o valor da venda

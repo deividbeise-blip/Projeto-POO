@@ -22,8 +22,8 @@ public class ConcessionariaDAO {
                      sql,
                      Statement.RETURN_GENERATED_KEYS)) {
 
-            comando.setString(1, concessionaria.getName());
-            comando.setString(2, concessionaria.getAddress());
+            comando.setString(1, concessionaria.getName_concessionaria());
+            comando.setString(2, concessionaria.getAddress_concessionaria());
 
             comando.executeUpdate();
 
@@ -37,6 +37,26 @@ public class ConcessionariaDAO {
 
         } catch (Exception e) {
             throw new RuntimeException("Erro ao salvar concessionaria no banco.", e);
+        }
+    }
+    public void atualizar(Concessionaria concessionaria, String atributo, String novoValor) {
+        String sql = """
+                UPDATE concessionaria
+                SET ? = ?
+                WHERE id_concessionaria = ?
+                """;
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+
+            comando.setString(1, atributo);
+            comando.setString(2, novoValor);
+            comando.setLong(3, concessionaria.getId_concessionaria());
+
+            comando.executeUpdate();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao atualizar concessionaria no banco.", e);
         }
     }
 }

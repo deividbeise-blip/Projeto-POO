@@ -41,4 +41,24 @@ public class VendedorDAO {
             throw new RuntimeException("Erro ao salvar Vendedor no banco.", e);
         }
     }
+    public void atualizar(Vendedor vendedor, String atributo, String novoValor) {
+        String sql = """
+                UPDATE vendedor
+                SET ? = ?
+                WHERE id_vendedor = ?
+                """;
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+
+            comando.setString(1, atributo);
+            comando.setString(2, novoValor);
+            comando.setLong(3, vendedor.getId_vendedor());
+
+            comando.executeUpdate();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao atualizar vendedor no banco.", e);
+        }
+    }
 }

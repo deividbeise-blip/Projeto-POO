@@ -23,7 +23,7 @@ public class ClienteDAO {
                      sql,
                      Statement.RETURN_GENERATED_KEYS)) {
 
-            comando.setString(1, cliente.getName());
+            comando.setString(1, cliente.getName_cliente());
             comando.setString(2, cliente.getCpf());
             comando.setString(3, cliente.getEmail());
             comando.setString(4, cliente.getPhone());
@@ -40,6 +40,26 @@ public class ClienteDAO {
 
         } catch (Exception e) {
             throw new RuntimeException("Erro ao salvar cliente no banco.", e);
+        }
+    }
+    public void atualizar(Cliente cliente, String atributo, String novoValor) {
+        String sql = """
+                UPDATE cliente
+                SET ? = ?
+                WHERE id_cliente = ?
+                """;
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+
+            comando.setString(1, atributo);
+            comando.setString(2, novoValor);
+            comando.setLong(3, cliente.getId_cliente());
+
+            comando.executeUpdate();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao atualizar cliente no banco.", e);
         }
     }
 }

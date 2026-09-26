@@ -31,6 +31,8 @@ public class Venda {
     }
     public void setPagamento(Pagamento pagamento) {
         this.pagamento = pagamento;
+        VendaDAO vendaDAO = new VendaDAO();
+        vendaDAO.atualizar(this, "pagamento_venda", String.valueOf(pagamento.getId_pagamento()));
     }
     // obtem o id da venda
     public Long getId_venda() {
@@ -38,6 +40,8 @@ public class Venda {
     }
     public void setId_venda(Long id_venda) {
         this.id_venda = id_venda;
+        VendaDAO vendaDAO = new VendaDAO();
+        vendaDAO.atualizar(this, "id_venda", String.valueOf(id_venda));
     }
     public Cliente getCliente() {
         return cliente;

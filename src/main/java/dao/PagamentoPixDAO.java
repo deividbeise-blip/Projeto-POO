@@ -40,4 +40,24 @@ public class PagamentoPixDAO {
             throw new RuntimeException("Erro ao salvar pagamento pix no banco.", e);
         }
     }
+    public void atualizar(PagamentoPix pagamentoPix, String atributo, String novoValor) {
+        String sql = """
+                UPDATE pagamentopix
+                SET ? = ?
+                WHERE id_pagamentopix = ?
+                """;
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+
+            comando.setString(1, atributo);
+            comando.setString(2, novoValor);
+            comando.setLong(3, pagamentoPix.getId_pagamentoPix());
+
+            comando.executeUpdate();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao atualizar pagamento pix no banco.", e);
+        }
+    }
 }

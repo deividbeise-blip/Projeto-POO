@@ -42,6 +42,8 @@ public class Veiculo {
     }
     public void setId_veiculo(Long id_veiculo) {
         this.id_veiculo = id_veiculo;
+        VeiculoDAO veiculoDAO = new VeiculoDAO();
+        veiculoDAO.atualizar(this, "id_veiculo", String.valueOf(id_veiculo));
     }
 
     public String getMarca() {
@@ -78,18 +80,26 @@ public class Veiculo {
 
     public void setPlaca(String placa) {
         this.placa = placa;
+        VeiculoDAO veiculoDAO = new VeiculoDAO();
+        veiculoDAO.atualizar(this, "placa_veiculo", placa);
     }
 
     public void setPreco(Double preco) {
         this.preco = preco;
+        VeiculoDAO veiculoDAO = new VeiculoDAO();
+        veiculoDAO.atualizar(this, "preco_veiculo", String.valueOf(preco));
     }
 
     public void setStatus(StatusVeiculo status) {
         this.status = status;
+        VeiculoDAO veiculoDAO = new VeiculoDAO();
+        veiculoDAO.atualizar(this, "status_veiculo", status.name());
     }
 
     public void setConcessionaria(Concessionaria concessionaria) {
         this.concessionaria = concessionaria;
+        VeiculoDAO veiculoDAO = new VeiculoDAO();
+        veiculoDAO.atualizar(this, "concessionaria_veiculo", String.valueOf(concessionaria.getId_concessionaria()));
     }
 
     public Boolean getVendido() {
@@ -98,6 +108,8 @@ public class Veiculo {
 
     public void setVendido(Boolean vendido) {
         this.vendido = vendido;
+        VeiculoDAO veiculoDAO = new VeiculoDAO();
+        veiculoDAO.atualizar(this, "vendido", String.valueOf(vendido));
     }
 
     public double calcularValorComDesconto(double percentual) {

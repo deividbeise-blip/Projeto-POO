@@ -28,6 +28,8 @@ public class PagamentoPix extends Pagamento {
     }
     public void setChavePix(String chavePix) {
         this.chavePix = chavePix;
+        PagamentoPixDAO pagamentoPixDAO = new PagamentoPixDAO();
+        pagamentoPixDAO.atualizar(this, "chave_pix", chavePix);
     }
 
     public String getTipoChave() {
@@ -36,6 +38,8 @@ public class PagamentoPix extends Pagamento {
 
     public void setTipoChave(String tipoChave) {
         this.tipoChave = tipoChave;
+        PagamentoPixDAO pagamentoPixDAO = new PagamentoPixDAO();
+        pagamentoPixDAO.atualizar(this, "tipo_chave_pix", tipoChave);
     }
 
     @Override
