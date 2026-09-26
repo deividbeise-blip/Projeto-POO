@@ -13,7 +13,7 @@ public class PagamentoCartaoDAO {
 
         String sql = """
                 INSERT INTO pagamentocartao
-                (numero_cartao, nomeTitular, validade_cartao, codigo_seguranca, numero_parcelas, valor_parcela, id_venda)
+                (numero_cartao, nomeTitular, validade_cartao, codigo_seguranca, numero_parcelas, valor_parcela, pagamento_cartao)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """;
 
