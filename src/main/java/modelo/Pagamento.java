@@ -1,7 +1,10 @@
+package modelo;
 import java.time.LocalDate;
 
+import dao.PagamentoDAO;
+
 public abstract class Pagamento {
-    private Long id;
+    private Long id_pagamento; //AUTO_INCREMENT
     private Venda venda;
     private String formaPagamento;
     private Double valorPago;
@@ -12,10 +15,22 @@ public abstract class Pagamento {
         this.formaPagamento = formaPagamento;
         this.valorPago = valorPago;
         this.dataPagamento = dataPagamento;
+        try {
+            PagamentoDAO pagamentoDAO = new PagamentoDAO();
+            pagamentoDAO.salvar(this);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar pagamento no banco. Banco deve estar offline", e);
+        }
     }
 
-    public Long getId() {
-        return id;
+    public Long getId_pagamento() {
+        return id_pagamento;
+    }
+
+    public void setId_pagamento(Long id_pagamento) {
+        this.id_pagamento = id_pagamento;
+        PagamentoDAO pagamentoDAO = new PagamentoDAO();
+        pagamentoDAO.atualizar(this, "id_pagamento", String.valueOf(id_pagamento));
     }
 
     public Venda getVenda() {
@@ -36,14 +51,20 @@ public abstract class Pagamento {
 
     public void setFormaPagamento(String formaPagamento) {
         this.formaPagamento = formaPagamento;
+        PagamentoDAO pagamentoDAO = new PagamentoDAO();
+        pagamentoDAO.atualizar(this, "forma_pagamento", formaPagamento);
     }
 
     public void setValorPago(Double valorPago) {
         this.valorPago = valorPago;
+        PagamentoDAO pagamentoDAO = new PagamentoDAO();
+        pagamentoDAO.atualizar(this, "valor_pago", String.valueOf(valorPago));
     }
 
     public void setDataPagamento(LocalDate dataPagamento) {
         this.dataPagamento = dataPagamento;
+        PagamentoDAO pagamentoDAO = new PagamentoDAO();
+        pagamentoDAO.atualizar(this, "data_pagamento", dataPagamento.toString());
     }
 
     public boolean validarPagamento() {
@@ -59,7 +80,7 @@ public abstract class Pagamento {
     }
     public void exibirResumo() {
         System.out.println("Resumo do Pagamento:");
-        System.out.println("ID: " + id);
+        System.out.println("ID: " + id_pagamento);
         System.out.println("Venda: " + venda);
         System.out.println("Forma de Pagamento: " + formaPagamento);
         System.out.println("Valor Pago: " + valorPago);

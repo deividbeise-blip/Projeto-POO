@@ -1,6 +1,11 @@
+package modelo;
 import java.time.LocalDate;
 
+import dao.PagamentoCartaoDAO;
+
 public class PagamentoCartao extends Pagamento {
+    private Long id_PagamentoCartao;
+    private Venda venda;
     private String numeroCartao;
     private String nomeTitular;
     private String validade;
@@ -11,13 +16,36 @@ public class PagamentoCartao extends Pagamento {
     public PagamentoCartao(Venda venda, String formaPagamento, Double valorPago, LocalDate dataPagamento,
                            String numeroCartao, String nomeTitular, String validade, String cvv) {
         super(venda, formaPagamento, valorPago, dataPagamento);
+        this.venda = venda;
         this.numeroCartao = numeroCartao;
         this.nomeTitular = nomeTitular;
         this.validade = validade;
         this.cvv = cvv;
+        try {
+            PagamentoCartaoDAO pagamentoCartaoDAO = new PagamentoCartaoDAO();
+            pagamentoCartaoDAO.salvar(this);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar pagamento no banco. Banco deve estar offline", e);
+        }
     }
     // Foi criado o set somente para o atributo validade, pois é o único que pode ser alterado após a criação do objeto.
     // Os outros atributos são considerados imutáveis e não possuem métodos set. 
+    public Venda getVenda() {
+        return venda;
+    }
+    public void setVenda(Venda venda) {
+        this.venda = venda;
+        PagamentoCartaoDAO pagamentoCartaoDAO = new PagamentoCartaoDAO();
+        pagamentoCartaoDAO.atualizar(this, "id_venda", String.valueOf(venda.getId_venda()));
+    }
+    public Long getId_PagamentoCartao() {
+        return id_PagamentoCartao;
+    }
+    public void setId_PagamentoCartao(Long id_PagamentoCartao) {
+        this.id_PagamentoCartao = id_PagamentoCartao;
+        PagamentoCartaoDAO pagamentoCartaoDAO = new PagamentoCartaoDAO();
+        pagamentoCartaoDAO.atualizar(this, "id_pagamentocartao", String.valueOf(id_PagamentoCartao));
+    }
     public String getNumeroCartao() {
         return numeroCartao;
     }
@@ -36,18 +64,24 @@ public class PagamentoCartao extends Pagamento {
 
     public void setValidade(String validade) {
         this.validade = validade;
+        PagamentoCartaoDAO pagamentoCartaoDAO = new PagamentoCartaoDAO();
+        pagamentoCartaoDAO.atualizar(this, "validade_cartao", validade);
     }
     public int getnumeroParcelas() {
         return numeroParcelas;
     }
     public void setnumeroParcelas(int numeroParcelas) {
         this.numeroParcelas = numeroParcelas;
+        PagamentoCartaoDAO pagamentoCartaoDAO = new PagamentoCartaoDAO();
+        pagamentoCartaoDAO.atualizar(this, "numero_parcelas", String.valueOf(numeroParcelas));
     }
     public Double getValorParcela() {
         return valorParcela;
     }
     public void setValorParcela(Double valorParcela) {
         this.valorParcela = valorParcela;
+        PagamentoCartaoDAO pagamentoCartaoDAO = new PagamentoCartaoDAO();
+        pagamentoCartaoDAO.atualizar(this, "valor_parcela", String.valueOf(valorParcela));
     }
     public boolean validarNumeroCartao() {
         return numeroCartao.matches("\\d{16}");

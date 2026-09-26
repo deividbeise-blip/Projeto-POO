@@ -1,19 +1,33 @@
-import modelo.Veiculo;
+package modelo;
+import dao.VendedorDAO;
 public class Vendedor {
-    private Long id;
+    private Long id_vendedor;
     private String name;
     private String cpf;
     private Double comissaoPercentual;
+    private Concessionaria concessionaria;
 
-    public Vendedor(String name, String cpf, Double comissaoPercentual) {
+    public Vendedor(String name, String cpf, Double comissaoPercentual, Concessionaria concessionaria) {
         this.name = name;
         this.cpf = cpf;
         this.comissaoPercentual = comissaoPercentual;
+        this.concessionaria = concessionaria;
+        try {
+            VendedorDAO vendedorDAO = new VendedorDAO();
+            vendedorDAO.salvar(this);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar vendedor no banco. Banco deve estar offline", e);
+        }
     }
-
+    
     // pega o id do vendedor
-    public Long getId() {
-        return id;
+    public Long getId_vendedor() {
+        return id_vendedor;
+    }
+    public void setId_vendedor(Long id_vendedor) {
+        this.id_vendedor = id_vendedor;
+        VendedorDAO vendedorDAO = new VendedorDAO();
+        vendedorDAO.atualizar(this, "id_vendedor", String.valueOf(id_vendedor));
     }
     // pega o nome do vendedor
     public String getName() {
@@ -31,14 +45,20 @@ public class Vendedor {
     // modifica o valor da variavel nome
     public void setName(String name) {
         this.name = name;
+        VendedorDAO vendedorDAO = new VendedorDAO();
+        vendedorDAO.atualizar(this, "name_vendedor", name);
     }
     // modifica o valor da variavel cpf
     public void setCpf(String cpf) {
         this.cpf = cpf;
+        VendedorDAO vendedorDAO = new VendedorDAO();
+        vendedorDAO.atualizar(this, "cpf_vendedor", cpf);
     }
     // muda o valor da variavel comissaoPercentual
     public void setComissaoPercentual(Double comissaoPercentual) {
         this.comissaoPercentual = comissaoPercentual;
+        VendedorDAO vendedorDAO = new VendedorDAO();
+        vendedorDAO.atualizar(this, "comissao_percentual", String.valueOf(comissaoPercentual));
     }
 
     //caucula o valor da comissão de acordo com o valor da venda
@@ -47,7 +67,7 @@ public class Vendedor {
         double percentual = comissaoPercentual;
         double reducaoComissaoMoto = 3;
 
-        if (veiculo.getMoto() == false) {
+        if (veiculo.isMoto() == false) {
             return valorVenda * percentual/100;
         }
         else {
@@ -61,6 +81,14 @@ public class Vendedor {
         return name != null
                 && cpf != null
                 && comissaoPercentual > 0;
+    }
+
+    public Concessionaria getConcessionaria() {
+        return concessionaria;
+    }
+
+    public void setConcessionaria(Concessionaria concessionaria) {
+        this.concessionaria = concessionaria;
     }
 }
 

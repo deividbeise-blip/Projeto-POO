@@ -1,9 +1,10 @@
 package modelo;
 
 import excecao.VeiculoIndisponivelException;
+import dao.VeiculoDAO;
 
 public class Veiculo {
-    private Long id;
+    private Long id_veiculo; //AUTO_INCREMENT
     private String marca;
     private String modelo;
     private Integer ano;
@@ -24,14 +25,25 @@ public class Veiculo {
         this.concessionaria = concessionaria;
         this.moto = moto;
         this.vendido = vendido;
+        try {
+            VeiculoDAO veiculoDAO = new VeiculoDAO();
+            veiculoDAO.salvar(this);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar veículo no banco. Banco deve estar offline", e);
+        }
     }
     /**
      * Os setter criados são apenas para os atributos que podem ser alterados após a criação do objeto, como placa, preço, status e concessionária.
      * Os outros atributos são considerados imutáveis e não possuem métodos set.
      */
 
-    public Long getId() {
-        return id;
+    public Long getId_veiculo() {
+        return id_veiculo;
+    }
+    public void setId_veiculo(Long id_veiculo) {
+        this.id_veiculo = id_veiculo;
+        VeiculoDAO veiculoDAO = new VeiculoDAO();
+        veiculoDAO.atualizar(this, "id_veiculo", String.valueOf(id_veiculo));
     }
 
     public String getMarca() {
@@ -62,24 +74,32 @@ public class Veiculo {
         return concessionaria;
     }
 
-    public Boolean getMoto() {
+    public Boolean isMoto() {
         return moto;
     }
 
     public void setPlaca(String placa) {
         this.placa = placa;
+        VeiculoDAO veiculoDAO = new VeiculoDAO();
+        veiculoDAO.atualizar(this, "placa_veiculo", placa);
     }
 
     public void setPreco(Double preco) {
         this.preco = preco;
+        VeiculoDAO veiculoDAO = new VeiculoDAO();
+        veiculoDAO.atualizar(this, "preco_veiculo", String.valueOf(preco));
     }
 
     public void setStatus(StatusVeiculo status) {
         this.status = status;
+        VeiculoDAO veiculoDAO = new VeiculoDAO();
+        veiculoDAO.atualizar(this, "status_veiculo", status.name());
     }
 
     public void setConcessionaria(Concessionaria concessionaria) {
         this.concessionaria = concessionaria;
+        VeiculoDAO veiculoDAO = new VeiculoDAO();
+        veiculoDAO.atualizar(this, "concessionaria_veiculo", String.valueOf(concessionaria.getId_concessionaria()));
     }
 
     public Boolean getVendido() {
@@ -88,6 +108,8 @@ public class Veiculo {
 
     public void setVendido(Boolean vendido) {
         this.vendido = vendido;
+        VeiculoDAO veiculoDAO = new VeiculoDAO();
+        veiculoDAO.atualizar(this, "vendido", String.valueOf(vendido));
     }
 
     public double calcularValorComDesconto(double percentual) {
