@@ -14,7 +14,7 @@ public class ClienteDAO {
 
         String sql = """
                 INSERT INTO cliente
-                (name_cliente, cpf, email, phone)
+                (name_cliente, cpf_cliente, email_cliente, phone_cliente)
                 VALUES (?, ?, ?, ?)
                 """;
 
@@ -24,9 +24,9 @@ public class ClienteDAO {
                      Statement.RETURN_GENERATED_KEYS)) {
 
             comando.setString(1, cliente.getName_cliente());
-            comando.setString(2, cliente.getCpf());
-            comando.setString(3, cliente.getEmail());
-            comando.setString(4, cliente.getPhone());
+            comando.setString(2, cliente.getCpf_cliente());
+            comando.setString(3, cliente.getEmail_cliente());
+            comando.setString(4, cliente.getPhone_cliente());
 
             comando.executeUpdate();
 
