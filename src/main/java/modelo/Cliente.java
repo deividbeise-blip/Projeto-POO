@@ -4,15 +4,15 @@ import dao.ClienteDAO;
 public class Cliente {
     private Long id_cliente;
     private String name_cliente;
-    private String cpf;
-    private String email;
-    private String phone;
+    private String cpf_cliente;
+    private String email_cliente;
+    private String phone_cliente;
 
-    public Cliente(String name_cliente, String cpf, String email, String phone) {
+    public Cliente(String name_cliente, String cpf_cliente, String email_cliente, String phone_cliente) {
         this.name_cliente = name_cliente;
-        this.cpf = cpf;
-        this.email = email;
-        this.phone = phone;
+        this.cpf_cliente = cpf_cliente;
+        this.email_cliente = email_cliente;
+        this.phone_cliente = phone_cliente;
         try {
             ClienteDAO clienteDAO = new ClienteDAO();
             clienteDAO.salvar(this);
@@ -42,33 +42,33 @@ public class Cliente {
 
     }
 
-    public String getCpf() {
-        return cpf;
+    public String getCpf_cliente() {
+        return cpf_cliente;
     }
 
-    public void setCpf(String cpf) {
-        this.cpf = cpf;
+    public void setCpf_cliente(String cpf_cliente) {
+        this.cpf_cliente = cpf_cliente;
         ClienteDAO clienteDAO = new ClienteDAO();
-        clienteDAO.atualizar(this, "cpf", cpf);
+        clienteDAO.atualizar(this, "cpf_cliente", cpf_cliente);
     }
 
-    public String getEmail() {
-        return email;
+    public String getEmail_cliente() {
+        return email_cliente;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setEmail_cliente(String email_cliente) {
+        this.email_cliente = email_cliente;
         ClienteDAO clienteDAO = new ClienteDAO();
-        clienteDAO.atualizar(this, "email", email);
+        clienteDAO.atualizar(this, "email_cliente", email_cliente);
     }
 
-    public String getPhone() {
-        return phone;
+    public String getPhone_cliente() {
+        return phone_cliente;
     }
 
-    public void setPhone(String phone) {
-        this.phone = phone;
+    public void setPhone_cliente(String phone_cliente) {
+        this.phone_cliente = phone_cliente;
         ClienteDAO clienteDAO = new ClienteDAO();
-        clienteDAO.atualizar(this, "phone", phone);
+        clienteDAO.atualizar(this, "phone_cliente", phone_cliente);
     }
 }

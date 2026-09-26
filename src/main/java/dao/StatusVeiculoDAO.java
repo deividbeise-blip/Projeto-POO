@@ -1,21 +1,19 @@
 package dao;
-
+import modelo.Veiculo;
 import conexao.ConexaoBanco;
-import modelo.Cliente;
+import java.sql.Statement;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.Statement;
 
-public class ClienteDAO {
-
-    public void salvar(Cliente cliente) {
+public class StatusVeiculoDAO {
+    public void salvar(Veiculo veiculo) {
 
         String sql = """
-                INSERT INTO cliente
-                (name_cliente, cpf_cliente, email_cliente, phone_cliente)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO statusveiculo
+                (StatusVeiculo, statusveiculo_veiculo)
+                VALUES (?, ?)
                 """;
 
         try (Connection conexao = ConexaoBanco.conectar();
@@ -23,10 +21,8 @@ public class ClienteDAO {
                      sql,
                      Statement.RETURN_GENERATED_KEYS)) {
 
-            comando.setString(1, cliente.getName_cliente());
-            comando.setString(2, cliente.getCpf_cliente());
-            comando.setString(3, cliente.getEmail_cliente());
-            comando.setString(4, cliente.getPhone_cliente());
+            comando.setString(1, veiculo.getStatus().name());
+            comando.setLong(2, veiculo.getId_veiculo());
 
             comando.executeUpdate();
 
@@ -34,19 +30,19 @@ public class ClienteDAO {
             try (ResultSet resultado = comando.getGeneratedKeys()) {
 
                 if (resultado.next()) {
-                    cliente.setId_cliente(resultado.getLong(1));
+                    veiculo.setId_veiculo(resultado.getLong(1));
                 }
             }
 
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao salvar cliente no banco.", e);
+            throw new RuntimeException("Erro ao salvar veiculo no banco.", e);
         }
     }
-    public void atualizar(Cliente cliente, String atributo, String novoValor) {
+    public void atualizar(Veiculo veiculo, String atributo, String novoValor) {
         String sql = """
-                UPDATE cliente
+                UPDATE statusveiculo
                 SET ? = ?
-                WHERE id_cliente = ?
+                WHERE id_statusveiculo = ?
                 """;
 
         try (Connection conexao = ConexaoBanco.conectar();
@@ -54,12 +50,12 @@ public class ClienteDAO {
 
             comando.setString(1, atributo);
             comando.setString(2, novoValor);
-            comando.setLong(3, cliente.getId_cliente());
+            comando.setLong(3, veiculo.getId_veiculo());
 
             comando.executeUpdate();
 
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao atualizar cliente no banco.", e);
+            throw new RuntimeException("Erro ao atualizar status do veiculo no banco.", e);
         }
     }
 }

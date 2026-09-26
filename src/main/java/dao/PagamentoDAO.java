@@ -13,7 +13,7 @@ public class PagamentoDAO {
 
         String sql = """
                 INSERT INTO pagamento
-                (forma_pagamento, valor_pago, data_pagamento, cliente_pagamento, veiculo_pagamento)
+                (forma_pagamento, valor_pagamento, data_pagamento, cliente_pagamento, veiculo_pagamento)
                 VALUES (?, ?, ?, ?, ?)
                 """;
 
