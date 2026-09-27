@@ -43,23 +43,18 @@ public class ClienteDAO {
         }
     }
     public void atualizar(Cliente cliente, String atributo, String novoValor) {
-        String sql = """
-                UPDATE cliente
-                SET ? = ?
-                WHERE id_cliente = ?
-                """;
+    String sql = "UPDATE cliente SET " + atributo + " = ? WHERE id_cliente = ?";
 
-        try (Connection conexao = ConexaoBanco.conectar();
-             PreparedStatement comando = conexao.prepareStatement(sql)) {
+    try (Connection conexao = ConexaoBanco.conectar();
+         PreparedStatement comando = conexao.prepareStatement(sql)) {
 
-            comando.setString(1, atributo);
-            comando.setString(2, novoValor);
-            comando.setLong(3, cliente.getId_cliente());
+        comando.setString(1, novoValor);
+        comando.setLong(2, cliente.getId_cliente());
 
-            comando.executeUpdate();
+        comando.executeUpdate();
 
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao atualizar cliente no banco.", e);
-        }
+    } catch (Exception e) {
+        throw new RuntimeException("Erro ao atualizar cliente no banco.", e);
     }
+}
 }
