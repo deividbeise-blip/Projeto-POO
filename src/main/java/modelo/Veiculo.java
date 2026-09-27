@@ -32,6 +32,26 @@ public class Veiculo {
             throw new RuntimeException("Erro ao salvar veículo no banco. Banco deve estar offline", e);
         }
     }
+
+    /**
+     * Construtor "de carga", usado apenas pelo VeiculoDAO para reconstruir o objeto
+     * a partir de um registro já existente no banco (ResultSet), sem disparar um novo
+     * INSERT. Por isso não chama salvar().
+     */
+    public Veiculo(Long id_veiculo, String marca, String modelo, Integer ano, String placa, Double preco,
+                   StatusVeiculo status, Concessionaria concessionaria, Boolean moto, Boolean vendido) {
+        this.id_veiculo = id_veiculo;
+        this.marca = marca;
+        this.modelo = modelo;
+        this.ano = ano;
+        this.placa = placa;
+        this.preco = preco;
+        this.status = status;
+        this.concessionaria = concessionaria;
+        this.moto = moto;
+        this.vendido = vendido;
+    }
+
     /**
      * Os setter criados são apenas para os atributos que podem ser alterados após a criação do objeto, como placa, preço, status e concessionária.
      * Os outros atributos são considerados imutáveis e não possuem métodos set.
@@ -131,5 +151,10 @@ public class Veiculo {
         }
         this.status = StatusVeiculo.VENDIDO;
         this.vendido = true;
+    }
+
+    @Override
+    public String toString() {
+        return marca + " " + modelo + " (" + ano + ") - Placa " + placa;
     }
 }

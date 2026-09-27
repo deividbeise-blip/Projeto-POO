@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 public class ConcessionariaDAO {
+
     public void salvar(Concessionaria concessionaria) {
 
         String sql = """
@@ -27,9 +28,7 @@ public class ConcessionariaDAO {
 
             comando.executeUpdate();
 
-            // Pega o ID gerado pelo AUTO_INCREMENT
             try (ResultSet resultado = comando.getGeneratedKeys()) {
-
                 if (resultado.next()) {
                     concessionaria.setId_concessionaria(resultado.getLong(1));
                 }
@@ -39,24 +38,45 @@ public class ConcessionariaDAO {
             throw new RuntimeException("Erro ao salvar concessionaria no banco.", e);
         }
     }
+
     public void atualizar(Concessionaria concessionaria, String atributo, String novoValor) {
-        String sql = """
-                UPDATE concessionaria
-                SET ? = ?
-                WHERE id_concessionaria = ?
-                """;
+        String sql = "UPDATE concessionaria SET " + atributo + " = ? WHERE id_concessionaria = ?";
 
         try (Connection conexao = ConexaoBanco.conectar();
              PreparedStatement comando = conexao.prepareStatement(sql)) {
 
-            comando.setString(1, atributo);
-            comando.setString(2, novoValor);
-            comando.setLong(3, concessionaria.getId_concessionaria());
+            comando.setString(1, novoValor);
+            comando.setLong(2, concessionaria.getId_concessionaria());
 
             comando.executeUpdate();
 
         } catch (Exception e) {
             throw new RuntimeException("Erro ao atualizar concessionaria no banco.", e);
         }
+    }
+
+    public Concessionaria buscarPorId(Long id) {
+        String sql = "SELECT * FROM concessionaria WHERE id_concessionaria = ?";
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+
+            comando.setLong(1, id);
+
+            try (ResultSet resultado = comando.executeQuery()) {
+                if (resultado.next()) {
+                    return new Concessionaria(
+                            resultado.getLong("id_concessionaria"),
+                            resultado.getString("name_concessionaria"),
+                            resultado.getString("address_concessionaria")
+                    );
+                }
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao buscar concessionaria no banco.", e);
+        }
+
+        return null;
     }
 }
