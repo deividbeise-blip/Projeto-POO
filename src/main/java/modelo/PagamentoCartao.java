@@ -1,113 +1,89 @@
 package modelo;
-import java.time.LocalDate;
 
-import dao.PagamentoCartaoDAO;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 public class PagamentoCartao extends Pagamento {
+    private static final DateTimeFormatter FORMATO_VALIDADE = DateTimeFormatter.ofPattern("MM/yy");
+
     private Long id_PagamentoCartao;
-    private Venda venda;
-    private String numeroCartao;
-    private String nomeTitular;
-    private String validade;
-    private String cvv;
-    private int numeroParcelas;
-    private Double valorParcela;
+    private final String numeroCartao;
+    private final String nomeTitular;
+    private final String validade;
+    private final String cvv;
+    private final int numeroParcelas;
+    private final Double valorParcela;
 
-    public PagamentoCartao(Venda venda, String formaPagamento, Double valorPago, LocalDate dataPagamento,
-                           String numeroCartao, String nomeTitular, String validade, String cvv) {
-        super(venda, formaPagamento, valorPago, dataPagamento);
-        this.venda = venda;
-        this.numeroCartao = numeroCartao;
-        this.nomeTitular = nomeTitular;
-        this.validade = validade;
-        this.cvv = cvv;
-        try {
-            PagamentoCartaoDAO pagamentoCartaoDAO = new PagamentoCartaoDAO();
-            pagamentoCartaoDAO.salvar(this);
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao salvar pagamento no banco. Banco deve estar offline", e);
+    public PagamentoCartao(Venda venda, double valorBase, LocalDate dataPagamento,
+                           String numeroCartao, String nomeTitular, String validade,
+                           String cvv, int numeroParcelas) {
+        super(venda, "Cartão", valorBase, dataPagamento, new SemDesconto());
+
+        if (numeroCartao == null || !numeroCartao.matches("\\d{16}")) {
+            throw new IllegalArgumentException("Número de cartão inválido. Deve conter 16 dígitos.");
         }
-    }
-    // Foi criado o set somente para o atributo validade, pois é o único que pode ser alterado após a criação do objeto.
-    // Os outros atributos são considerados imutáveis e não possuem métodos set. 
-    public Venda getVenda() {
-        return venda;
-    }
-    public void setVenda(Venda venda) {
-        this.venda = venda;
-        PagamentoCartaoDAO pagamentoCartaoDAO = new PagamentoCartaoDAO();
-        pagamentoCartaoDAO.atualizar(this, "id_venda", String.valueOf(venda.getId_venda()));
-    }
-    public Long getId_PagamentoCartao() {
-        return id_PagamentoCartao;
-    }
-    public void setId_PagamentoCartao(Long id_PagamentoCartao) {
-        this.id_PagamentoCartao = id_PagamentoCartao;
-        PagamentoCartaoDAO pagamentoCartaoDAO = new PagamentoCartaoDAO();
-        pagamentoCartaoDAO.atualizar(this, "id_pagamentocartao", String.valueOf(id_PagamentoCartao));
-    }
-    public String getNumeroCartao() {
-        return numeroCartao;
-    }
-
-    public String getNomeTitular() {
-        return nomeTitular;
-    }
-
-    public String getValidade() {
-        return validade;
-    }
-
-    public String getCvv() {
-        return cvv;
-    }
-
-    public void setValidade(String validade) {
-        this.validade = validade;
-        PagamentoCartaoDAO pagamentoCartaoDAO = new PagamentoCartaoDAO();
-        pagamentoCartaoDAO.atualizar(this, "validade_cartao", validade);
-    }
-    public int getnumeroParcelas() {
-        return numeroParcelas;
-    }
-    public void setnumeroParcelas(int numeroParcelas) {
-        this.numeroParcelas = numeroParcelas;
-        PagamentoCartaoDAO pagamentoCartaoDAO = new PagamentoCartaoDAO();
-        pagamentoCartaoDAO.atualizar(this, "numero_parcelas", String.valueOf(numeroParcelas));
-    }
-    public Double getValorParcela() {
-        return valorParcela;
-    }
-    public void setValorParcela(Double valorParcela) {
-        this.valorParcela = valorParcela;
-        PagamentoCartaoDAO pagamentoCartaoDAO = new PagamentoCartaoDAO();
-        pagamentoCartaoDAO.atualizar(this, "valor_parcela", String.valueOf(valorParcela));
-    }
-    public boolean validarNumeroCartao() {
-        return numeroCartao.matches("\\d{16}");
-    }
-    public Double calcularParcelas(int numeroParcelas) {
+        if (nomeTitular == null || nomeTitular.isBlank()) {
+            throw new IllegalArgumentException("Informe o nome do titular.");
+        }
+        validarValidade(validade);
+        if (cvv == null || !cvv.matches("\\d{3,4}")) {
+            throw new IllegalArgumentException("CVV inválido. Deve conter 3 ou 4 dígitos.");
+        }
         if (numeroParcelas < 1 || numeroParcelas > 12) {
             throw new IllegalArgumentException("Número de parcelas inválido. Deve ser entre 1 e 12.");
         }
+
+        this.numeroCartao = numeroCartao;
+        this.nomeTitular = nomeTitular.trim();
+        this.validade = validade;
+        this.cvv = cvv;
         this.numeroParcelas = numeroParcelas;
         this.valorParcela = getValorPago() / numeroParcelas;
-        return (getValorPago() / numeroParcelas);
     }
+
+    private static void validarValidade(String validade) {
+        try {
+            YearMonth vencimento = YearMonth.parse(validade == null ? "" : validade.trim(), FORMATO_VALIDADE);
+            if (vencimento.isBefore(YearMonth.now())) {
+                throw new IllegalArgumentException("Cartão vencido.");
+            }
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Validade inválida. Use o formato MM/AA.");
+        }
+    }
+
+    public Long getId_PagamentoCartao() {
+        return id_PagamentoCartao;
+    }
+
+    public void setId_PagamentoCartao(Long id) {
+        if (this.id_PagamentoCartao != null) {
+            throw new IllegalStateException("O ID do pagamento no cartão já foi definido.");
+        }
+        this.id_PagamentoCartao = id;
+    }
+
+    public String getNumeroCartao() { return numeroCartao; }
+    public String getNomeTitular() { return nomeTitular; }
+    public String getValidade() { return validade; }
+    public String getCvv() { return cvv; }
+    public int getNumeroParcelas() { return numeroParcelas; }
+    public Double getValorParcela() { return valorParcela; }
 
     @Override
     public String obterReciboDetalhado() {
-        String numeroMascarado = numeroCartao != null && numeroCartao.length() >= 4
-                ? "**** **** **** " + numeroCartao.substring(numeroCartao.length() - 4)
-                : numeroCartao;
+        String numeroMascarado = "**** **** **** " + numeroCartao.substring(numeroCartao.length() - 4);
 
         StringBuilder recibo = new StringBuilder();
         recibo.append("===== Recibo de Pagamento (Cartão) =====\n");
         recibo.append("Titular: ").append(nomeTitular).append("\n");
         recibo.append("Cartão: ").append(numeroMascarado).append("\n");
         recibo.append("Valor pago: ").append(getValorPago()).append("\n");
-        if (numeroParcelas > 0) {
-            recibo.append("Parcelado em: ").append(numeroParcelas).append("x de ").append(valorParcela).append("\n");
+        if (numeroParcelas > 1) {
+            recibo.append("Parcelado em: ").append(numeroParcelas).append("x de ")
+                    .append(String.format("%.2f", valorParcela)).append("\n");
         } else {
             recibo.append("Pagamento à vista\n");
         }

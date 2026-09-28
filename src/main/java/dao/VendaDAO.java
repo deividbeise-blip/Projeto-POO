@@ -7,8 +7,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.Types;
 
 public class VendaDAO {
+
     public void salvar(Venda venda) {
 
         String sql = """
@@ -26,13 +28,12 @@ public class VendaDAO {
             comando.setLong(2, venda.getCliente().getId_cliente());
             comando.setLong(3, venda.getVeiculo().getId_veiculo());
             comando.setLong(4, venda.getVendedor().getId_vendedor());
-            comando.setDouble(5, venda.getPagamento().getId_pagamento());
+            // O pagamento ainda não existe neste momento; é preenchido em atualizarPagamento().
+            comando.setNull(5, Types.BIGINT);
 
             comando.executeUpdate();
 
-            // Pega o ID gerado pelo AUTO_INCREMENT
             try (ResultSet resultado = comando.getGeneratedKeys()) {
-
                 if (resultado.next()) {
                     venda.setId_venda(resultado.getLong(1));
                 }
@@ -42,24 +43,21 @@ public class VendaDAO {
             throw new RuntimeException("Erro ao salvar venda no banco.", e);
         }
     }
-    public void atualizar(Venda venda, String atributo, String novoValor) {
-        String sql = """
-                UPDATE venda
-                SET ? = ?
-                WHERE id_venda = ?
-                """;
+
+    /** Liga a venda ao pagamento depois que o pagamento já foi gravado. */
+    public void atualizarPagamento(Venda venda) {
+        String sql = "UPDATE venda SET pagamento_venda = ? WHERE id_venda = ?";
 
         try (Connection conexao = ConexaoBanco.conectar();
              PreparedStatement comando = conexao.prepareStatement(sql)) {
 
-            comando.setString(1, atributo);
-            comando.setString(2, novoValor);
-            comando.setLong(3, venda.getId_venda());
+            comando.setLong(1, venda.getPagamento().getId_pagamento());
+            comando.setLong(2, venda.getId_venda());
 
             comando.executeUpdate();
 
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao atualizar venda no banco.", e);
+            throw new RuntimeException("Erro ao atualizar pagamento da venda no banco.", e);
         }
     }
 }

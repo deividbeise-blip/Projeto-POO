@@ -3,14 +3,20 @@ package interfacegrafica;
 import dao.VeiculoDAO;
 import dao.VendedorDAO;
 import excecao.VeiculoIndisponivelException;
-import modelo.*;
+import excecao.VendaInvalidaException;
+import modelo.Cliente;
+import modelo.Pagamento;
+import modelo.Veiculo;
+import modelo.Vendedor;
+import servico.VendaService;
 
 import javax.swing.*;
 import java.awt.*;
-import java.time.LocalDate;
 import java.util.List;
 
 public class ConcessionariaFront extends JPanel {
+
+    private final VendaService vendaService = new VendaService();
 
     private JTextField campoNomeCliente;
     private JTextField campoCpfCliente;
@@ -155,19 +161,16 @@ public class ConcessionariaFront extends JPanel {
         return painel;
     }
 
+    /**
+     * A tela só coleta os dados e mostra o resultado.
+     * Validação e regras de negócio ficam no modelo e no VendaService.
+     */
     private void finalizarVenda() {
         try {
-            if (!validarCamposCliente()) {
-                JOptionPane.showMessageDialog(this,
-                        "Preencha todos os dados do cliente.",
-                        "Dados incompletos", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
+            Veiculo veiculo = (Veiculo) comboVeiculos.getSelectedItem();
+            Vendedor vendedor = (Vendedor) comboVendedores.getSelectedItem();
 
-            Veiculo veiculoSelecionado = (Veiculo) comboVeiculos.getSelectedItem();
-            Vendedor vendedorSelecionado = (Vendedor) comboVendedores.getSelectedItem();
-
-            if (veiculoSelecionado == null || vendedorSelecionado == null) {
+            if (veiculo == null || vendedor == null) {
                 JOptionPane.showMessageDialog(this,
                         "Selecione um veículo e um vendedor.",
                         "Dados incompletos", JOptionPane.WARNING_MESSAGE);
@@ -178,75 +181,49 @@ public class ConcessionariaFront extends JPanel {
                     campoNomeCliente.getText(),
                     campoCpfCliente.getText(),
                     campoEmailCliente.getText(),
-                    campoTelefoneCliente.getText()
-            );
-
-            String formaPagamento = (String) comboFormaPagamento.getSelectedItem();
-            Double valorFinal = veiculoSelecionado.getPreco();
-
-            // Venda é criada antes do pagamento pois Pagamento exige uma Venda no construtor
-            Venda venda = new Venda(cliente, vendedorSelecionado, veiculoSelecionado,
-                    LocalDate.now(), valorFinal, null);
+                    campoTelefoneCliente.getText());
 
             Pagamento pagamento;
-            if ("PIX".equals(formaPagamento)) {
-                if (campoChavePix.getText().isBlank()) {
-                    JOptionPane.showMessageDialog(this,
-                            "Informe a chave PIX.", "Dados incompletos", JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
-                pagamento = new PagamentoPix(venda, "PIX", valorFinal, LocalDate.now(),
+            if ("PIX".equals(comboFormaPagamento.getSelectedItem())) {
+                pagamento = vendaService.venderComPix(cliente, vendedor, veiculo,
                         campoChavePix.getText(), (String) comboTipoChave.getSelectedItem());
             } else {
-                if (campoNumeroCartao.getText().isBlank() || campoNomeTitular.getText().isBlank()
-                        || campoValidade.getText().isBlank() || campoCvv.getText().isBlank()) {
-                    JOptionPane.showMessageDialog(this,
-                            "Preencha todos os dados do cartão.", "Dados incompletos", JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
-                PagamentoCartao pagamentoCartao = new PagamentoCartao(venda, "Cartão", valorFinal, LocalDate.now(),
+                pagamento = vendaService.venderComCartao(cliente, vendedor, veiculo,
                         campoNumeroCartao.getText(), campoNomeTitular.getText(),
-                        campoValidade.getText(), campoCvv.getText());
-
-                if (!pagamentoCartao.validarNumeroCartao()) {
-                    JOptionPane.showMessageDialog(this,
-                            "Número de cartão inválido. Deve conter 16 dígitos.",
-                            "Erro de validação", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                int parcelas = (int) spinnerParcelas.getValue();
-                pagamentoCartao.calcularParcelas(parcelas);
-                pagamento = pagamentoCartao;
+                        campoValidade.getText(), campoCvv.getText(),
+                        (int) spinnerParcelas.getValue());
             }
-
-            venda.setPagamento(pagamento);
-
-            // Regra de negócio disparada aqui: pode lançar VeiculoIndisponivelException
-            venda.finalizarVenda();
 
             JOptionPane.showMessageDialog(this,
                     "Venda realizada com sucesso!\n" + pagamento.obterReciboDetalhado(),
                     "Sucesso", JOptionPane.INFORMATION_MESSAGE);
 
             limparFormulario();
+            recarregarVeiculos();
 
         } catch (VeiculoIndisponivelException ex) {
             JOptionPane.showMessageDialog(this,
                     ex.getMessage(),
                     "Veículo indisponível", JOptionPane.ERROR_MESSAGE);
-        } catch (Exception ex) {
+        } catch (VendaInvalidaException ex) {
             JOptionPane.showMessageDialog(this,
-                    "Erro inesperado ao finalizar a venda: " + ex.getMessage(),
+                    ex.getMessage(),
+                    "Venda inválida", JOptionPane.ERROR_MESSAGE);
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(this,
+                    ex.getMessage(),
+                    "Dados inválidos", JOptionPane.WARNING_MESSAGE);
+        } catch (RuntimeException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Erro ao finalizar a venda: " + ex.getMessage(),
                     "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private boolean validarCamposCliente() {
-        return !campoNomeCliente.getText().isBlank()
-                && !campoCpfCliente.getText().isBlank()
-                && !campoEmailCliente.getText().isBlank()
-                && !campoTelefoneCliente.getText().isBlank();
+    // O veículo vendido precisa sair da lista de disponíveis
+    private void recarregarVeiculos() {
+        comboVeiculos.setModel(new DefaultComboBoxModel<>(
+                new VeiculoDAO().listarDisponiveis().toArray(new Veiculo[0])));
     }
 
     private void limparFormulario() {
