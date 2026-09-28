@@ -8,6 +8,7 @@ import modelo.Veiculo;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,26 +50,34 @@ public class VeiculoDAO {
         }
     }
 
-    public void atualizar(Veiculo veiculo, String atributo, String novoValor) {
-        // Nome de coluna não pode ser parametrizado com "?", por isso é concatenado diretamente.
-        // ATENÇÃO: "atributo" nunca deve vir de entrada do usuário sem validação, para evitar SQL Injection.
-        String sql = "UPDATE veiculo SET " + atributo + " = ? WHERE id_veiculo = ?";
+    /** Persiste o status e a flag "vendido" juntos, para nunca ficarem divergentes no banco. */
+    public void atualizarStatus(Veiculo veiculo) {
+        String sql = "UPDATE veiculo SET status_veiculo = ?, vendido = ? WHERE id_veiculo = ?";
 
         try (Connection conexao = ConexaoBanco.conectar();
              PreparedStatement comando = conexao.prepareStatement(sql)) {
 
-            comando.setString(1, novoValor);
-            comando.setLong(2, veiculo.getId_veiculo());
+            comando.setString(1, veiculo.getStatus().name());
+            comando.setBoolean(2, veiculo.getVendido());
+            comando.setLong(3, veiculo.getId_veiculo());
 
             comando.executeUpdate();
 
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao atualizar veículo no banco.", e);
+            throw new RuntimeException("Erro ao atualizar status do veículo no banco.", e);
         }
     }
 
     public List<Veiculo> listarDisponiveis() {
-        String sql = "SELECT * FROM veiculo WHERE status_veiculo = 'DISPONIVEL'";
+        return listar("SELECT * FROM veiculo WHERE status_veiculo = 'DISPONIVEL'",
+                "Erro ao listar veículos disponíveis.");
+    }
+
+    public List<Veiculo> listarTodos() {
+        return listar("SELECT * FROM veiculo", "Erro ao listar veículos.");
+    }
+
+    private List<Veiculo> listar(String sql, String mensagemErro) {
         List<Veiculo> veiculos = new ArrayList<>();
 
         try (Connection conexao = ConexaoBanco.conectar();
@@ -78,62 +87,30 @@ public class VeiculoDAO {
             ConcessionariaDAO concessionariaDAO = new ConcessionariaDAO();
 
             while (resultado.next()) {
-                Concessionaria concessionaria = concessionariaDAO.buscarPorId(resultado.getLong("concessionaria_veiculo"));
-
-                Veiculo veiculo = new Veiculo(
-                        resultado.getLong("id_veiculo"),
-                        resultado.getString("marca_veiculo"),
-                        resultado.getString("modelo_veiculo"),
-                        resultado.getInt("ano_veiculo"),
-                        resultado.getString("placa_veiculo"),
-                        resultado.getDouble("preco_veiculo"),
-                        StatusVeiculo.valueOf(resultado.getString("status_veiculo")),
-                        concessionaria,
-                        resultado.getBoolean("moto"),
-                        resultado.getBoolean("vendido")
-                );
-                veiculos.add(veiculo);
+                veiculos.add(mapear(resultado, concessionariaDAO));
             }
 
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao listar veículos disponíveis.", e);
+            throw new RuntimeException(mensagemErro, e);
         }
 
         return veiculos;
     }
 
-    public List<Veiculo> listarTodos() {
-    String sql = "SELECT * FROM veiculo";
-    List<Veiculo> veiculos = new ArrayList<>();
+    private Veiculo mapear(ResultSet resultado, ConcessionariaDAO concessionariaDAO) throws SQLException {
+        Concessionaria concessionaria = concessionariaDAO.buscarPorId(resultado.getLong("concessionaria_veiculo"));
 
-    try (Connection conexao = ConexaoBanco.conectar();
-         PreparedStatement comando = conexao.prepareStatement(sql);
-         ResultSet resultado = comando.executeQuery()) {
-
-        ConcessionariaDAO concessionariaDAO = new ConcessionariaDAO();
-
-        while (resultado.next()) {
-            Concessionaria concessionaria = concessionariaDAO.buscarPorId(resultado.getLong("concessionaria_veiculo"));
-
-            Veiculo veiculo = new Veiculo(
-                    resultado.getLong("id_veiculo"),
-                    resultado.getString("marca_veiculo"),
-                    resultado.getString("modelo_veiculo"),
-                    resultado.getInt("ano_veiculo"),
-                    resultado.getString("placa_veiculo"),
-                    resultado.getDouble("preco_veiculo"),
-                    StatusVeiculo.valueOf(resultado.getString("status_veiculo")),
-                    concessionaria,
-                    resultado.getBoolean("moto"),
-                    resultado.getBoolean("vendido")
-            );
-            veiculos.add(veiculo);
-        }
-
-    } catch (Exception e) {
-        throw new RuntimeException("Erro ao listar veículos.", e);
+        return new Veiculo(
+                resultado.getLong("id_veiculo"),
+                resultado.getString("marca_veiculo"),
+                resultado.getString("modelo_veiculo"),
+                resultado.getInt("ano_veiculo"),
+                resultado.getString("placa_veiculo"),
+                resultado.getDouble("preco_veiculo"),
+                StatusVeiculo.valueOf(resultado.getString("status_veiculo")),
+                concessionaria,
+                resultado.getBoolean("moto"),
+                resultado.getBoolean("vendido")
+        );
     }
-
-    return veiculos;
-}
 }

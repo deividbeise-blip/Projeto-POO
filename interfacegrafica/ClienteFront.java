@@ -1,11 +1,13 @@
 package interfacegrafica;
 
-import modelo.Cliente;
+import servico.ClienteService;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class ClienteFront extends JPanel {
+
+    private final ClienteService clienteService = new ClienteService();
 
     private JTextField campoNome;
     private JTextField campoCpf;
@@ -50,21 +52,12 @@ public class ClienteFront extends JPanel {
     }
 
     private void cadastrarCliente() {
-        if (campoNome.getText().isBlank() || campoCpf.getText().isBlank()
-                || campoEmail.getText().isBlank() || campoTelefone.getText().isBlank()) {
-            JOptionPane.showMessageDialog(this,
-                    "Preencha todos os campos.",
-                    "Dados incompletos", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
         try {
-            new Cliente(
+            clienteService.cadastrar(
                     campoNome.getText(),
                     campoCpf.getText(),
                     campoEmail.getText(),
-                    campoTelefone.getText()
-            );
+                    campoTelefone.getText());
 
             JOptionPane.showMessageDialog(this,
                     "Cliente cadastrado com sucesso!",
@@ -72,6 +65,10 @@ public class ClienteFront extends JPanel {
 
             limparFormulario();
 
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(this,
+                    ex.getMessage(),
+                    "Dados inválidos", JOptionPane.WARNING_MESSAGE);
         } catch (RuntimeException ex) {
             JOptionPane.showMessageDialog(this,
                     "Erro ao cadastrar cliente: " + ex.getMessage(),

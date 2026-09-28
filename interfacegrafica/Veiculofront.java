@@ -1,14 +1,18 @@
 package interfacegrafica;
 
 import dao.VeiculoDAO;
+import excecao.VeiculoIndisponivelException;
 import modelo.StatusVeiculo;
 import modelo.Veiculo;
+import servico.VeiculoService;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 
 public class VeiculoFront extends JPanel {
+
+    private final VeiculoService veiculoService = new VeiculoService();
 
     private JComboBox<Veiculo> comboVeiculos;
     private JLabel labelStatusAtual;
@@ -43,10 +47,8 @@ public class VeiculoFront extends JPanel {
 
         labelStatusAtual = new JLabel("-");
 
-        // Um carro já vendido nunca pode voltar a ficar disponível por aqui:
-        // a regra de negócio (VeiculoIndisponivelException) garante que ele
-        // não pode ser vendido de novo, e essa tela não pode furar essa regra
-        // liberando o status manualmente.
+        // VENDIDO não aparece aqui: a venda é feita na aba "Vendas", e o próprio
+        // modelo (Veiculo) impede que um veículo vendido volte a ficar disponível.
         comboNovoStatus = new JComboBox<>(new StatusVeiculo[]{
                 StatusVeiculo.DISPONIVEL, StatusVeiculo.EM_MANUTENCAO
         });
@@ -92,13 +94,17 @@ public class VeiculoFront extends JPanel {
         }
 
         try {
-            veiculo.setStatus(novoStatus);
-            labelStatusAtual.setText(veiculo.getStatus().name());
+            veiculoService.alterarStatus(veiculo, novoStatus);
+            atualizarPainelStatus();
 
             JOptionPane.showMessageDialog(this,
                     "Status atualizado com sucesso!",
                     "Sucesso", JOptionPane.INFORMATION_MESSAGE);
 
+        } catch (VeiculoIndisponivelException ex) {
+            JOptionPane.showMessageDialog(this,
+                    ex.getMessage(),
+                    "Operação não permitida", JOptionPane.WARNING_MESSAGE);
         } catch (RuntimeException ex) {
             JOptionPane.showMessageDialog(this,
                     "Erro ao atualizar status: " + ex.getMessage(),
