@@ -1,9 +1,5 @@
 package dao;
 
-import conexao.ConexaoBanco;
-import modelo.Concessionaria;
-import modelo.Vendedor;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -11,13 +7,18 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import conexao.ConexaoBanco;
+import modelo.Concessionaria;
+import modelo.Vendedor;
+
 public class VendedorDAO {
 
     public void salvar(Vendedor vendedor) {
 
+        // A coluna no banco é "concessionario_vendedor" (sem "a"), não "concessionaria_vendedor".
         String sql = """
                 INSERT INTO vendedor
-                (name_vendedor, cpf_vendedor, comissao_percentual, concessionaria_vendedor)
+                (name_vendedor, cpf_vendedor, comissao_percentual, concessionario_vendedor)
                 VALUES (?, ?, ?, ?)
                 """;
 
@@ -71,7 +72,7 @@ public class VendedorDAO {
             ConcessionariaDAO concessionariaDAO = new ConcessionariaDAO();
 
             while (resultado.next()) {
-                Concessionaria concessionaria = concessionariaDAO.buscarPorId(resultado.getLong("concessionaria_vendedor"));
+                Concessionaria concessionaria = concessionariaDAO.buscarPorId(resultado.getLong("concessionario_vendedor"));
 
                 Vendedor vendedor = new Vendedor(
                         resultado.getLong("id_vendedor"),

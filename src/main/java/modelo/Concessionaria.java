@@ -36,4 +36,9 @@ public class Concessionaria {
 
     public String getName_concessionaria() { return name_concessionaria; }
     public String getAddress_concessionaria() { return address_concessionaria; }
+
+    @Override
+    public String toString() {
+        return name_concessionaria + " - " + address_concessionaria;
+    }
 }

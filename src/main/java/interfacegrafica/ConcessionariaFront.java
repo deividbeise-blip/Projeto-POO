@@ -1,5 +1,24 @@
 package interfacegrafica;
 
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
+import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JSpinner;
+import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
+
+import dao.ClienteDAO;
 import dao.VeiculoDAO;
 import dao.VendedorDAO;
 import excecao.VeiculoIndisponivelException;
@@ -10,18 +29,11 @@ import modelo.Veiculo;
 import modelo.Vendedor;
 import servico.VendaService;
 
-import javax.swing.*;
-import java.awt.*;
-import java.util.List;
-
 public class ConcessionariaFront extends JPanel {
 
     private final VendaService vendaService = new VendaService();
 
-    private JTextField campoNomeCliente;
-    private JTextField campoCpfCliente;
-    private JTextField campoEmailCliente;
-    private JTextField campoTelefoneCliente;
+    private JComboBox<Cliente> comboClientes;
 
     private JComboBox<Veiculo> comboVeiculos;
     private JComboBox<Vendedor> comboVendedores;
@@ -46,28 +58,20 @@ public class ConcessionariaFront extends JPanel {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        add(criarPainelDadosCliente(), BorderLayout.NORTH);
+        add(criarPainelCliente(), BorderLayout.NORTH);
         add(criarPainelVendaEPagamento(), BorderLayout.CENTER);
         add(criarPainelBotao(), BorderLayout.SOUTH);
     }
 
-    private JPanel criarPainelDadosCliente() {
-        JPanel painel = new JPanel(new GridLayout(4, 2, 5, 5));
-        painel.setBorder(BorderFactory.createTitledBorder("Dados do Cliente"));
+    private JPanel criarPainelCliente() {
+        JPanel painel = new JPanel(new GridLayout(1, 2, 5, 5));
+        painel.setBorder(BorderFactory.createTitledBorder("Cliente"));
 
-        campoNomeCliente = new JTextField();
-        campoCpfCliente = new JTextField();
-        campoEmailCliente = new JTextField();
-        campoTelefoneCliente = new JTextField();
+        List<Cliente> clientes = new ClienteDAO().listar();
+        comboClientes = new JComboBox<>(clientes.toArray(new Cliente[0]));
 
-        painel.add(new JLabel("Nome:"));
-        painel.add(campoNomeCliente);
-        painel.add(new JLabel("CPF:"));
-        painel.add(campoCpfCliente);
-        painel.add(new JLabel("E-mail:"));
-        painel.add(campoEmailCliente);
-        painel.add(new JLabel("Telefone:"));
-        painel.add(campoTelefoneCliente);
+        painel.add(new JLabel("Cliente:"));
+        painel.add(comboClientes);
 
         return painel;
     }
@@ -167,21 +171,16 @@ public class ConcessionariaFront extends JPanel {
      */
     private void finalizarVenda() {
         try {
+            Cliente cliente = (Cliente) comboClientes.getSelectedItem();
             Veiculo veiculo = (Veiculo) comboVeiculos.getSelectedItem();
             Vendedor vendedor = (Vendedor) comboVendedores.getSelectedItem();
 
-            if (veiculo == null || vendedor == null) {
+            if (cliente == null || veiculo == null || vendedor == null) {
                 JOptionPane.showMessageDialog(this,
-                        "Selecione um veículo e um vendedor.",
+                        "Selecione um cliente, um veículo e um vendedor.",
                         "Dados incompletos", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-
-            Cliente cliente = new Cliente(
-                    campoNomeCliente.getText(),
-                    campoCpfCliente.getText(),
-                    campoEmailCliente.getText(),
-                    campoTelefoneCliente.getText());
 
             Pagamento pagamento;
             if ("PIX".equals(comboFormaPagamento.getSelectedItem())) {
@@ -227,10 +226,6 @@ public class ConcessionariaFront extends JPanel {
     }
 
     private void limparFormulario() {
-        campoNomeCliente.setText("");
-        campoCpfCliente.setText("");
-        campoEmailCliente.setText("");
-        campoTelefoneCliente.setText("");
         campoChavePix.setText("");
         campoNumeroCartao.setText("");
         campoNomeTitular.setText("");

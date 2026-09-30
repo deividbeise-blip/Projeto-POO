@@ -65,6 +65,6 @@ public class Vendedor {
 
     @Override
     public String toString() {
-        return name + " - " + cpf;
+        return name;
     }
 }

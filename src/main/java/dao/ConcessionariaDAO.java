@@ -1,12 +1,14 @@
 package dao;
 
-import conexao.ConexaoBanco;
-import modelo.Concessionaria;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
+import conexao.ConexaoBanco;
+import modelo.Concessionaria;
 
 public class ConcessionariaDAO {
 
@@ -78,5 +80,29 @@ public class ConcessionariaDAO {
         }
 
         return null;
+    }
+
+    /** Necessário para preencher o combo de concessionárias na tela de cadastro de veículo. */
+    public List<Concessionaria> listar() {
+        String sql = "SELECT * FROM concessionaria";
+        List<Concessionaria> lista = new ArrayList<>();
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(sql);
+             ResultSet resultado = comando.executeQuery()) {
+
+            while (resultado.next()) {
+                lista.add(new Concessionaria(
+                        resultado.getLong("id_concessionaria"),
+                        resultado.getString("name_concessionaria"),
+                        resultado.getString("address_concessionaria")
+                ));
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao listar concessionarias.", e);
+        }
+
+        return lista;
     }
 }
