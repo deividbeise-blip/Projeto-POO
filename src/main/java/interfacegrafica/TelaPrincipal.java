@@ -14,7 +14,7 @@ public class TelaPrincipal extends JFrame {
         JTabbedPane abas = new JTabbedPane();
 
         ClienteFront painelClientes = new ClienteFront();
-        VeiculoFront painelVeiculos = new VeiculoFront();
+        Veiculofront painelVeiculos = new Veiculofront();
         ConcessionariaFront painelVendas = new ConcessionariaFront();
 
         abas.addTab("Clientes", painelClientes);
@@ -26,7 +26,7 @@ public class TelaPrincipal extends JFrame {
         // (sem isso, cada combo só carregava uma vez, na abertura do programa).
         abas.addChangeListener(e -> {
             Component selecionado = abas.getSelectedComponent();
-            if (selecionado instanceof VeiculoFront veiculoFront) {
+            if (selecionado instanceof Veiculofront veiculoFront) {
                 veiculoFront.atualizarDados();
             } else if (selecionado instanceof ConcessionariaFront concessionariaFront) {
                 concessionariaFront.atualizarDados();

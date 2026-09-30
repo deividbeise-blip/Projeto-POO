@@ -22,7 +22,7 @@ import modelo.StatusVeiculo;
 import modelo.Veiculo;
 import servico.VeiculoService;
 
-public class VeiculoFront extends JPanel {
+public class Veiculofront extends JPanel {
 
     private final VeiculoService veiculoService = new VeiculoService();
 
@@ -41,7 +41,7 @@ public class VeiculoFront extends JPanel {
     private JComboBox<StatusVeiculo> comboNovoStatus;
     private JButton botaoAtualizar;
 
-    public VeiculoFront() {
+    public Veiculofront() {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
