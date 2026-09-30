@@ -82,6 +82,3 @@ Uma concessionária precisa controlar seu estoque de veículos, cadastrar client
 | Interface gráfica com Swing | `TelaPrincipal` (JFrame com abas) reúne `ClienteFront`, `VeiculoFront` e `ConcessionariaFront`, usando `JTextField`, `JComboBox`, `JButton` e `JOptionPane`. |
 | Data e hora em Java | `LocalDate` é usado nas datas de venda e pagamento; `YearMonth` valida a validade do cartão de crédito. |
 
-## Capturas de tela
-
-*(inserir aqui prints das telas de Clientes, Veículos e Vendas em funcionamento)*
