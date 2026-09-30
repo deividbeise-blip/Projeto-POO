@@ -1,5 +1,19 @@
 package interfacegrafica;
 
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
+import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+
 import dao.ConcessionariaDAO;
 import dao.VeiculoDAO;
 import excecao.VeiculoIndisponivelException;
@@ -7,10 +21,6 @@ import modelo.Concessionaria;
 import modelo.StatusVeiculo;
 import modelo.Veiculo;
 import servico.VeiculoService;
-
-import javax.swing.*;
-import java.awt.*;
-import java.util.List;
 
 public class VeiculoFront extends JPanel {
 
@@ -41,6 +51,16 @@ public class VeiculoFront extends JPanel {
         painelInferior.add(criarPainelSelecao(), BorderLayout.NORTH);
         painelInferior.add(criarPainelStatus(), BorderLayout.CENTER);
         add(painelInferior, BorderLayout.CENTER);
+    }
+
+    /**
+     * Recarrega os combos a partir do banco. Chamado pelo TelaPrincipal sempre
+     * que o usuário troca para esta aba, para refletir mudanças feitas em outras.
+     */
+    public void atualizarDados() {
+        comboConcessionaria.setModel(new DefaultComboBoxModel<>(
+                new ConcessionariaDAO().listar().toArray(new Concessionaria[0])));
+        recarregarVeiculos();
     }
 
     // ---------------------- Cadastro de veículo ----------------------
@@ -246,9 +266,10 @@ public class VeiculoFront extends JPanel {
         }
     }
 
-    // O veículo cadastrado precisa aparecer na lista de seleção
+    // O veículo cadastrado/atualizado precisa refletir na lista de seleção
     private void recarregarVeiculos() {
         comboVeiculos.setModel(new DefaultComboBoxModel<>(
                 new VeiculoDAO().listarTodos().toArray(new Veiculo[0])));
+        atualizarPainelStatus();
     }
 }

@@ -1,8 +1,8 @@
 package modelo;
 
-import excecao.VeiculoIndisponivelException;
-
 import java.time.LocalDate;
+
+import excecao.VeiculoIndisponivelException;
 
 public class Veiculo {
     private Long id_veiculo; // AUTO_INCREMENT
@@ -150,6 +150,6 @@ public class Veiculo {
 
     @Override
     public String toString() {
-        return marca + " " + modelo + " (" + ano + ") - Placa " + placa;
+        return String.format("%s %s (%d) - Placa %s - R$ %.2f", marca, modelo, ano, placa, preco);
     }
 }

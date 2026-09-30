@@ -63,6 +63,19 @@ public class ConcessionariaFront extends JPanel {
         add(criarPainelBotao(), BorderLayout.SOUTH);
     }
 
+    /**
+     * Recarrega os combos a partir do banco. Chamado pelo TelaPrincipal sempre
+     * que o usuário troca para esta aba, para refletir cadastros feitos em
+     * outras abas e mudanças de status (ex.: veículo colocado em manutenção).
+     */
+    public void atualizarDados() {
+        comboClientes.setModel(new DefaultComboBoxModel<>(
+                new ClienteDAO().listar().toArray(new Cliente[0])));
+        comboVendedores.setModel(new DefaultComboBoxModel<>(
+                new VendedorDAO().listar().toArray(new Vendedor[0])));
+        recarregarVeiculos();
+    }
+
     private JPanel criarPainelCliente() {
         JPanel painel = new JPanel(new GridLayout(1, 2, 5, 5));
         painel.setBorder(BorderFactory.createTitledBorder("Cliente"));
@@ -125,7 +138,10 @@ public class ConcessionariaFront extends JPanel {
     private JPanel criarPainelPix() {
         painelPix = new JPanel(new GridLayout(2, 2, 5, 5));
         campoChavePix = new JTextField();
-        comboTipoChave = new JComboBox<>(new String[]{"CPF", "CNPJ", "E-mail", "Telefone", "Aleatória"});
+        // Os valores precisam bater exatamente com o ENUM da coluna tipo_chave_pix
+        // no banco: 'CPF', 'Email', 'Telefone' (sem "CNPJ" e sem "Aleatória", que
+        // o banco não aceita, e "Email" sem hífen).
+        comboTipoChave = new JComboBox<>(new String[]{"CPF", "Email", "Telefone"});
 
         painelPix.add(new JLabel("Chave PIX:"));
         painelPix.add(campoChavePix);
@@ -219,7 +235,8 @@ public class ConcessionariaFront extends JPanel {
         }
     }
 
-    // O veículo vendido precisa sair da lista de disponíveis
+    // O veículo vendido precisa sair da lista de disponíveis, e a lista precisa
+    // sempre refletir status atualizados (ex.: um que foi para manutenção).
     private void recarregarVeiculos() {
         comboVeiculos.setModel(new DefaultComboBoxModel<>(
                 new VeiculoDAO().listarDisponiveis().toArray(new Veiculo[0])));

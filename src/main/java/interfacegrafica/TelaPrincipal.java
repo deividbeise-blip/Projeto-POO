@@ -1,5 +1,7 @@
 package interfacegrafica;
+
 import javax.swing.*;
+import java.awt.Component;
 
 public class TelaPrincipal extends JFrame {
 
@@ -11,13 +13,25 @@ public class TelaPrincipal extends JFrame {
 
         JTabbedPane abas = new JTabbedPane();
 
-        JPanel painelClientes = new ClienteFront();
-        JPanel painelVeiculos = new VeiculoFront();
-        JPanel painelVendas = new ConcessionariaFront();
+        ClienteFront painelClientes = new ClienteFront();
+        VeiculoFront painelVeiculos = new VeiculoFront();
+        ConcessionariaFront painelVendas = new ConcessionariaFront();
 
         abas.addTab("Clientes", painelClientes);
         abas.addTab("Veículos", painelVeiculos);
         abas.addTab("Vendas", painelVendas);
+
+        // Sempre que o usuário troca de aba, recarrega os dados dela a partir
+        // do banco, para refletir cadastros e vendas feitos em outras abas
+        // (sem isso, cada combo só carregava uma vez, na abertura do programa).
+        abas.addChangeListener(e -> {
+            Component selecionado = abas.getSelectedComponent();
+            if (selecionado instanceof VeiculoFront veiculoFront) {
+                veiculoFront.atualizarDados();
+            } else if (selecionado instanceof ConcessionariaFront concessionariaFront) {
+                concessionariaFront.atualizarDados();
+            }
+        });
 
         add(abas);
     }

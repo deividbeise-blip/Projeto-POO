@@ -1,14 +1,23 @@
 package dao;
 
-import conexao.ConexaoBanco;
-import modelo.PagamentoCartao;
-
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+
+import conexao.ConexaoBanco;
+import modelo.PagamentoCartao;
 
 public class PagamentoCartaoDAO {
+
+    // A validade chega como "MM/aa" (ex: "12/30"); a coluna validade_cartao no
+    // banco é do tipo DATE, então convertemos para o último dia daquele mês/ano.
+    private static final DateTimeFormatter FORMATO_VALIDADE = DateTimeFormatter.ofPattern("MM/yy");
+
     public void salvar(PagamentoCartao pagamentoCartao) {
 
         String sql = """
@@ -22,13 +31,15 @@ public class PagamentoCartaoDAO {
                      sql,
                      Statement.RETURN_GENERATED_KEYS)) {
 
+            YearMonth anoMes = YearMonth.parse(pagamentoCartao.getValidade(), FORMATO_VALIDADE);
+            LocalDate dataValidade = anoMes.atEndOfMonth();
+
             comando.setString(1, pagamentoCartao.getNumeroCartao());
             comando.setString(2, pagamentoCartao.getNomeTitular());
-            comando.setString(3, pagamentoCartao.getValidade());
+            comando.setDate(3, Date.valueOf(dataValidade));
             comando.setString(4, pagamentoCartao.getCvv());
             comando.setInt(5, pagamentoCartao.getNumeroParcelas());
             comando.setDouble(6, pagamentoCartao.getValorParcela());
-            // Antes gravava o ID da venda; a coluna é do pagamento (igual ao PIX).
             comando.setLong(7, pagamentoCartao.getId_pagamento());
 
             comando.executeUpdate();
@@ -40,7 +51,7 @@ public class PagamentoCartaoDAO {
             }
 
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao salvar pagamento no banco.", e);
+            throw new RuntimeException("Erro ao salvar pagamento no cartão no banco.", e);
         }
     }
 }

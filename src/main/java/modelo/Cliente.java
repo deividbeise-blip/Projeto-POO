@@ -48,6 +48,6 @@ public class Cliente {
 
     @Override
     public String toString() {
-        return name_cliente + " - " + cpf_cliente;
+        return name_cliente + " - " + cpf_cliente + " - " + email_cliente + " - " + phone_cliente;
     }
 }
