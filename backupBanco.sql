@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 8.0.33, for Win64 (x86_64)
 --
--- Host: 127.0.0.1    Database: projeto_poo
+-- Host:     mysql://avnadmin:AVNS_0YGqt6iNnhRRfCSV9vU@mysql-4eaccc0-projeto-poo.k.aivencloud.com:21803/defaultdb?ssl-mode=REQUIRED    Database: projeto_poo
 -- ------------------------------------------------------
 -- Server version	5.5.5-10.4.32-MariaDB
 
@@ -123,7 +123,10 @@ DROP TABLE IF EXISTS `statusveiculo`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `statusveiculo` (
-  `StatusVeiculo` enum('Disponivel','Vendido','Em_Manutencao') NOT NULL
+  `id_veiculo` int(11) NOT NULL,
+  `StatusVeiculo` enum('Disponivel','Vendido','Em_Manutencao') NOT NULL,
+  PRIMARY KEY (`id_veiculo`),
+  CONSTRAINT `statusveiculo_ibfk_1` FOREIGN KEY (`id_veiculo`) REFERENCES `veiculo` (`id_veiculo`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
