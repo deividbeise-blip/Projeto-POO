@@ -42,22 +42,26 @@ Uma concessionária precisa controlar seu estoque de veículos, cadastrar client
 1. Inicie o MySQL (pelo XAMPP Control Panel, clique em **Start** ao lado de MySQL).
 2. No phpMyAdmin (`http://localhost/phpmyadmin`), crie um banco de dados chamado `projeto_poo`.
 3. Importe o arquivo `backupBanco.sql` (na raiz do repositório) dentro desse banco, na aba **Importar**.
-4. Confirme que `src/main/java/conexao/ConexaoBanco.java` aponta para:
+4. Confirme que `src/main/java/infra/conexao/ConexaoBanco.java` aponta para:
    - URL: `jdbc:mysql://localhost:3306/projeto_poo`
    - Usuário: `root`
    - Senha: (em branco)
-5. Abra o projeto no VS Code (ou outra IDE com suporte a Maven/Java) e rode a classe `interfacegrafica.TelaPrincipal`, que contém o método `main`.
+5. Abra o projeto no VS Code (ou outra IDE com suporte a Maven/Java) e rode a classe `apresentacao.TelaPrincipal`, que contém o método `main`.
 
 ## Classes principais
 
 | Pacote | Classes |
 |---|---|
-| `modelo` | `Cliente`, `Concessionaria`, `Vendedor`, `Veiculo`, `StatusVeiculo` (enum), `Pagamento` (abstrata), `PagamentoPix`, `PagamentoCartao`, `Venda`, `PoliticaDesconto` (interface), `DescontoPix`, `SemDesconto` |
-| `servico` | `ClienteService`, `VeiculoService`, `VendaService` |
-| `dao` | `ClienteDAO`, `ConcessionariaDAO`, `VendedorDAO`, `VeiculoDAO`, `VendaDAO`, `PagamentoDAO`, `PagamentoPixDAO`, `PagamentoCartaoDAO` |
-| `excecao` | `VeiculoIndisponivelException`, `VendaInvalidaException` |
-| `interfacegrafica` | `TelaPrincipal`, `ClienteFront`, `VeiculoFront`, `ConcessionariaFront` (tela de vendas) |
-| `conexao` | `ConexaoBanco` |
+| `dominio.modelo` | `Cliente`, `Concessionaria`, `Vendedor`, `Veiculo`, `StatusVeiculo` (enum), `Pagamento` (abstrata), `PagamentoPix`, `PagamentoCartao`, `Venda` |
+| `dominio.politica` | `PoliticaDesconto` (interface), `DescontoPix`, `SemDesconto` |
+| `dominio.excecao` | `VeiculoIndisponivelException`, `VendaInvalidaException` |
+| `dominio.repositorio` | `ClienteRepository`, `VeiculoRepository`, `VendedorRepository`, `ConcessionariaRepository`, `VendaRepository`, `PagamentoRepository`, `DetalhePagamentoRepository` (interfaces) |
+| `aplicacao` | `Transacao` (interface) |
+| `aplicacao.servico` | `ClienteService`, `VeiculoService`, `VendaService` |
+| `infra.dao` | `ClienteDAO`, `ConcessionariaDAO`, `VendedorDAO`, `VeiculoDAO`, `VendaDAO`, `PagamentoDAO`, `PagamentoPixDAO`, `PagamentoCartaoDAO` (implementam os repositórios) |
+| `infra.conexao` | `ConexaoBanco` |
+| `apresentacao` | `TelaPrincipal`, `ClienteFront`, `VeiculoFront`, `ConcessionariaFront` (tela de vendas) |
+| `config` | `AppConfig` (único lugar que cria os DAOs e monta os services) |
 
 ## Checklist de avaliação
 
@@ -71,7 +75,7 @@ Uma concessionária precisa controlar seu estoque de veículos, cadastrar client
 | Palavra-chave `this` | Usada nos construtores de `Cliente`, `Veiculo`, `Vendedor` e `Concessionaria` para diferenciar atributo do parâmetro (ex.: `this.marca = marca`). |
 | Modificadores Java | Atributos são `private`/`private final`; cada classe expõe apenas os métodos públicos necessários (ex.: não existe `setStatus` público em `Veiculo`). |
 | Encapsulamento em Java | O status de um veículo só muda através de `vender()`, `colocarEmManutencao()` e `tornarDisponivel()`, que impõem as regras de transição válidas. |
-| Pacotes Java / API | Código organizado em `modelo`, `servico`, `dao`, `excecao`, `interfacegrafica` e `conexao`, cada um com uma responsabilidade. |
+| Pacotes Java / API | Código organizado em camadas (`dominio`, `aplicacao`, `infra`, `apresentacao`, `config`); o domínio e a aplicação não dependem do banco nem da tela. |
 | Herança em Java | `PagamentoPix` e `PagamentoCartao` estendem a classe abstrata `Pagamento`. |
 | Polimorfismo em Java | O `VendaService` manipula qualquer pagamento pelo tipo `Pagamento`, chamando `obterReciboDetalhado()` sem saber se é PIX ou Cartão. |
 | Palavra-chave `super` | Os construtores de `PagamentoPix` e `PagamentoCartao` chamam `super(venda, formaPagamento, valorBase, dataPagamento, politica)`. |

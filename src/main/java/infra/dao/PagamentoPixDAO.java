@@ -1,0 +1,42 @@
+package infra.dao;
+
+import infra.conexao.ConexaoBanco;
+import dominio.repositorio.DetalhePagamentoRepository;
+import dominio.modelo.PagamentoPix;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+
+public class PagamentoPixDAO implements DetalhePagamentoRepository<PagamentoPix> {
+    public void salvar(PagamentoPix pagamentoPix) {
+
+        String sql = """
+                INSERT INTO pagamentopix
+                (chave_pix, tipo_chave_pix, pagamento_pix)
+                VALUES (?, ?, ?)
+                """;
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(
+                     sql,
+                     Statement.RETURN_GENERATED_KEYS)) {
+
+            comando.setString(1, pagamentoPix.getChavePix());
+            comando.setString(2, pagamentoPix.getTipoChave());
+            comando.setLong(3, pagamentoPix.getId_pagamento());
+
+            comando.executeUpdate();
+
+            try (ResultSet resultado = comando.getGeneratedKeys()) {
+                if (resultado.next()) {
+                    pagamentoPix.setId_pagamentoPix(resultado.getLong(1));
+                }
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar pagamento pix no banco.", e);
+        }
+    }
+}
