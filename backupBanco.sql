@@ -1,6 +1,5 @@
 -- MySQL dump 10.13  Distrib 8.0.33, for Win64 (x86_64)
 --
--- Host:     mysql://avnadmin:AVNS_0YGqt6iNnhRRfCSV9vU@mysql-4eaccc0-projeto-poo.k.aivencloud.com:21803/defaultdb?ssl-mode=REQUIRED    Database: projeto_poo
 -- ------------------------------------------------------
 -- Server version	5.5.5-10.4.32-MariaDB
 
