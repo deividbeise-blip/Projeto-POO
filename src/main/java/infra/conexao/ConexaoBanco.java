@@ -3,21 +3,48 @@ package infra.conexao;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
-public class ConexaoBanco {
+/**
+ * Conexão MySQL. As credenciais vêm das variáveis de ambiente DB_URL, DB_USER e
+ * DB_PASSWORD (veja .env.example); nada de senha, usuário ou host no código.
+ */
+public class ConexaoBanco implements ConnectionFactory {
 
-    private static final String URL =
-            "jdbc:mysql://betas:AVNS_O31MopHAFid95WTV-ZQ@mysql-4eaccc0-projeto-poo.k.aivencloud.com:21803/defaultdb?ssl-mode=REQUIRED"; 
+    private final String url;
+    private final String usuario;
+    private final String senha;
 
-    private static final String USUARIO = "betas";
+    public ConexaoBanco() {
+        List<String> faltando = new ArrayList<>();
+        this.url = lerVariavel("DB_URL", faltando);
+        this.usuario = lerVariavel("DB_USER", faltando);
+        this.senha = lerVariavel("DB_PASSWORD", faltando);
 
-    private static final String SENHA = "AVNS_O31MopHAFid95WTV-ZQ";
+        if (!faltando.isEmpty()) {
+            throw new IllegalStateException(
+                    "Variáveis de ambiente do banco não definidas: " + String.join(", ", faltando)
+                            + ". Configure DB_URL, DB_USER e DB_PASSWORD antes de iniciar o sistema.");
+        }
+    }
 
+    @Override
+    public Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(url, usuario, senha);
+    }
+
+    // TEMPORÁRIO: os DAOs ainda chamam este método estático. Remover quando
+    // a ConnectionFactory for injetada nos DAOs.
     public static Connection conectar() throws SQLException {
-        return DriverManager.getConnection(
-                URL,
-                USUARIO,
-                SENHA
-        );
+        return new ConexaoBanco().getConnection();
+    }
+
+    private static String lerVariavel(String nome, List<String> faltando) {
+        String valor = System.getenv(nome);
+        if (valor == null || valor.isBlank()) {
+            faltando.add(nome);
+        }
+        return valor;
     }
 }
