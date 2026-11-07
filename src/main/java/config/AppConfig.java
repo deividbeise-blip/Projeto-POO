@@ -9,6 +9,9 @@ import dominio.repositorio.PagamentoRepository;
 import dominio.repositorio.VeiculoRepository;
 import dominio.repositorio.VendaRepository;
 import dominio.repositorio.VendedorRepository;
+import aplicacao.Transacao;
+import infra.conexao.ConexaoBanco;
+import infra.conexao.TransacaoJdbc;
 import infra.dao.ClienteDAO;
 import infra.dao.ConcessionariaDAO;
 import infra.dao.PagamentoCartaoDAO;
@@ -24,12 +27,15 @@ import infra.dao.VendedorDAO;
  */
 public class AppConfig {
 
-    private final ClienteRepository clienteRepository = new ClienteDAO();
-    private final ConcessionariaRepository concessionariaRepository = new ConcessionariaDAO();
-    private final VeiculoRepository veiculoRepository = new VeiculoDAO();
-    private final VendedorRepository vendedorRepository = new VendedorDAO();
-    private final VendaRepository vendaRepository = new VendaDAO();
-    private final PagamentoRepository pagamentoRepository = new PagamentoDAO();
+    // Uma única fábrica de conexões, que também controla a transação: todos os DAOs a recebem.
+    private final TransacaoJdbc transacao = new TransacaoJdbc(new ConexaoBanco());
+
+    private final ClienteRepository clienteRepository = new ClienteDAO(transacao);
+    private final ConcessionariaRepository concessionariaRepository = new ConcessionariaDAO(transacao);
+    private final VeiculoRepository veiculoRepository = new VeiculoDAO(transacao);
+    private final VendedorRepository vendedorRepository = new VendedorDAO(transacao);
+    private final VendaRepository vendaRepository = new VendaDAO(transacao);
+    private final PagamentoRepository pagamentoRepository = new PagamentoDAO(transacao);
 
     private final ClienteService clienteService = new ClienteService(clienteRepository);
     private final VeiculoService veiculoService = new VeiculoService(veiculoRepository);
@@ -37,9 +43,10 @@ public class AppConfig {
             clienteRepository,
             vendaRepository,
             pagamentoRepository,
-            new PagamentoPixDAO(),
-            new PagamentoCartaoDAO(),
-            veiculoRepository);
+            new PagamentoPixDAO(transacao),
+            new PagamentoCartaoDAO(transacao),
+            veiculoRepository,
+            transacao);
 
     public ClienteService clienteService() { return clienteService; }
     public VeiculoService veiculoService() { return veiculoService; }

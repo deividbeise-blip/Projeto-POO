@@ -5,7 +5,7 @@ public class TesteBanco {
     public static void main(String[] args) {
 
         try {
-            ConexaoBanco.conectar();
+            new ConexaoBanco().getConnection().close();
 
             System.out.println("Conexão com o MySQL realizada com sucesso!");
 

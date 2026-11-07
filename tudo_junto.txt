@@ -1,0 +1,2886 @@
+============================================================================== 
+INÍCIO DO ARQUIVO: Transacao.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\aplicacao\) 
+============================================================================== 
+ 
+package aplicacao;
+
+/**
+ * Executa um bloco de operações como uma unidade: ou tudo é gravado, ou nada é.
+ * A implementação (JDBC, por exemplo) fica na camada de infraestrutura.
+ */
+public interface Transacao {
+
+    void executar(Runnable acao);
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: Transacao.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: ClienteService.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\aplicacao\servico\) 
+============================================================================== 
+ 
+package aplicacao.servico;
+
+import dominio.modelo.Cliente;
+import dominio.repositorio.ClienteRepository;
+
+public class ClienteService {
+    private final ClienteRepository clienteRepository;
+
+    public ClienteService(ClienteRepository clienteRepository) {
+        this.clienteRepository = clienteRepository;
+    }
+
+    /** Valida (construtor de Cliente) e só então grava. Lança IllegalArgumentException se inválido. */
+    public Cliente cadastrar(String nome, String cpf, String email, String telefone) {
+        Cliente cliente = new Cliente(nome, cpf, email, telefone);
+        clienteRepository.salvar(cliente);
+        return cliente;
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: ClienteService.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: VeiculoService.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\aplicacao\servico\) 
+============================================================================== 
+ 
+package aplicacao.servico;
+
+import dominio.excecao.VeiculoIndisponivelException;
+import dominio.modelo.Concessionaria;
+import dominio.modelo.StatusVeiculo;
+import dominio.modelo.Veiculo;
+import dominio.repositorio.VeiculoRepository;
+
+public class VeiculoService {
+    private final VeiculoRepository veiculoRepository;
+
+    public VeiculoService(VeiculoRepository veiculoRepository) {
+        this.veiculoRepository = veiculoRepository;
+    }
+
+    /**
+     * Cadastra um veículo novo, sempre como DISPONIVEL.
+     * A validação de dados (marca, modelo, placa, preço etc.) acontece no
+     * construtor de Veiculo; aqui só orquestramos a gravação.
+     */
+    public Veiculo cadastrar(String marca, String modelo, Integer ano, String placa,
+                             Double preco, boolean moto, Concessionaria concessionaria) {
+        Veiculo veiculo = new Veiculo(marca, modelo, ano, placa, preco,
+                StatusVeiculo.DISPONIVEL, concessionaria, moto, false);
+        veiculoRepository.salvar(veiculo);
+        return veiculo;
+    }
+
+    /** Altera o status respeitando as regras do domínio e persiste o resultado. */
+    public void alterarStatus(Veiculo veiculo, StatusVeiculo novoStatus) throws VeiculoIndisponivelException {
+        switch (novoStatus) {
+            case DISPONIVEL -> veiculo.tornarDisponivel();
+            case EM_MANUTENCAO -> veiculo.colocarEmManutencao();
+            case VENDIDO -> throw new VeiculoIndisponivelException(
+                    "Um veículo só pode ser marcado como vendido pela tela de vendas.");
+        }
+        veiculoRepository.atualizarStatus(veiculo);
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: VeiculoService.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: VendaService.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\aplicacao\servico\) 
+============================================================================== 
+ 
+package aplicacao.servico;
+
+import dominio.excecao.VeiculoIndisponivelException;
+import dominio.excecao.VendaInvalidaException;
+import dominio.modelo.*;
+import dominio.repositorio.ClienteRepository;
+import dominio.repositorio.DetalhePagamentoRepository;
+import dominio.repositorio.PagamentoRepository;
+import dominio.repositorio.VeiculoRepository;
+import dominio.repositorio.VendaRepository;
+
+import java.time.LocalDate;
+
+public class VendaService {
+    private final ClienteRepository clienteRepository;
+    private final VendaRepository vendaRepository;
+    private final PagamentoRepository pagamentoRepository;
+    private final DetalhePagamentoRepository<PagamentoPix> pagamentoPixRepository;
+    private final DetalhePagamentoRepository<PagamentoCartao> pagamentoCartaoRepository;
+    private final VeiculoRepository veiculoRepository;
+
+    public VendaService(ClienteRepository clienteRepository,
+                        VendaRepository vendaRepository,
+                        PagamentoRepository pagamentoRepository,
+                        DetalhePagamentoRepository<PagamentoPix> pagamentoPixRepository,
+                        DetalhePagamentoRepository<PagamentoCartao> pagamentoCartaoRepository,
+                        VeiculoRepository veiculoRepository) {
+        this.clienteRepository = clienteRepository;
+        this.vendaRepository = vendaRepository;
+        this.pagamentoRepository = pagamentoRepository;
+        this.pagamentoPixRepository = pagamentoPixRepository;
+        this.pagamentoCartaoRepository = pagamentoCartaoRepository;
+        this.veiculoRepository = veiculoRepository;
+    }
+
+    public Pagamento venderComPix(Cliente cliente, Vendedor vendedor, Veiculo veiculo,
+                                  String chavePix, String tipoChave)
+            throws VeiculoIndisponivelException, VendaInvalidaException {
+
+        Venda venda = new Venda(cliente, vendedor, veiculo, LocalDate.now());
+        PagamentoPix pagamento = new PagamentoPix(venda, veiculo.getPreco(), LocalDate.now(), chavePix, tipoChave);
+        return concluir(venda, pagamento, () -> pagamentoPixRepository.salvar(pagamento));
+    }
+
+    public Pagamento venderComCartao(Cliente cliente, Vendedor vendedor, Veiculo veiculo,
+                                     String numeroCartao, String titular, String validade,
+                                     String cvv, int parcelas)
+            throws VeiculoIndisponivelException, VendaInvalidaException {
+
+        Venda venda = new Venda(cliente, vendedor, veiculo, LocalDate.now());
+        PagamentoCartao pagamento = new PagamentoCartao(venda, veiculo.getPreco(), LocalDate.now(),
+                numeroCartao, titular, validade, cvv, parcelas);
+        return concluir(venda, pagamento, () -> pagamentoCartaoRepository.salvar(pagamento));
+    }
+
+    private Pagamento concluir(Venda venda, Pagamento pagamento, Runnable salvarDetalhePagamento)
+            throws VeiculoIndisponivelException, VendaInvalidaException {
+
+        venda.registrarPagamento(pagamento);
+
+        // 1) Regras de negócio primeiro: se falhar aqui, NADA foi gravado no banco.
+        venda.finalizarVenda();
+
+        // 2) Só então persiste, na ordem que as chaves estrangeiras exigem.
+        try {
+            if (venda.getCliente().getId_cliente() == null) {
+                clienteRepository.salvar(venda.getCliente());
+            }
+            vendaRepository.salvar(venda);
+            pagamentoRepository.salvar(pagamento);
+            salvarDetalhePagamento.run();
+            vendaRepository.atualizarPagamento(venda);
+            veiculoRepository.atualizarStatus(venda.getVeiculo());
+        } catch (RuntimeException e) {
+            venda.getVeiculo().cancelarVenda(); // desfaz o estado em memória
+            throw e;
+        }
+        return pagamento;
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: VendaService.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: ClienteFront.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\apresentacao\) 
+============================================================================== 
+ 
+package apresentacao;
+
+import aplicacao.servico.ClienteService;
+
+import javax.swing.*;
+import java.awt.*;
+
+public class ClienteFront extends JPanel {
+
+    private final ClienteService clienteService;
+
+    private JTextField campoNome;
+    private JTextField campoCpf;
+    private JTextField campoEmail;
+    private JTextField campoTelefone;
+
+    public ClienteFront(ClienteService clienteService) {
+        this.clienteService = clienteService;
+        setLayout(new BorderLayout(10, 10));
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        add(criarFormulario(), BorderLayout.CENTER);
+        add(criarPainelBotao(), BorderLayout.SOUTH);
+    }
+
+    private JPanel criarFormulario() {
+        JPanel painel = new JPanel(new GridLayout(4, 2, 8, 8));
+        painel.setBorder(BorderFactory.createTitledBorder("Cadastro de Cliente"));
+
+        campoNome = new JTextField();
+        campoCpf = new JTextField();
+        campoEmail = new JTextField();
+        campoTelefone = new JTextField();
+
+        painel.add(new JLabel("Nome:"));
+        painel.add(campoNome);
+        painel.add(new JLabel("CPF:"));
+        painel.add(campoCpf);
+        painel.add(new JLabel("E-mail:"));
+        painel.add(campoEmail);
+        painel.add(new JLabel("Telefone:"));
+        painel.add(campoTelefone);
+
+        return painel;
+    }
+
+    private JPanel criarPainelBotao() {
+        JPanel painel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton botaoCadastrar = new JButton("Cadastrar Cliente");
+        botaoCadastrar.addActionListener(e -> cadastrarCliente());
+        painel.add(botaoCadastrar);
+        return painel;
+    }
+
+    private void cadastrarCliente() {
+        try {
+            clienteService.cadastrar(
+                    campoNome.getText(),
+                    campoCpf.getText(),
+                    campoEmail.getText(),
+                    campoTelefone.getText());
+
+            JOptionPane.showMessageDialog(this,
+                    "Cliente cadastrado com sucesso!",
+                    "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+
+            limparFormulario();
+
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(this,
+                    ex.getMessage(),
+                    "Dados inválidos", JOptionPane.WARNING_MESSAGE);
+        } catch (RuntimeException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Erro ao cadastrar cliente: " + ex.getMessage(),
+                    "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void limparFormulario() {
+        campoNome.setText("");
+        campoCpf.setText("");
+        campoEmail.setText("");
+        campoTelefone.setText("");
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: ClienteFront.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: ConcessionariaFront.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\apresentacao\) 
+============================================================================== 
+ 
+package apresentacao;
+
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
+import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JSpinner;
+import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
+
+import dominio.excecao.VeiculoIndisponivelException;
+import dominio.excecao.VendaInvalidaException;
+import dominio.modelo.Cliente;
+import dominio.modelo.Pagamento;
+import dominio.modelo.Veiculo;
+import dominio.modelo.Vendedor;
+import aplicacao.servico.VendaService;
+import dominio.repositorio.ClienteRepository;
+import dominio.repositorio.VeiculoRepository;
+import dominio.repositorio.VendedorRepository;
+
+public class ConcessionariaFront extends JPanel {
+
+    private final VendaService vendaService;
+    private final ClienteRepository clienteRepository;
+    private final VeiculoRepository veiculoRepository;
+    private final VendedorRepository vendedorRepository;
+
+    private JComboBox<Cliente> comboClientes;
+
+    private JComboBox<Veiculo> comboVeiculos;
+    private JComboBox<Vendedor> comboVendedores;
+    private JComboBox<String> comboFormaPagamento;
+
+    // Campos PIX
+    private JPanel painelPix;
+    private JTextField campoChavePix;
+    private JComboBox<String> comboTipoChave;
+
+    // Campos Cartão
+    private JPanel painelCartao;
+    private JTextField campoNumeroCartao;
+    private JTextField campoNomeTitular;
+    private JTextField campoValidade;
+    private JTextField campoCvv;
+    private JSpinner spinnerParcelas;
+
+    private JPanel painelFormasDinamico;
+
+    public ConcessionariaFront(VendaService vendaService,
+                               ClienteRepository clienteRepository,
+                               VeiculoRepository veiculoRepository,
+                               VendedorRepository vendedorRepository) {
+        this.vendaService = vendaService;
+        this.clienteRepository = clienteRepository;
+        this.veiculoRepository = veiculoRepository;
+        this.vendedorRepository = vendedorRepository;
+        setLayout(new BorderLayout(10, 10));
+        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        add(criarPainelCliente(), BorderLayout.NORTH);
+        add(criarPainelVendaEPagamento(), BorderLayout.CENTER);
+        add(criarPainelBotao(), BorderLayout.SOUTH);
+    }
+
+    /**
+     * Recarrega os combos a partir do banco. Chamado pelo TelaPrincipal sempre
+     * que o usuário troca para esta aba, para refletir cadastros feitos em
+     * outras abas e mudanças de status (ex.: veículo colocado em manutenção).
+     */
+    public void atualizarDados() {
+        comboClientes.setModel(new DefaultComboBoxModel<>(
+                clienteRepository.listar().toArray(new Cliente[0])));
+        comboVendedores.setModel(new DefaultComboBoxModel<>(
+                vendedorRepository.listar().toArray(new Vendedor[0])));
+        recarregarVeiculos();
+    }
+
+    private JPanel criarPainelCliente() {
+        JPanel painel = new JPanel(new GridLayout(1, 2, 5, 5));
+        painel.setBorder(BorderFactory.createTitledBorder("Cliente"));
+
+        List<Cliente> clientes = clienteRepository.listar();
+        comboClientes = new JComboBox<>(clientes.toArray(new Cliente[0]));
+
+        painel.add(new JLabel("Cliente:"));
+        painel.add(comboClientes);
+
+        return painel;
+    }
+
+    private JPanel criarPainelVendaEPagamento() {
+        JPanel painel = new JPanel();
+        painel.setLayout(new BoxLayout(painel, BoxLayout.Y_AXIS));
+
+        // Veículo e vendedor
+        JPanel painelSelecao = new JPanel(new GridLayout(2, 2, 5, 5));
+        painelSelecao.setBorder(BorderFactory.createTitledBorder("Veículo e Vendedor"));
+
+        List<Veiculo> veiculosDisponiveis = veiculoRepository.listarDisponiveis();
+        comboVeiculos = new JComboBox<>(veiculosDisponiveis.toArray(new Veiculo[0]));
+
+        List<Vendedor> vendedores = vendedorRepository.listar();
+        comboVendedores = new JComboBox<>(vendedores.toArray(new Vendedor[0]));
+
+        painelSelecao.add(new JLabel("Veículo:"));
+        painelSelecao.add(comboVeiculos);
+        painelSelecao.add(new JLabel("Vendedor:"));
+        painelSelecao.add(comboVendedores);
+
+        // Forma de pagamento
+        JPanel painelPagamento = new JPanel(new BorderLayout(5, 5));
+        painelPagamento.setBorder(BorderFactory.createTitledBorder("Pagamento"));
+
+        JPanel linhaForma = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        comboFormaPagamento = new JComboBox<>(new String[]{"PIX", "Cartão"});
+        linhaForma.add(new JLabel("Forma de pagamento:"));
+        linhaForma.add(comboFormaPagamento);
+
+        painelFormasDinamico = new JPanel(new CardLayout());
+        painelFormasDinamico.add(criarPainelPix(), "PIX");
+        painelFormasDinamico.add(criarPainelCartao(), "Cartão");
+
+        comboFormaPagamento.addActionListener(e -> {
+            CardLayout cl = (CardLayout) painelFormasDinamico.getLayout();
+            cl.show(painelFormasDinamico, (String) comboFormaPagamento.getSelectedItem());
+        });
+
+        painelPagamento.add(linhaForma, BorderLayout.NORTH);
+        painelPagamento.add(painelFormasDinamico, BorderLayout.CENTER);
+
+        painel.add(painelSelecao);
+        painel.add(painelPagamento);
+
+        return painel;
+    }
+
+    private JPanel criarPainelPix() {
+        painelPix = new JPanel(new GridLayout(2, 2, 5, 5));
+        campoChavePix = new JTextField();
+        // Os valores precisam bater exatamente com o ENUM da coluna tipo_chave_pix
+        // no banco: 'CPF', 'Email', 'Telefone' (sem "CNPJ" e sem "Aleatória", que
+        // o banco não aceita, e "Email" sem hífen).
+        comboTipoChave = new JComboBox<>(new String[]{"CPF", "Email", "Telefone"});
+
+        painelPix.add(new JLabel("Chave PIX:"));
+        painelPix.add(campoChavePix);
+        painelPix.add(new JLabel("Tipo de chave:"));
+        painelPix.add(comboTipoChave);
+
+        return painelPix;
+    }
+
+    private JPanel criarPainelCartao() {
+        painelCartao = new JPanel(new GridLayout(5, 2, 5, 5));
+        campoNumeroCartao = new JTextField();
+        campoNomeTitular = new JTextField();
+        campoValidade = new JTextField();
+        campoCvv = new JTextField();
+        spinnerParcelas = new JSpinner(new SpinnerNumberModel(1, 1, 12, 1));
+
+        painelCartao.add(new JLabel("Número do cartão:"));
+        painelCartao.add(campoNumeroCartao);
+        painelCartao.add(new JLabel("Nome do titular:"));
+        painelCartao.add(campoNomeTitular);
+        painelCartao.add(new JLabel("Validade (MM/AA):"));
+        painelCartao.add(campoValidade);
+        painelCartao.add(new JLabel("CVV:"));
+        painelCartao.add(campoCvv);
+        painelCartao.add(new JLabel("Parcelas:"));
+        painelCartao.add(spinnerParcelas);
+
+        return painelCartao;
+    }
+
+    private JPanel criarPainelBotao() {
+        JPanel painel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton botaoFinalizar = new JButton("Finalizar Venda");
+        botaoFinalizar.addActionListener(e -> finalizarVenda());
+        painel.add(botaoFinalizar);
+        return painel;
+    }
+
+    /**
+     * A tela só coleta os dados e mostra o resultado.
+     * Validação e regras de negócio ficam no modelo e no VendaService.
+     */
+    private void finalizarVenda() {
+        try {
+            Cliente cliente = (Cliente) comboClientes.getSelectedItem();
+            Veiculo veiculo = (Veiculo) comboVeiculos.getSelectedItem();
+            Vendedor vendedor = (Vendedor) comboVendedores.getSelectedItem();
+
+            if (cliente == null || veiculo == null || vendedor == null) {
+                JOptionPane.showMessageDialog(this,
+                        "Selecione um cliente, um veículo e um vendedor.",
+                        "Dados incompletos", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            Pagamento pagamento;
+            if ("PIX".equals(comboFormaPagamento.getSelectedItem())) {
+                pagamento = vendaService.venderComPix(cliente, vendedor, veiculo,
+                        campoChavePix.getText(), (String) comboTipoChave.getSelectedItem());
+            } else {
+                pagamento = vendaService.venderComCartao(cliente, vendedor, veiculo,
+                        campoNumeroCartao.getText(), campoNomeTitular.getText(),
+                        campoValidade.getText(), campoCvv.getText(),
+                        (int) spinnerParcelas.getValue());
+            }
+
+            JOptionPane.showMessageDialog(this,
+                    "Venda realizada com sucesso!\n" + pagamento.obterReciboDetalhado(),
+                    "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+
+            limparFormulario();
+            recarregarVeiculos();
+
+        } catch (VeiculoIndisponivelException ex) {
+            JOptionPane.showMessageDialog(this,
+                    ex.getMessage(),
+                    "Veículo indisponível", JOptionPane.ERROR_MESSAGE);
+        } catch (VendaInvalidaException ex) {
+            JOptionPane.showMessageDialog(this,
+                    ex.getMessage(),
+                    "Venda inválida", JOptionPane.ERROR_MESSAGE);
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(this,
+                    ex.getMessage(),
+                    "Dados inválidos", JOptionPane.WARNING_MESSAGE);
+        } catch (RuntimeException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Erro ao finalizar a venda: " + ex.getMessage(),
+                    "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // O veículo vendido precisa sair da lista de disponíveis, e a lista precisa
+    // sempre refletir status atualizados (ex.: um que foi para manutenção).
+    private void recarregarVeiculos() {
+        comboVeiculos.setModel(new DefaultComboBoxModel<>(
+                veiculoRepository.listarDisponiveis().toArray(new Veiculo[0])));
+    }
+
+    private void limparFormulario() {
+        campoChavePix.setText("");
+        campoNumeroCartao.setText("");
+        campoNomeTitular.setText("");
+        campoValidade.setText("");
+        campoCvv.setText("");
+        spinnerParcelas.setValue(1);
+    }
+} 
+============================================================================== 
+FIM DO ARQUIVO: ConcessionariaFront.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: TelaPrincipal.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\apresentacao\) 
+============================================================================== 
+ 
+package apresentacao;
+
+import config.AppConfig;
+
+import javax.swing.*;
+import java.awt.Component;
+
+public class TelaPrincipal extends JFrame {
+
+    public TelaPrincipal(AppConfig config) {
+        setTitle("Concessionária Grupo 2");
+        setSize(800, 600);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+        JTabbedPane abas = new JTabbedPane();
+
+        ClienteFront painelClientes = new ClienteFront(config.clienteService());
+        VeiculoFront painelVeiculos = new VeiculoFront(
+                config.veiculoService(),
+                config.veiculoRepository(),
+                config.concessionariaRepository());
+        ConcessionariaFront painelVendas = new ConcessionariaFront(
+                config.vendaService(),
+                config.clienteRepository(),
+                config.veiculoRepository(),
+                config.vendedorRepository());
+
+        abas.addTab("Clientes", painelClientes);
+        abas.addTab("Veículos", painelVeiculos);
+        abas.addTab("Vendas", painelVendas);
+
+        // Sempre que o usuário troca de aba, recarrega os dados dela a partir
+        // do banco, para refletir cadastros e vendas feitos em outras abas
+        // (sem isso, cada combo só carregava uma vez, na abertura do programa).
+        abas.addChangeListener(e -> {
+            Component selecionado = abas.getSelectedComponent();
+            if (selecionado instanceof VeiculoFront veiculoFront) {
+                veiculoFront.atualizarDados();
+            } else if (selecionado instanceof ConcessionariaFront concessionariaFront) {
+                concessionariaFront.atualizarDados();
+            }
+        });
+
+        add(abas);
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            TelaPrincipal tela = new TelaPrincipal(new AppConfig());
+            tela.setVisible(true);
+        });
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: TelaPrincipal.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: VeiculoFront.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\apresentacao\) 
+============================================================================== 
+ 
+package apresentacao;
+
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
+import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+
+import dominio.excecao.VeiculoIndisponivelException;
+import dominio.modelo.Concessionaria;
+import dominio.modelo.StatusVeiculo;
+import dominio.modelo.Veiculo;
+import aplicacao.servico.VeiculoService;
+import dominio.repositorio.ConcessionariaRepository;
+import dominio.repositorio.VeiculoRepository;
+
+public class VeiculoFront extends JPanel {
+
+    private final VeiculoService veiculoService;
+    private final VeiculoRepository veiculoRepository;
+    private final ConcessionariaRepository concessionariaRepository;
+
+    // Cadastro
+    private JTextField campoMarca;
+    private JTextField campoModelo;
+    private JTextField campoAno;
+    private JTextField campoPlaca;
+    private JTextField campoPreco;
+    private JComboBox<String> comboMoto;
+    private JComboBox<Concessionaria> comboConcessionaria;
+
+    // Consulta / status
+    private JComboBox<Veiculo> comboVeiculos;
+    private JLabel labelStatusAtual;
+    private JComboBox<StatusVeiculo> comboNovoStatus;
+    private JButton botaoAtualizar;
+
+    public VeiculoFront(VeiculoService veiculoService,
+                        VeiculoRepository veiculoRepository,
+                        ConcessionariaRepository concessionariaRepository) {
+        this.veiculoService = veiculoService;
+        this.veiculoRepository = veiculoRepository;
+        this.concessionariaRepository = concessionariaRepository;
+        setLayout(new BorderLayout(10, 10));
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        add(criarPainelCadastro(), BorderLayout.NORTH);
+
+        JPanel painelInferior = new JPanel(new BorderLayout(10, 10));
+        painelInferior.add(criarPainelSelecao(), BorderLayout.NORTH);
+        painelInferior.add(criarPainelStatus(), BorderLayout.CENTER);
+        add(painelInferior, BorderLayout.CENTER);
+    }
+
+    /**
+     * Recarrega os combos a partir do banco. Chamado pelo TelaPrincipal sempre
+     * que o usuário troca para esta aba, para refletir mudanças feitas em outras.
+     */
+    public void atualizarDados() {
+        comboConcessionaria.setModel(new DefaultComboBoxModel<>(
+                concessionariaRepository.listar().toArray(new Concessionaria[0])));
+        recarregarVeiculos();
+    }
+
+    // ---------------------- Cadastro de veículo ----------------------
+
+    private JPanel criarPainelCadastro() {
+        JPanel painel = new JPanel(new GridLayout(6, 2, 8, 8));
+        painel.setBorder(BorderFactory.createTitledBorder("Cadastro de Veículo"));
+
+        campoMarca = new JTextField();
+        campoModelo = new JTextField();
+        campoAno = new JTextField();
+        campoPlaca = new JTextField();
+        campoPreco = new JTextField();
+        comboMoto = new JComboBox<>(new String[]{"Não", "Sim"});
+
+        List<Concessionaria> concessionarias = concessionariaRepository.listar();
+        comboConcessionaria = new JComboBox<>(concessionarias.toArray(new Concessionaria[0]));
+
+        painel.add(new JLabel("Marca:"));
+        painel.add(campoMarca);
+        painel.add(new JLabel("Modelo:"));
+        painel.add(campoModelo);
+        painel.add(new JLabel("Ano:"));
+        painel.add(campoAno);
+        painel.add(new JLabel("Placa:"));
+        painel.add(campoPlaca);
+        painel.add(new JLabel("Preço:"));
+        painel.add(campoPreco);
+        painel.add(new JLabel("É moto?"));
+        painel.add(comboMoto);
+
+        JPanel painelCompleto = new JPanel(new BorderLayout(8, 8));
+        painelCompleto.add(painel, BorderLayout.CENTER);
+
+        JPanel linhaConcessionariaEBotao = new JPanel(new BorderLayout(8, 8));
+        JPanel linhaConcessionaria = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        linhaConcessionaria.add(new JLabel("Concessionária:"));
+        linhaConcessionaria.add(comboConcessionaria);
+        linhaConcessionariaEBotao.add(linhaConcessionaria, BorderLayout.WEST);
+
+        JButton botaoCadastrar = new JButton("Cadastrar Veículo");
+        botaoCadastrar.addActionListener(e -> cadastrarVeiculo());
+        JPanel painelBotao = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        painelBotao.add(botaoCadastrar);
+        linhaConcessionariaEBotao.add(painelBotao, BorderLayout.EAST);
+
+        painelCompleto.add(linhaConcessionariaEBotao, BorderLayout.SOUTH);
+        painelCompleto.setBorder(BorderFactory.createTitledBorder("Cadastro de Veículo"));
+
+        return painelCompleto;
+    }
+
+    private void cadastrarVeiculo() {
+        try {
+            Concessionaria concessionaria = (Concessionaria) comboConcessionaria.getSelectedItem();
+            if (concessionaria == null) {
+                JOptionPane.showMessageDialog(this,
+                        "Cadastre uma concessionária antes de cadastrar um veículo.",
+                        "Dados incompletos", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            Integer ano = parseInteiro(campoAno.getText(), "Ano");
+            Double preco = parseDouble(campoPreco.getText(), "Preço");
+            boolean moto = "Sim".equals(comboMoto.getSelectedItem());
+
+            veiculoService.cadastrar(
+                    campoMarca.getText(),
+                    campoModelo.getText(),
+                    ano,
+                    campoPlaca.getText(),
+                    preco,
+                    moto,
+                    concessionaria);
+
+            JOptionPane.showMessageDialog(this,
+                    "Veículo cadastrado com sucesso!",
+                    "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+
+            limparFormularioCadastro();
+            recarregarVeiculos();
+
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(this,
+                    ex.getMessage(),
+                    "Dados inválidos", JOptionPane.WARNING_MESSAGE);
+        } catch (RuntimeException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Erro ao cadastrar veículo: " + ex.getMessage(),
+                    "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private Integer parseInteiro(String texto, String campo) {
+        try {
+            return Integer.parseInt(texto.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(campo + " deve ser um número inteiro válido.");
+        }
+    }
+
+    private Double parseDouble(String texto, String campo) {
+        try {
+            return Double.parseDouble(texto.trim().replace(",", "."));
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(campo + " deve ser um número válido.");
+        }
+    }
+
+    private void limparFormularioCadastro() {
+        campoMarca.setText("");
+        campoModelo.setText("");
+        campoAno.setText("");
+        campoPlaca.setText("");
+        campoPreco.setText("");
+        comboMoto.setSelectedIndex(0);
+    }
+
+    // ---------------------- Consulta / atualização de status ----------------------
+
+    private JPanel criarPainelSelecao() {
+        JPanel painel = new JPanel(new GridLayout(1, 2, 8, 8));
+        painel.setBorder(BorderFactory.createTitledBorder("Selecionar Veículo"));
+
+        List<Veiculo> veiculos = veiculoRepository.listarTodos();
+        comboVeiculos = new JComboBox<>(veiculos.toArray(new Veiculo[0]));
+        comboVeiculos.addActionListener(e -> atualizarPainelStatus());
+
+        painel.add(new JLabel("Veículo:"));
+        painel.add(comboVeiculos);
+
+        return painel;
+    }
+
+    private JPanel criarPainelStatus() {
+        JPanel painel = new JPanel(new GridLayout(3, 2, 8, 8));
+        painel.setBorder(BorderFactory.createTitledBorder("Status do Veículo"));
+
+        labelStatusAtual = new JLabel("-");
+
+        // VENDIDO não aparece aqui: a venda é feita na aba "Vendas", e o próprio
+        // modelo (Veiculo) impede que um veículo vendido volte a ficar disponível.
+        comboNovoStatus = new JComboBox<>(new StatusVeiculo[]{
+                StatusVeiculo.DISPONIVEL, StatusVeiculo.EM_MANUTENCAO
+        });
+
+        botaoAtualizar = new JButton("Atualizar Status");
+        botaoAtualizar.addActionListener(e -> atualizarStatus());
+
+        painel.add(new JLabel("Status atual:"));
+        painel.add(labelStatusAtual);
+        painel.add(new JLabel("Novo status:"));
+        painel.add(comboNovoStatus);
+        painel.add(new JLabel());
+        painel.add(botaoAtualizar);
+
+        atualizarPainelStatus();
+
+        return painel;
+    }
+
+    private void atualizarPainelStatus() {
+        Veiculo veiculo = (Veiculo) comboVeiculos.getSelectedItem();
+
+        if (veiculo == null) {
+            labelStatusAtual.setText("-");
+            comboNovoStatus.setEnabled(false);
+            botaoAtualizar.setEnabled(false);
+            return;
+        }
+
+        labelStatusAtual.setText(veiculo.getStatus().name());
+
+        boolean vendido = veiculo.getStatus() == StatusVeiculo.VENDIDO;
+        comboNovoStatus.setEnabled(!vendido);
+        botaoAtualizar.setEnabled(!vendido);
+    }
+
+    private void atualizarStatus() {
+        Veiculo veiculo = (Veiculo) comboVeiculos.getSelectedItem();
+        StatusVeiculo novoStatus = (StatusVeiculo) comboNovoStatus.getSelectedItem();
+
+        if (veiculo == null || novoStatus == null) {
+            return;
+        }
+
+        try {
+            veiculoService.alterarStatus(veiculo, novoStatus);
+            atualizarPainelStatus();
+
+            JOptionPane.showMessageDialog(this,
+                    "Status atualizado com sucesso!",
+                    "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+
+        } catch (VeiculoIndisponivelException ex) {
+            JOptionPane.showMessageDialog(this,
+                    ex.getMessage(),
+                    "Operação não permitida", JOptionPane.WARNING_MESSAGE);
+        } catch (RuntimeException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Erro ao atualizar status: " + ex.getMessage(),
+                    "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // O veículo cadastrado/atualizado precisa refletir na lista de seleção
+    private void recarregarVeiculos() {
+        comboVeiculos.setModel(new DefaultComboBoxModel<>(
+                veiculoRepository.listarTodos().toArray(new Veiculo[0])));
+        atualizarPainelStatus();
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: VeiculoFront.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: AppConfig.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\config\) 
+============================================================================== 
+ 
+package config;
+
+import aplicacao.servico.ClienteService;
+import aplicacao.servico.VeiculoService;
+import aplicacao.servico.VendaService;
+import dominio.repositorio.ClienteRepository;
+import dominio.repositorio.ConcessionariaRepository;
+import dominio.repositorio.PagamentoRepository;
+import dominio.repositorio.VeiculoRepository;
+import dominio.repositorio.VendaRepository;
+import dominio.repositorio.VendedorRepository;
+import infra.dao.ClienteDAO;
+import infra.dao.ConcessionariaDAO;
+import infra.dao.PagamentoCartaoDAO;
+import infra.dao.PagamentoDAO;
+import infra.dao.PagamentoPixDAO;
+import infra.dao.VeiculoDAO;
+import infra.dao.VendaDAO;
+import infra.dao.VendedorDAO;
+
+/**
+ * Único lugar do sistema que conhece as implementações concretas (DAOs).
+ * Monta os services com as dependências certas e entrega tudo pronto para as telas.
+ */
+public class AppConfig {
+
+    private final ClienteRepository clienteRepository = new ClienteDAO();
+    private final ConcessionariaRepository concessionariaRepository = new ConcessionariaDAO();
+    private final VeiculoRepository veiculoRepository = new VeiculoDAO();
+    private final VendedorRepository vendedorRepository = new VendedorDAO();
+    private final VendaRepository vendaRepository = new VendaDAO();
+    private final PagamentoRepository pagamentoRepository = new PagamentoDAO();
+
+    private final ClienteService clienteService = new ClienteService(clienteRepository);
+    private final VeiculoService veiculoService = new VeiculoService(veiculoRepository);
+    private final VendaService vendaService = new VendaService(
+            clienteRepository,
+            vendaRepository,
+            pagamentoRepository,
+            new PagamentoPixDAO(),
+            new PagamentoCartaoDAO(),
+            veiculoRepository);
+
+    public ClienteService clienteService() { return clienteService; }
+    public VeiculoService veiculoService() { return veiculoService; }
+    public VendaService vendaService() { return vendaService; }
+
+    public ClienteRepository clienteRepository() { return clienteRepository; }
+    public ConcessionariaRepository concessionariaRepository() { return concessionariaRepository; }
+    public VeiculoRepository veiculoRepository() { return veiculoRepository; }
+    public VendedorRepository vendedorRepository() { return vendedorRepository; }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: AppConfig.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: VeiculoIndisponivelException.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\excecao\) 
+============================================================================== 
+ 
+package dominio.excecao;
+
+public class VeiculoIndisponivelException extends Exception {
+
+    public VeiculoIndisponivelException(String mensagem) {
+        super(mensagem);
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: VeiculoIndisponivelException.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: VendaInvalidaException.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\excecao\) 
+============================================================================== 
+ 
+package dominio.excecao;
+
+public class VendaInvalidaException extends Exception {
+
+    public VendaInvalidaException(String mensagem) {
+        super(mensagem);
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: VendaInvalidaException.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: Cliente.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\modelo\) 
+============================================================================== 
+ 
+package dominio.modelo;
+
+public class Cliente {
+    private Long id_cliente;
+    private final String name_cliente;
+    private final String cpf_cliente;
+    private final String email_cliente;
+    private final String phone_cliente;
+
+    public Cliente(String name_cliente, String cpf_cliente, String email_cliente, String phone_cliente) {
+        if (name_cliente == null || name_cliente.isBlank()) {
+            throw new IllegalArgumentException("Nome do cliente é obrigatório.");
+        }
+        String cpf = cpf_cliente == null ? "" : cpf_cliente.replaceAll("\\D", "");
+        if (cpf.length() != 11) {
+            throw new IllegalArgumentException("CPF deve conter 11 dígitos.");
+        }
+        if (email_cliente == null || !email_cliente.trim().matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+            throw new IllegalArgumentException("E-mail inválido.");
+        }
+        String telefone = phone_cliente == null ? "" : phone_cliente.replaceAll("\\D", "");
+        if (telefone.length() < 10 || telefone.length() > 11) {
+            throw new IllegalArgumentException("Telefone deve ter DDD + número (10 ou 11 dígitos).");
+        }
+
+        this.name_cliente = name_cliente.trim();
+        this.cpf_cliente = cpf;
+        this.email_cliente = email_cliente.trim();
+        this.phone_cliente = telefone;
+    }
+
+    public Long getId_cliente() {
+        return id_cliente;
+    }
+
+    /** O ID é gerado pelo banco e só pode ser definido uma vez (pelo DAO após o INSERT). */
+    public void setId_cliente(Long id) {
+        if (this.id_cliente != null) {
+            throw new IllegalStateException("O ID do cliente já foi definido.");
+        }
+        this.id_cliente = id;
+    }
+
+    public String getName_cliente() { return name_cliente; }
+    public String getCpf_cliente() { return cpf_cliente; }
+    public String getEmail_cliente() { return email_cliente; }
+    public String getPhone_cliente() { return phone_cliente; }
+
+    @Override
+    public String toString() {
+        return name_cliente + " - " + cpf_cliente + " - " + email_cliente + " - " + phone_cliente;
+    }
+} 
+============================================================================== 
+FIM DO ARQUIVO: Cliente.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: Concessionaria.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\modelo\) 
+============================================================================== 
+ 
+package dominio.modelo;
+
+public class Concessionaria {
+    private Long id_concessionaria;
+    private final String name_concessionaria;
+    private final String address_concessionaria;
+
+    // Construtor de CADASTRO: valida os dados. Quem grava no banco é o DAO/serviço.
+    public Concessionaria(String name_concessionaria, String address_concessionaria) {
+        if (name_concessionaria == null || name_concessionaria.isBlank()) {
+            throw new IllegalArgumentException("Nome da concessionária é obrigatório.");
+        }
+        if (address_concessionaria == null || address_concessionaria.isBlank()) {
+            throw new IllegalArgumentException("Endereço da concessionária é obrigatório.");
+        }
+        this.name_concessionaria = name_concessionaria.trim();
+        this.address_concessionaria = address_concessionaria.trim();
+    }
+
+    // Construtor DE CARGA: usado pelo DAO ao ler um registro existente.
+    public Concessionaria(Long id_concessionaria, String name_concessionaria, String address_concessionaria) {
+        this(name_concessionaria, address_concessionaria);
+        this.id_concessionaria = id_concessionaria;
+    }
+
+    public Long getId_concessionaria() {
+        return id_concessionaria;
+    }
+
+    public void setId_concessionaria(Long id) {
+        if (this.id_concessionaria != null) {
+            throw new IllegalStateException("O ID da concessionária já foi definido.");
+        }
+        this.id_concessionaria = id;
+    }
+
+    public String getName_concessionaria() { return name_concessionaria; }
+    public String getAddress_concessionaria() { return address_concessionaria; }
+
+    @Override
+    public String toString() {
+        return name_concessionaria + " - " + address_concessionaria;
+    }
+} 
+============================================================================== 
+FIM DO ARQUIVO: Concessionaria.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: Pagamento.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\modelo\) 
+============================================================================== 
+ 
+package dominio.modelo;
+
+import dominio.politica.PoliticaDesconto;
+
+import java.time.LocalDate;
+
+public abstract class Pagamento {
+    private Long id_pagamento; // AUTO_INCREMENT
+    private final Venda venda;
+    private final String formaPagamento;
+    private final Double valorPago;
+    private final LocalDate dataPagamento;
+
+    /**
+     * O valor pago já sai calculado pela PoliticaDesconto recebida,
+     * então o objeto nasce com o valor final correto (antes de qualquer gravação).
+     */
+    protected Pagamento(Venda venda, String formaPagamento, double valorBase,
+                        LocalDate dataPagamento, PoliticaDesconto politica) {
+        if (venda == null) {
+            throw new IllegalArgumentException("Pagamento exige uma venda.");
+        }
+        if (formaPagamento == null || formaPagamento.isBlank()) {
+            throw new IllegalArgumentException("Forma de pagamento é obrigatória.");
+        }
+        if (valorBase <= 0) {
+            throw new IllegalArgumentException("Valor do pagamento deve ser maior que zero.");
+        }
+        if (dataPagamento == null) {
+            throw new IllegalArgumentException("Data do pagamento é obrigatória.");
+        }
+        if (politica == null) {
+            throw new IllegalArgumentException("Política de desconto é obrigatória.");
+        }
+        this.venda = venda;
+        this.formaPagamento = formaPagamento;
+        this.dataPagamento = dataPagamento;
+        this.valorPago = politica.calcular(valorBase);
+    }
+
+    public Long getId_pagamento() {
+        return id_pagamento;
+    }
+
+    public void setId_pagamento(Long id) {
+        if (this.id_pagamento != null) {
+            throw new IllegalStateException("O ID do pagamento já foi definido.");
+        }
+        this.id_pagamento = id;
+    }
+
+    public Venda getVenda() { return venda; }
+    public String getFormaPagamento() { return formaPagamento; }
+    public Double getValorPago() { return valorPago; }
+    public LocalDate getDataPagamento() { return dataPagamento; }
+
+    public boolean validarPagamento() {
+        return valorPago > 0;
+    }
+
+    public boolean validarFormaPagamento() {
+        return formaPagamento.equalsIgnoreCase("pix") || formaPagamento.equalsIgnoreCase("cartão");
+    }
+
+    public void exibirResumo() {
+        System.out.println("Resumo do Pagamento:");
+        System.out.println("ID: " + id_pagamento);
+        System.out.println("Forma de Pagamento: " + formaPagamento);
+        System.out.println("Valor Pago: " + valorPago);
+        System.out.println("Data do Pagamento: " + dataPagamento);
+    }
+
+    /** Cada forma de pagamento monta seu próprio recibo (polimorfismo). */
+    public abstract String obterReciboDetalhado();
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: Pagamento.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: PagamentoCartao.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\modelo\) 
+============================================================================== 
+ 
+package dominio.modelo;
+
+import dominio.politica.SemDesconto;
+
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+
+public class PagamentoCartao extends Pagamento {
+    private static final DateTimeFormatter FORMATO_VALIDADE = DateTimeFormatter.ofPattern("MM/yy");
+
+    private Long id_PagamentoCartao;
+    private final String numeroCartao;
+    private final String nomeTitular;
+    private final String validade;
+    private final String cvv;
+    private final int numeroParcelas;
+    private final Double valorParcela;
+
+    public PagamentoCartao(Venda venda, double valorBase, LocalDate dataPagamento,
+                           String numeroCartao, String nomeTitular, String validade,
+                           String cvv, int numeroParcelas) {
+        super(venda, "Cartão", valorBase, dataPagamento, new SemDesconto());
+
+        if (numeroCartao == null || !numeroCartao.matches("\\d{16}")) {
+            throw new IllegalArgumentException("Número de cartão inválido. Deve conter 16 dígitos.");
+        }
+        if (nomeTitular == null || nomeTitular.isBlank()) {
+            throw new IllegalArgumentException("Informe o nome do titular.");
+        }
+        validarValidade(validade);
+        if (cvv == null || !cvv.matches("\\d{3,4}")) {
+            throw new IllegalArgumentException("CVV inválido. Deve conter 3 ou 4 dígitos.");
+        }
+        if (numeroParcelas < 1 || numeroParcelas > 12) {
+            throw new IllegalArgumentException("Número de parcelas inválido. Deve ser entre 1 e 12.");
+        }
+
+        this.numeroCartao = numeroCartao;
+        this.nomeTitular = nomeTitular.trim();
+        this.validade = validade;
+        this.cvv = cvv;
+        this.numeroParcelas = numeroParcelas;
+        this.valorParcela = getValorPago() / numeroParcelas;
+    }
+
+    private static void validarValidade(String validade) {
+        try {
+            YearMonth vencimento = YearMonth.parse(validade == null ? "" : validade.trim(), FORMATO_VALIDADE);
+            if (vencimento.isBefore(YearMonth.now())) {
+                throw new IllegalArgumentException("Cartão vencido.");
+            }
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Validade inválida. Use o formato MM/AA.");
+        }
+    }
+
+    public Long getId_PagamentoCartao() {
+        return id_PagamentoCartao;
+    }
+
+    public void setId_PagamentoCartao(Long id) {
+        if (this.id_PagamentoCartao != null) {
+            throw new IllegalStateException("O ID do pagamento no cartão já foi definido.");
+        }
+        this.id_PagamentoCartao = id;
+    }
+
+    public String getNumeroCartao() { return numeroCartao; }
+    public String getNomeTitular() { return nomeTitular; }
+    public String getValidade() { return validade; }
+    public String getCvv() { return cvv; }
+    public int getNumeroParcelas() { return numeroParcelas; }
+    public Double getValorParcela() { return valorParcela; }
+
+    @Override
+    public String obterReciboDetalhado() {
+        String numeroMascarado = "**** **** **** " + numeroCartao.substring(numeroCartao.length() - 4);
+
+        StringBuilder recibo = new StringBuilder();
+        recibo.append("===== Recibo de Pagamento (Cartão) =====\n");
+        recibo.append("Titular: ").append(nomeTitular).append("\n");
+        recibo.append("Cartão: ").append(numeroMascarado).append("\n");
+        recibo.append("Valor pago: ").append(getValorPago()).append("\n");
+        if (numeroParcelas > 1) {
+            recibo.append("Parcelado em: ").append(numeroParcelas).append("x de ")
+                    .append(String.format("%.2f", valorParcela)).append("\n");
+        } else {
+            recibo.append("Pagamento à vista\n");
+        }
+        recibo.append("Data do pagamento: ").append(getDataPagamento()).append("\n");
+        recibo.append("=========================================");
+        return recibo.toString();
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: PagamentoCartao.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: PagamentoPix.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\modelo\) 
+============================================================================== 
+ 
+package dominio.modelo;
+
+import dominio.politica.DescontoPix;
+
+import java.time.LocalDate;
+
+public class PagamentoPix extends Pagamento {
+    private Long id_pagamentoPix; // AUTO_INCREMENT
+    private final String chavePix;
+    private final String tipoChave; // CPF, CNPJ, E-mail, Telefone ou Aleatória
+
+    public PagamentoPix(Venda venda, double valorBase, LocalDate dataPagamento,
+                        String chavePix, String tipoChave) {
+        super(venda, "PIX", valorBase, dataPagamento, new DescontoPix());
+        if (chavePix == null || chavePix.isBlank()) {
+            throw new IllegalArgumentException("Informe a chave PIX.");
+        }
+        if (tipoChave == null || tipoChave.isBlank()) {
+            throw new IllegalArgumentException("Informe o tipo da chave PIX.");
+        }
+        this.chavePix = chavePix.trim();
+        this.tipoChave = tipoChave;
+    }
+
+    public String getChavePix() { return chavePix; }
+    public String getTipoChave() { return tipoChave; }
+
+    public Long getId_pagamentoPix() {
+        return id_pagamentoPix;
+    }
+
+    public void setId_pagamentoPix(Long id) {
+        if (this.id_pagamentoPix != null) {
+            throw new IllegalStateException("O ID do pagamento PIX já foi definido.");
+        }
+        this.id_pagamentoPix = id;
+    }
+
+    @Override
+    public String obterReciboDetalhado() {
+        return "===== Recibo de Pagamento (PIX) =====\n" +
+                "Chave PIX: " + chavePix + " (" + tipoChave + ")\n" +
+                "Valor pago (com 5% de desconto PIX): " + getValorPago() + "\n" +
+                "Data do pagamento: " + getDataPagamento() + "\n" +
+                "======================================";
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: PagamentoPix.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: StatusVeiculo.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\modelo\) 
+============================================================================== 
+ 
+package dominio.modelo;
+
+public enum StatusVeiculo {
+    DISPONIVEL,
+    VENDIDO,
+    EM_MANUTENCAO
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: StatusVeiculo.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: Veiculo.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\modelo\) 
+============================================================================== 
+ 
+package dominio.modelo;
+
+import java.time.LocalDate;
+
+import dominio.excecao.VeiculoIndisponivelException;
+
+public class Veiculo {
+    private Long id_veiculo; // AUTO_INCREMENT
+    private final String marca;
+    private final String modelo;
+    private final Integer ano;
+    private String placa;
+    private Double preco;
+    private StatusVeiculo status;
+    private final Concessionaria concessionaria;
+    private final Boolean moto;   // true = moto, false = carro
+    private Boolean vendido;      // sempre acompanha o status (true quando VENDIDO)
+
+    // Construtor de CADASTRO: só cria objetos válidos. Quem grava no banco é o DAO/serviço.
+    public Veiculo(String marca, String modelo, Integer ano, String placa, Double preco,
+                   StatusVeiculo status, Concessionaria concessionaria, Boolean moto, Boolean vendido) {
+        if (marca == null || marca.isBlank()) {
+            throw new IllegalArgumentException("Marca é obrigatória.");
+        }
+        if (modelo == null || modelo.isBlank()) {
+            throw new IllegalArgumentException("Modelo é obrigatório.");
+        }
+        if (ano == null || ano < 1900 || ano > LocalDate.now().getYear() + 1) {
+            throw new IllegalArgumentException("Ano inválido.");
+        }
+        validarPlaca(placa);
+        validarPreco(preco);
+        if (status == null) {
+            throw new IllegalArgumentException("Status é obrigatório.");
+        }
+        if (concessionaria == null) {
+            throw new IllegalArgumentException("O veículo precisa pertencer a uma concessionária.");
+        }
+        if (moto == null) {
+            throw new IllegalArgumentException("Informe se o veículo é moto ou carro.");
+        }
+
+        this.marca = marca.trim();
+        this.modelo = modelo.trim();
+        this.ano = ano;
+        this.placa = placa.trim();
+        this.preco = preco;
+        this.status = status;
+        this.concessionaria = concessionaria;
+        this.moto = moto;
+        this.vendido = (status == StatusVeiculo.VENDIDO) || Boolean.TRUE.equals(vendido);
+    }
+
+    // Construtor DE CARGA: usado pelo VeiculoDAO ao ler um registro existente.
+    public Veiculo(Long id_veiculo, String marca, String modelo, Integer ano, String placa, Double preco,
+                   StatusVeiculo status, Concessionaria concessionaria, Boolean moto, Boolean vendido) {
+        this(marca, modelo, ano, placa, preco, status, concessionaria, moto, vendido);
+        this.id_veiculo = id_veiculo;
+    }
+
+    private static void validarPlaca(String placa) {
+        if (placa == null || placa.isBlank()) {
+            throw new IllegalArgumentException("Placa é obrigatória.");
+        }
+    }
+
+    private static void validarPreco(Double preco) {
+        if (preco == null || preco <= 0) {
+            throw new IllegalArgumentException("Preço deve ser maior que zero.");
+        }
+    }
+
+    public Long getId_veiculo() {
+        return id_veiculo;
+    }
+
+    public void setId_veiculo(Long id) {
+        if (this.id_veiculo != null) {
+            throw new IllegalStateException("O ID do veículo já foi definido.");
+        }
+        this.id_veiculo = id;
+    }
+
+    public String getMarca() { return marca; }
+    public String getModelo() { return modelo; }
+    public Integer getAno() { return ano; }
+    public String getPlaca() { return placa; }
+    public Double getPreco() { return preco; }
+    public StatusVeiculo getStatus() { return status; }
+    public Concessionaria getConcessionaria() { return concessionaria; }
+    public Boolean isMoto() { return moto; }
+    public Boolean getVendido() { return vendido; }
+
+    // Dados que podem mudar depois de criado, sempre validados (persistência fica no serviço)
+    public void setPlaca(String placa) {
+        validarPlaca(placa);
+        this.placa = placa.trim();
+    }
+
+    public void setPreco(Double preco) {
+        validarPreco(preco);
+        this.preco = preco;
+    }
+
+    // ---- Transições de status controladas (não existe setStatus público) ----
+
+    public boolean verificarDisponibilidade() {
+        return status == StatusVeiculo.DISPONIVEL;
+    }
+
+    public void vender() throws VeiculoIndisponivelException {
+        if (status == StatusVeiculo.VENDIDO) {
+            throw new VeiculoIndisponivelException("Veículo já foi vendido e não pode ser vendido novamente.");
+        }
+        if (status == StatusVeiculo.EM_MANUTENCAO) {
+            throw new VeiculoIndisponivelException("Veículo em manutenção não pode ser vendido.");
+        }
+        this.status = StatusVeiculo.VENDIDO;
+        this.vendido = true;
+    }
+
+    /** Desfaz uma venda (ex.: falha ao gravar no banco). Só faz sentido para veículo vendido. */
+    public void cancelarVenda() {
+        if (status == StatusVeiculo.VENDIDO) {
+            this.status = StatusVeiculo.DISPONIVEL;
+            this.vendido = false;
+        }
+    }
+
+    public void colocarEmManutencao() throws VeiculoIndisponivelException {
+        if (status == StatusVeiculo.VENDIDO) {
+            throw new VeiculoIndisponivelException("Veículo vendido não pode ir para manutenção.");
+        }
+        this.status = StatusVeiculo.EM_MANUTENCAO;
+    }
+
+    public void tornarDisponivel() throws VeiculoIndisponivelException {
+        if (status == StatusVeiculo.VENDIDO) {
+            throw new VeiculoIndisponivelException("Veículo vendido não pode voltar a ficar disponível.");
+        }
+        this.status = StatusVeiculo.DISPONIVEL;
+    }
+
+    public double calcularValorComDesconto(double percentual) {
+        if (percentual < 0 || percentual > 100) {
+            throw new IllegalArgumentException("Percentual deve estar entre 0 e 100.");
+        }
+        return this.preco - (this.preco * (percentual / 100));
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s %s (%d) - Placa %s - R$ %.2f", marca, modelo, ano, placa, preco);
+    }
+} 
+============================================================================== 
+FIM DO ARQUIVO: Veiculo.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: Venda.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\modelo\) 
+============================================================================== 
+ 
+package dominio.modelo;
+
+import dominio.excecao.VeiculoIndisponivelException;
+import dominio.excecao.VendaInvalidaException;
+
+import java.time.LocalDate;
+
+public class Venda {
+    private Long id_venda;
+    private final Cliente cliente;
+    private final Vendedor vendedor;
+    private final Veiculo veiculo;
+    private final LocalDate dataVenda;
+    private double valorFinal;
+    private Pagamento pagamento;
+
+    /**
+     * A venda nasce sem pagamento (o Pagamento exige uma Venda no construtor).
+     * O pagamento é ligado depois, por registrarPagamento().
+     */
+    public Venda(Cliente cliente, Vendedor vendedor, Veiculo veiculo, LocalDate dataVenda) {
+        if (cliente == null) throw new IllegalArgumentException("Selecione um cliente.");
+        if (vendedor == null) throw new IllegalArgumentException("Selecione um vendedor.");
+        if (veiculo == null) throw new IllegalArgumentException("Selecione um veículo.");
+        if (dataVenda == null) throw new IllegalArgumentException("Data da venda é obrigatória.");
+
+        this.cliente = cliente;
+        this.vendedor = vendedor;
+        this.veiculo = veiculo;
+        this.dataVenda = dataVenda;
+        this.valorFinal = veiculo.getPreco();
+    }
+
+    /** Liga o pagamento à venda e atualiza o valor final (já com o desconto da forma de pagamento). */
+    public void registrarPagamento(Pagamento pagamento) {
+        if (pagamento == null) {
+            throw new IllegalArgumentException("Pagamento é obrigatório.");
+        }
+        if (pagamento.getVenda() != this) {
+            throw new IllegalArgumentException("O pagamento pertence a outra venda.");
+        }
+        this.pagamento = pagamento;
+        this.valorFinal = pagamento.getValorPago();
+    }
+
+    public Long getId_venda() {
+        return id_venda;
+    }
+
+    public void setId_venda(Long id) {
+        if (this.id_venda != null) {
+            throw new IllegalStateException("O ID da venda já foi definido.");
+        }
+        this.id_venda = id;
+    }
+
+    public Pagamento getPagamento() { return pagamento; }
+    public Cliente getCliente() { return cliente; }
+    public Vendedor getVendedor() { return vendedor; }
+    public Veiculo getVeiculo() { return veiculo; }
+    public LocalDate getDataVenda() { return dataVenda; }
+    public double getValorFinal() { return valorFinal; }
+
+    // comissão do vendedor de acordo com o valor final da venda
+    public double getcomissao() {
+        return vendedor.caucularcomissao(valorFinal, veiculo);
+    }
+
+    public boolean validarVenda() {
+        return cliente != null
+                && veiculo != null
+                && vendedor != null
+                && dataVenda != null
+                && pagamento != null
+                && valorFinal > 0
+                && vendedor.validarVendedor()
+                && pagamento.validarPagamento();
+    }
+
+    /**
+     * Regra de negócio: só finaliza se a venda estiver completa e o veículo puder ser vendido.
+     * Falhas lançam exceção ANTES de qualquer alteração de estado.
+     */
+    public void finalizarVenda() throws VeiculoIndisponivelException, VendaInvalidaException {
+        if (!validarVenda()) {
+            throw new VendaInvalidaException("Venda incompleta: verifique cliente, vendedor, veículo e pagamento.");
+        }
+        veiculo.vender(); // lança VeiculoIndisponivelException se vendido ou em manutenção
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: Venda.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: Vendedor.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\modelo\) 
+============================================================================== 
+ 
+package dominio.modelo;
+
+public class Vendedor {
+    private static final double REDUCAO_COMISSAO_MOTO = 3;
+
+    private Long id_vendedor;
+    private final String name;
+    private final String cpf;
+    private final Double comissaoPercentual;
+    private final Concessionaria concessionaria;
+
+    // Construtor de CADASTRO (sem id): valida os dados. Quem grava no banco é o DAO/serviço.
+    public Vendedor(String name, String cpf, Double comissaoPercentual, Concessionaria concessionaria) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Nome do vendedor é obrigatório.");
+        }
+        if (cpf == null || cpf.isBlank()) {
+            throw new IllegalArgumentException("CPF do vendedor é obrigatório.");
+        }
+        if (comissaoPercentual == null || comissaoPercentual <= 0 || comissaoPercentual > 100) {
+            throw new IllegalArgumentException("Comissão deve estar entre 0 (exclusivo) e 100.");
+        }
+        if (concessionaria == null) {
+            throw new IllegalArgumentException("O vendedor precisa pertencer a uma concessionária.");
+        }
+        this.name = name.trim();
+        this.cpf = cpf.trim();
+        this.comissaoPercentual = comissaoPercentual;
+        this.concessionaria = concessionaria;
+    }
+
+    // Construtor DE CARGA (com id, vindo do banco)
+    public Vendedor(Long id_vendedor, String name, String cpf, Double comissaoPercentual, Concessionaria concessionaria) {
+        this(name, cpf, comissaoPercentual, concessionaria);
+        this.id_vendedor = id_vendedor;
+    }
+
+    public Long getId_vendedor() {
+        return id_vendedor;
+    }
+
+    public void setId_vendedor(Long id) {
+        if (this.id_vendedor != null) {
+            throw new IllegalStateException("O ID do vendedor já foi definido.");
+        }
+        this.id_vendedor = id;
+    }
+
+    public String getName() { return name; }
+    public String getCpf() { return cpf; }
+    public Double getComissaoPercentual() { return comissaoPercentual; }
+    public Concessionaria getConcessionaria() { return concessionaria; }
+
+    public double caucularcomissao(double valorVenda, Veiculo veiculo) {
+        double percentual = comissaoPercentual;
+        if (veiculo.isMoto()) {
+            percentual = Math.max(0, percentual - REDUCAO_COMISSAO_MOTO);
+        }
+        return valorVenda * percentual / 100;
+    }
+
+    public boolean validarVendedor() {
+        return name != null && cpf != null && comissaoPercentual > 0;
+    }
+
+    @Override
+    public String toString() {
+        return name;
+    }
+} 
+============================================================================== 
+FIM DO ARQUIVO: Vendedor.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: DescontoPix.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\politica\) 
+============================================================================== 
+ 
+package dominio.politica;
+
+public class DescontoPix implements PoliticaDesconto {
+    private static final double PERCENTUAL = 5.0;
+
+    @Override
+    public double calcular(double valorBase) {
+        return valorBase - valorBase * PERCENTUAL / 100;
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: DescontoPix.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: PoliticaDesconto.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\politica\) 
+============================================================================== 
+ 
+package dominio.politica;
+
+/** Regra de desconto substituível: novas políticas podem ser criadas sem alterar Pagamento. */
+public interface PoliticaDesconto {
+    double calcular(double valorBase);
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: PoliticaDesconto.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: SemDesconto.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\politica\) 
+============================================================================== 
+ 
+package dominio.politica;
+
+public class SemDesconto implements PoliticaDesconto {
+    @Override
+    public double calcular(double valorBase) {
+        return valorBase;
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: SemDesconto.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: ClienteRepository.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\repositorio\) 
+============================================================================== 
+ 
+package dominio.repositorio;
+
+import java.util.List;
+
+import dominio.modelo.Cliente;
+
+public interface ClienteRepository {
+
+    /** Grava o cliente e preenche o ID gerado. */
+    void salvar(Cliente cliente);
+
+    List<Cliente> listar();
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: ClienteRepository.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: ConcessionariaRepository.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\repositorio\) 
+============================================================================== 
+ 
+package dominio.repositorio;
+
+import java.util.List;
+
+import dominio.modelo.Concessionaria;
+
+public interface ConcessionariaRepository {
+
+    Concessionaria buscarPorId(Long id);
+
+    List<Concessionaria> listar();
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: ConcessionariaRepository.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: DetalhePagamentoRepository.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\repositorio\) 
+============================================================================== 
+ 
+package dominio.repositorio;
+
+import dominio.modelo.Pagamento;
+
+/**
+ * Grava os dados específicos de uma forma de pagamento (PIX, cartão...),
+ * depois que a parte comum já foi gravada pelo PagamentoRepository.
+ */
+public interface DetalhePagamentoRepository<T extends Pagamento> {
+
+    void salvar(T pagamento);
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: DetalhePagamentoRepository.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: PagamentoRepository.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\repositorio\) 
+============================================================================== 
+ 
+package dominio.repositorio;
+
+import dominio.modelo.Pagamento;
+
+/** Grava a parte comum de qualquer pagamento (tabela pagamento). */
+public interface PagamentoRepository {
+
+    void salvar(Pagamento pagamento);
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: PagamentoRepository.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: VeiculoRepository.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\repositorio\) 
+============================================================================== 
+ 
+package dominio.repositorio;
+
+import java.util.List;
+
+import dominio.modelo.Veiculo;
+
+public interface VeiculoRepository {
+
+    /** Grava o veículo e preenche o ID gerado. */
+    void salvar(Veiculo veiculo);
+
+    void atualizarStatus(Veiculo veiculo);
+
+    List<Veiculo> listarDisponiveis();
+
+    List<Veiculo> listarTodos();
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: VeiculoRepository.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: VendaRepository.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\repositorio\) 
+============================================================================== 
+ 
+package dominio.repositorio;
+
+import dominio.modelo.Venda;
+
+public interface VendaRepository {
+
+    /** Grava a venda (ainda sem pagamento) e preenche o ID gerado. */
+    void salvar(Venda venda);
+
+    /** Liga a venda ao pagamento depois que o pagamento já foi gravado. */
+    void atualizarPagamento(Venda venda);
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: VendaRepository.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: VendedorRepository.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\dominio\repositorio\) 
+============================================================================== 
+ 
+package dominio.repositorio;
+
+import java.util.List;
+
+import dominio.modelo.Vendedor;
+
+public interface VendedorRepository {
+
+    List<Vendedor> listar();
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: VendedorRepository.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: ConexaoBanco.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\infra\conexao\) 
+============================================================================== 
+ 
+package infra.conexao;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Conexão MySQL. As credenciais vêm das variáveis de ambiente DB_URL, DB_USER e
+ * DB_PASSWORD (veja .env.example); nada de senha, usuário ou host no código.
+ */
+public class ConexaoBanco implements ConnectionFactory {
+
+    private final String url;
+    private final String usuario;
+    private final String senha;
+
+    public ConexaoBanco() {
+        List<String> faltando = new ArrayList<>();
+        this.url = lerVariavel("DB_URL", faltando);
+        this.usuario = lerVariavel("DB_USER", faltando);
+        this.senha = lerVariavel("DB_PASSWORD", faltando);
+
+        if (!faltando.isEmpty()) {
+            throw new IllegalStateException(
+                    "Variáveis de ambiente do banco não definidas: " + String.join(", ", faltando)
+                            + ". Configure DB_URL, DB_USER e DB_PASSWORD antes de iniciar o sistema.");
+        }
+    }
+
+    @Override
+    public Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(url, usuario, senha);
+    }
+
+    // TEMPORÁRIO: os DAOs ainda chamam este método estático. Remover quando
+    // a ConnectionFactory for injetada nos DAOs.
+    public static Connection conectar() throws SQLException {
+        return new ConexaoBanco().getConnection();
+    }
+
+    private static String lerVariavel(String nome, List<String> faltando) {
+        String valor = System.getenv(nome);
+        if (valor == null || valor.isBlank()) {
+            faltando.add(nome);
+        }
+        return valor;
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: ConexaoBanco.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: ConnectionFactory.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\infra\conexao\) 
+============================================================================== 
+ 
+package infra.conexao;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+
+/** Abstração de "onde vem a conexão com o banco". */
+public interface ConnectionFactory {
+    Connection getConnection() throws SQLException;
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: ConnectionFactory.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: TesteBanco.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\infra\conexao\) 
+============================================================================== 
+ 
+package infra.conexao;
+
+public class TesteBanco {
+
+    public static void main(String[] args) {
+
+        try {
+            ConexaoBanco.conectar();
+
+            System.out.println("Conexão com o MySQL realizada com sucesso!");
+
+        } catch (Exception e) {
+            System.out.println("Erro ao conectar com o MySQL:");
+            e.printStackTrace();
+        }
+    }
+} 
+============================================================================== 
+FIM DO ARQUIVO: TesteBanco.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: ClienteDAO.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\infra\dao\) 
+============================================================================== 
+ 
+package infra.dao;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
+import infra.conexao.ConexaoBanco;
+import dominio.repositorio.ClienteRepository;
+import dominio.modelo.Cliente;
+
+public class ClienteDAO implements ClienteRepository {
+
+    public void salvar(Cliente cliente) {
+
+        String sql = """
+                INSERT INTO cliente
+                (name_cliente, cpf, email, phone)
+                VALUES (?, ?, ?, ?)
+                """;
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(
+                     sql,
+                     Statement.RETURN_GENERATED_KEYS)) {
+
+            comando.setString(1, cliente.getName_cliente());
+            comando.setString(2, cliente.getCpf_cliente());
+            comando.setString(3, cliente.getEmail_cliente());
+            comando.setString(4, cliente.getPhone_cliente());
+
+            comando.executeUpdate();
+
+            // Pega o ID gerado pelo AUTO_INCREMENT
+            try (ResultSet resultado = comando.getGeneratedKeys()) {
+
+                if (resultado.next()) {
+                    cliente.setId_cliente(resultado.getLong(1));
+                }
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar cliente no banco.", e);
+        }
+    }
+
+    public void atualizar(Cliente cliente, String atributo, String novoValor) {
+        String sql = "UPDATE cliente SET " + atributo + " = ? WHERE id_cliente = ?";
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+
+            comando.setString(1, novoValor);
+            comando.setLong(2, cliente.getId_cliente());
+
+            comando.executeUpdate();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao atualizar cliente no banco.", e);
+        }
+    }
+
+    /** Necessário para o combo de clientes na tela de Vendas. */
+    public List<Cliente> listar() {
+        String sql = "SELECT * FROM cliente";
+        List<Cliente> clientes = new ArrayList<>();
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(sql);
+             ResultSet resultado = comando.executeQuery()) {
+
+            while (resultado.next()) {
+                Cliente cliente = new Cliente(
+                        resultado.getString("name_cliente"),
+                        resultado.getString("cpf"),
+                        resultado.getString("email"),
+                        resultado.getString("phone")
+                );
+                cliente.setId_cliente(resultado.getLong("id_cliente"));
+                clientes.add(cliente);
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao listar clientes.", e);
+        }
+
+        return clientes;
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: ClienteDAO.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: ConcessionariaDAO.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\infra\dao\) 
+============================================================================== 
+ 
+package infra.dao;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
+import infra.conexao.ConexaoBanco;
+import dominio.repositorio.ConcessionariaRepository;
+import dominio.modelo.Concessionaria;
+
+public class ConcessionariaDAO implements ConcessionariaRepository {
+
+    public void salvar(Concessionaria concessionaria) {
+
+        String sql = """
+                INSERT INTO concessionaria
+                (name_concessionaria, address_concessionaria)
+                VALUES (?, ?)
+                """;
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(
+                     sql,
+                     Statement.RETURN_GENERATED_KEYS)) {
+
+            comando.setString(1, concessionaria.getName_concessionaria());
+            comando.setString(2, concessionaria.getAddress_concessionaria());
+
+            comando.executeUpdate();
+
+            try (ResultSet resultado = comando.getGeneratedKeys()) {
+                if (resultado.next()) {
+                    concessionaria.setId_concessionaria(resultado.getLong(1));
+                }
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar concessionaria no banco.", e);
+        }
+    }
+
+    public void atualizar(Concessionaria concessionaria, String atributo, String novoValor) {
+        String sql = "UPDATE concessionaria SET " + atributo + " = ? WHERE id_concessionaria = ?";
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+
+            comando.setString(1, novoValor);
+            comando.setLong(2, concessionaria.getId_concessionaria());
+
+            comando.executeUpdate();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao atualizar concessionaria no banco.", e);
+        }
+    }
+
+    public Concessionaria buscarPorId(Long id) {
+        String sql = "SELECT * FROM concessionaria WHERE id_concessionaria = ?";
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+
+            comando.setLong(1, id);
+
+            try (ResultSet resultado = comando.executeQuery()) {
+                if (resultado.next()) {
+                    return new Concessionaria(
+                            resultado.getLong("id_concessionaria"),
+                            resultado.getString("name_concessionaria"),
+                            resultado.getString("address_concessionaria")
+                    );
+                }
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao buscar concessionaria no banco.", e);
+        }
+
+        return null;
+    }
+
+    /** Necessário para preencher o combo de concessionárias na tela de cadastro de veículo. */
+    public List<Concessionaria> listar() {
+        String sql = "SELECT * FROM concessionaria";
+        List<Concessionaria> lista = new ArrayList<>();
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(sql);
+             ResultSet resultado = comando.executeQuery()) {
+
+            while (resultado.next()) {
+                lista.add(new Concessionaria(
+                        resultado.getLong("id_concessionaria"),
+                        resultado.getString("name_concessionaria"),
+                        resultado.getString("address_concessionaria")
+                ));
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao listar concessionarias.", e);
+        }
+
+        return lista;
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: ConcessionariaDAO.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: PagamentoCartaoDAO.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\infra\dao\) 
+============================================================================== 
+ 
+package infra.dao;
+
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+
+import infra.conexao.ConexaoBanco;
+import dominio.repositorio.DetalhePagamentoRepository;
+import dominio.modelo.PagamentoCartao;
+
+public class PagamentoCartaoDAO implements DetalhePagamentoRepository<PagamentoCartao> {
+
+    // A validade chega como "MM/aa" (ex: "12/30"); a coluna validade_cartao no
+    // banco é do tipo DATE, então convertemos para o último dia daquele mês/ano.
+    private static final DateTimeFormatter FORMATO_VALIDADE = DateTimeFormatter.ofPattern("MM/yy");
+
+    public void salvar(PagamentoCartao pagamentoCartao) {
+
+        String sql = """
+                INSERT INTO pagamentocartao
+                (numero_cartao, nomeTitular, validade_cartao, codigo_seguranca, numero_parcelas, valor_parcela, pagamento_cartao)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """;
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(
+                     sql,
+                     Statement.RETURN_GENERATED_KEYS)) {
+
+            YearMonth anoMes = YearMonth.parse(pagamentoCartao.getValidade(), FORMATO_VALIDADE);
+            LocalDate dataValidade = anoMes.atEndOfMonth();
+
+            comando.setString(1, pagamentoCartao.getNumeroCartao());
+            comando.setString(2, pagamentoCartao.getNomeTitular());
+            comando.setDate(3, Date.valueOf(dataValidade));
+            comando.setString(4, pagamentoCartao.getCvv());
+            comando.setInt(5, pagamentoCartao.getNumeroParcelas());
+            comando.setDouble(6, pagamentoCartao.getValorParcela());
+            comando.setLong(7, pagamentoCartao.getId_pagamento());
+
+            comando.executeUpdate();
+
+            try (ResultSet resultado = comando.getGeneratedKeys()) {
+                if (resultado.next()) {
+                    pagamentoCartao.setId_PagamentoCartao(resultado.getLong(1));
+                }
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar pagamento no cartão no banco.", e);
+        }
+    }
+} 
+============================================================================== 
+FIM DO ARQUIVO: PagamentoCartaoDAO.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: PagamentoDAO.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\infra\dao\) 
+============================================================================== 
+ 
+package infra.dao;
+
+import infra.conexao.ConexaoBanco;
+import dominio.repositorio.PagamentoRepository;
+import dominio.modelo.Pagamento;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+
+public class PagamentoDAO implements PagamentoRepository {
+    public void salvar(Pagamento pagamento) {
+
+        String sql = """
+                INSERT INTO pagamento
+                (forma_pagamento, valor_pagamento, data_pagamento, cliente_pagamento, veiculo_pagamento)
+                VALUES (?, ?, ?, ?, ?)
+                """;
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(
+                     sql,
+                     Statement.RETURN_GENERATED_KEYS)) {
+
+            comando.setString(1, pagamento.getFormaPagamento());
+            comando.setDouble(2, pagamento.getValorPago());
+            comando.setDate(3, java.sql.Date.valueOf(pagamento.getDataPagamento()));
+            // Confira no seu schema: a coluna "cliente_pagamento" está recebendo o ID da VENDA.
+            comando.setLong(4, pagamento.getVenda().getId_venda());
+            comando.setLong(5, pagamento.getVenda().getVeiculo().getId_veiculo());
+
+            comando.executeUpdate();
+
+            try (ResultSet resultado = comando.getGeneratedKeys()) {
+                if (resultado.next()) {
+                    pagamento.setId_pagamento(resultado.getLong(1));
+                }
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar pagamento no banco.", e);
+        }
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: PagamentoDAO.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: PagamentoPixDAO.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\infra\dao\) 
+============================================================================== 
+ 
+package infra.dao;
+
+import infra.conexao.ConexaoBanco;
+import dominio.repositorio.DetalhePagamentoRepository;
+import dominio.modelo.PagamentoPix;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+
+public class PagamentoPixDAO implements DetalhePagamentoRepository<PagamentoPix> {
+    public void salvar(PagamentoPix pagamentoPix) {
+
+        String sql = """
+                INSERT INTO pagamentopix
+                (chave_pix, tipo_chave_pix, pagamento_pix)
+                VALUES (?, ?, ?)
+                """;
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(
+                     sql,
+                     Statement.RETURN_GENERATED_KEYS)) {
+
+            comando.setString(1, pagamentoPix.getChavePix());
+            comando.setString(2, pagamentoPix.getTipoChave());
+            comando.setLong(3, pagamentoPix.getId_pagamento());
+
+            comando.executeUpdate();
+
+            try (ResultSet resultado = comando.getGeneratedKeys()) {
+                if (resultado.next()) {
+                    pagamentoPix.setId_pagamentoPix(resultado.getLong(1));
+                }
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar pagamento pix no banco.", e);
+        }
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: PagamentoPixDAO.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: StatusVeiculoDAO.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\infra\dao\) 
+============================================================================== 
+ 
+package infra.dao;
+import dominio.modelo.Veiculo;
+import infra.conexao.ConexaoBanco;
+import java.sql.Statement;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+
+public class StatusVeiculoDAO {
+    public void salvar(Veiculo veiculo) {
+
+        String sql = """
+                INSERT INTO statusveiculo
+                (StatusVeiculo, statusveiculo_veiculo)
+                VALUES (?, ?)
+                """;
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(
+                     sql,
+                     Statement.RETURN_GENERATED_KEYS)) {
+
+            comando.setString(1, veiculo.getStatus().name());
+            comando.setLong(2, veiculo.getId_veiculo());
+
+            comando.executeUpdate();
+
+            // Pega o ID gerado pelo AUTO_INCREMENT
+            try (ResultSet resultado = comando.getGeneratedKeys()) {
+
+                if (resultado.next()) {
+                    veiculo.setId_veiculo(resultado.getLong(1));
+                }
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar veiculo no banco.", e);
+        }
+    }
+    public void atualizar(Veiculo veiculo, String atributo, String novoValor) {
+        String sql = """
+                UPDATE statusveiculo
+                SET ? = ?
+                WHERE id_statusveiculo = ?
+                """;
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+
+            comando.setString(1, atributo);
+            comando.setString(2, novoValor);
+            comando.setLong(3, veiculo.getId_veiculo());
+
+            comando.executeUpdate();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao atualizar status do veiculo no banco.", e);
+        }
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: StatusVeiculoDAO.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: VeiculoDAO.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\infra\dao\) 
+============================================================================== 
+ 
+package infra.dao;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
+import infra.conexao.ConexaoBanco;
+import dominio.repositorio.VeiculoRepository;
+import dominio.modelo.Concessionaria;
+import dominio.modelo.StatusVeiculo;
+import dominio.modelo.Veiculo;
+
+public class VeiculoDAO implements VeiculoRepository {
+
+    public void salvar(Veiculo veiculo) {
+
+        // A coluna no banco é "concessionario_veiculo" (sem "a"), não "concessionaria_veiculo".
+        String sql = """
+                INSERT INTO veiculo
+                (marca_veiculo, modelo_veiculo, ano_veiculo, placa_veiculo, preco_veiculo, status_veiculo, moto, concessionario_veiculo)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(
+                     sql,
+                     Statement.RETURN_GENERATED_KEYS)) {
+
+            comando.setString(1, veiculo.getMarca());
+            comando.setString(2, veiculo.getModelo());
+            comando.setInt(3, veiculo.getAno());
+            comando.setString(4, veiculo.getPlaca());
+            comando.setDouble(5, veiculo.getPreco());
+            comando.setString(6, paraColunaEnum(veiculo.getStatus()));
+            comando.setBoolean(7, veiculo.isMoto());
+            comando.setLong(8, veiculo.getConcessionaria().getId_concessionaria());
+
+            comando.executeUpdate();
+
+            try (ResultSet resultado = comando.getGeneratedKeys()) {
+                if (resultado.next()) {
+                    veiculo.setId_veiculo(resultado.getLong(1));
+                }
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar veículo no banco.", e);
+        }
+    }
+
+    /**
+     * Persiste só o status. Não existe coluna "vendido" separada no banco: o próprio
+     * status_veiculo já contém essa informação (VENDIDO/DISPONIVEL/EM_MANUTENCAO).
+     */
+    public void atualizarStatus(Veiculo veiculo) {
+        String sql = "UPDATE veiculo SET status_veiculo = ? WHERE id_veiculo = ?";
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+
+            comando.setString(1, paraColunaEnum(veiculo.getStatus()));
+            comando.setLong(2, veiculo.getId_veiculo());
+
+            comando.executeUpdate();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao atualizar status do veículo no banco.", e);
+        }
+    }
+
+    public List<Veiculo> listarDisponiveis() {
+        return listar("SELECT * FROM veiculo WHERE status_veiculo = 'Disponivel'",
+                "Erro ao listar veículos disponíveis.");
+    }
+
+    public List<Veiculo> listarTodos() {
+        return listar("SELECT * FROM veiculo", "Erro ao listar veículos.");
+    }
+
+    private List<Veiculo> listar(String sql, String mensagemErro) {
+        List<Veiculo> veiculos = new ArrayList<>();
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(sql);
+             ResultSet resultado = comando.executeQuery()) {
+
+            ConcessionariaDAO concessionariaDAO = new ConcessionariaDAO();
+
+            while (resultado.next()) {
+                veiculos.add(mapear(resultado, concessionariaDAO));
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException(mensagemErro, e);
+        }
+
+        return veiculos;
+    }
+
+    private Veiculo mapear(ResultSet resultado, ConcessionariaDAO concessionariaDAO) throws SQLException {
+        Concessionaria concessionaria = concessionariaDAO.buscarPorId(resultado.getLong("concessionario_veiculo"));
+
+        // O terceiro parâmetro "vendido" recebe null: o construtor de Veiculo já deriva
+        // esse valor a partir do status (VENDIDO = true, senão false), então não
+        // precisamos de uma coluna própria para isso.
+        return new Veiculo(
+                resultado.getLong("id_veiculo"),
+                resultado.getString("marca_veiculo"),
+                resultado.getString("modelo_veiculo"),
+                resultado.getInt("ano_veiculo"),
+                resultado.getString("placa_veiculo"),
+                resultado.getDouble("preco_veiculo"),
+                paraEnumJava(resultado.getString("status_veiculo")),
+                concessionaria,
+                resultado.getBoolean("moto"),
+                null
+        );
+    }
+
+    /**
+     * A coluna status_veiculo no banco é um ENUM com os valores exatos
+     * 'Disponivel', 'Vendido' e 'Em_Manutencao' (só a primeira letra maiúscula),
+     * diferente da grafia toda maiúscula do enum StatusVeiculo em Java.
+     * Estes dois métodos convertem entre os dois formatos nos dois sentidos.
+     */
+    private String paraColunaEnum(StatusVeiculo status) {
+        return switch (status) {
+            case DISPONIVEL -> "Disponivel";
+            case VENDIDO -> "Vendido";
+            case EM_MANUTENCAO -> "Em_Manutencao";
+        };
+    }
+
+    private StatusVeiculo paraEnumJava(String valorColuna) {
+        return switch (valorColuna) {
+            case "Disponivel" -> StatusVeiculo.DISPONIVEL;
+            case "Vendido" -> StatusVeiculo.VENDIDO;
+            case "Em_Manutencao" -> StatusVeiculo.EM_MANUTENCAO;
+            default -> throw new IllegalStateException("Status desconhecido no banco: " + valorColuna);
+        };
+    }
+} 
+============================================================================== 
+FIM DO ARQUIVO: VeiculoDAO.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: VendaDAO.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\infra\dao\) 
+============================================================================== 
+ 
+package infra.dao;
+
+import infra.conexao.ConexaoBanco;
+import dominio.repositorio.VendaRepository;
+import dominio.modelo.Venda;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.sql.Types;
+
+public class VendaDAO implements VendaRepository {
+
+    public void salvar(Venda venda) {
+
+        String sql = """
+                INSERT INTO venda
+                (data_venda, cliente_venda, veiculo_venda, vendedor_venda, pagamento_venda)
+                VALUES (?, ?, ?, ?, ?)
+                """;
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(
+                     sql,
+                     Statement.RETURN_GENERATED_KEYS)) {
+
+            comando.setDate(1, java.sql.Date.valueOf(venda.getDataVenda()));
+            comando.setLong(2, venda.getCliente().getId_cliente());
+            comando.setLong(3, venda.getVeiculo().getId_veiculo());
+            comando.setLong(4, venda.getVendedor().getId_vendedor());
+            // O pagamento ainda não existe neste momento; é preenchido em atualizarPagamento().
+            comando.setNull(5, Types.BIGINT);
+
+            comando.executeUpdate();
+
+            try (ResultSet resultado = comando.getGeneratedKeys()) {
+                if (resultado.next()) {
+                    venda.setId_venda(resultado.getLong(1));
+                }
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar venda no banco.", e);
+        }
+    }
+
+    /** Liga a venda ao pagamento depois que o pagamento já foi gravado. */
+    public void atualizarPagamento(Venda venda) {
+        String sql = "UPDATE venda SET pagamento_venda = ? WHERE id_venda = ?";
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+
+            comando.setLong(1, venda.getPagamento().getId_pagamento());
+            comando.setLong(2, venda.getId_venda());
+
+            comando.executeUpdate();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao atualizar pagamento da venda no banco.", e);
+        }
+    }
+}
+ 
+============================================================================== 
+FIM DO ARQUIVO: VendaDAO.java 
+============================================================================== 
+ 
+ 
+============================================================================== 
+INÍCIO DO ARQUIVO: VendedorDAO.java 
+LOCALIZAÇÃO: Subpasta (.\src\main\java\infra\dao\) 
+============================================================================== 
+ 
+package infra.dao;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
+import infra.conexao.ConexaoBanco;
+import dominio.repositorio.VendedorRepository;
+import dominio.modelo.Concessionaria;
+import dominio.modelo.Vendedor;
+
+public class VendedorDAO implements VendedorRepository {
+
+    public void salvar(Vendedor vendedor) {
+
+        // A coluna no banco é "concessionario_vendedor" (sem "a"), não "concessionaria_vendedor".
+        String sql = """
+                INSERT INTO vendedor
+                (name_vendedor, cpf_vendedor, comissao_percentual, concessionario_vendedor)
+                VALUES (?, ?, ?, ?)
+                """;
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(
+                     sql,
+                     Statement.RETURN_GENERATED_KEYS)) {
+
+            comando.setString(1, vendedor.getName());
+            comando.setString(2, vendedor.getCpf());
+            comando.setDouble(3, vendedor.getComissaoPercentual());
+            comando.setLong(4, vendedor.getConcessionaria().getId_concessionaria());
+
+            comando.executeUpdate();
+
+            try (ResultSet resultado = comando.getGeneratedKeys()) {
+                if (resultado.next()) {
+                    vendedor.setId_vendedor(resultado.getLong(1));
+                }
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar Vendedor no banco.", e);
+        }
+    }
+
+    public void atualizar(Vendedor vendedor, String atributo, String novoValor) {
+        String sql = "UPDATE vendedor SET " + atributo + " = ? WHERE id_vendedor = ?";
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+
+            comando.setString(1, novoValor);
+            comando.setLong(2, vendedor.getId_vendedor());
+
+            comando.executeUpdate();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao atualizar vendedor no banco.", e);
+        }
+    }
+
+    public List<Vendedor> listar() {
+        String sql = "SELECT * FROM vendedor";
+        List<Vendedor> vendedores = new ArrayList<>();
+
+        try (Connection conexao = ConexaoBanco.conectar();
+             PreparedStatement comando = conexao.prepareStatement(sql);
+             ResultSet resultado = comando.executeQuery()) {
+
+            ConcessionariaDAO concessionariaDAO = new ConcessionariaDAO();
+
+            while (resultado.next()) {
+                Concessionaria concessionaria = concessionariaDAO.buscarPorId(resultado.getLong("concessionario_vendedor"));
+
+                Vendedor vendedor = new Vendedor(
+                        resultado.getLong("id_vendedor"),
+                        resultado.getString("name_vendedor"),
+                        resultado.getString("cpf_vendedor"),
+                        resultado.getDouble("comissao_percentual"),
+                        concessionaria
+                );
+                vendedores.add(vendedor);
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao listar vendedores.", e);
+        }
+
+        return vendedores;
+    }
+} 
+============================================================================== 
+FIM DO ARQUIVO: VendedorDAO.java 
+============================================================================== 
+ 
+ 

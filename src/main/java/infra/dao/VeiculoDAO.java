@@ -1,112 +1,94 @@
 package infra.dao;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.List;
 
-import infra.conexao.ConexaoBanco;
-import dominio.repositorio.VeiculoRepository;
 import dominio.modelo.Concessionaria;
 import dominio.modelo.StatusVeiculo;
 import dominio.modelo.Veiculo;
+import dominio.repositorio.VeiculoRepository;
+import infra.conexao.ConnectionFactory;
 
 public class VeiculoDAO implements VeiculoRepository {
 
-    public void salvar(Veiculo veiculo) {
+    // Uma consulta só: o JOIN traz a concessionária junto, sem consulta extra por linha.
+    private static final String SELECT_COM_CONCESSIONARIA = """
+            SELECT v.id_veiculo, v.marca_veiculo, v.modelo_veiculo, v.ano_veiculo, v.placa_veiculo,
+                   v.preco_veiculo, v.status_veiculo, v.moto,
+                   c.id_concessionaria, c.name_concessionaria, c.address_concessionaria
+            FROM veiculo v
+            JOIN concessionaria c ON c.id_concessionaria = v.concessionario_veiculo
+            """;
 
+    private final ExecutorSql executor;
+
+    public VeiculoDAO(ConnectionFactory connectionFactory) {
+        this.executor = new ExecutorSql(connectionFactory);
+    }
+
+    @Override
+    public void salvar(Veiculo veiculo) {
         // A coluna no banco é "concessionario_veiculo" (sem "a"), não "concessionaria_veiculo".
-        String sql = """
+        long id = executor.inserir(
+                """
                 INSERT INTO veiculo
                 (marca_veiculo, modelo_veiculo, ano_veiculo, placa_veiculo, preco_veiculo, status_veiculo, moto, concessionario_veiculo)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """;
-
-        try (Connection conexao = ConexaoBanco.conectar();
-             PreparedStatement comando = conexao.prepareStatement(
-                     sql,
-                     Statement.RETURN_GENERATED_KEYS)) {
-
-            comando.setString(1, veiculo.getMarca());
-            comando.setString(2, veiculo.getModelo());
-            comando.setInt(3, veiculo.getAno());
-            comando.setString(4, veiculo.getPlaca());
-            comando.setDouble(5, veiculo.getPreco());
-            comando.setString(6, paraColunaEnum(veiculo.getStatus()));
-            comando.setBoolean(7, veiculo.isMoto());
-            comando.setLong(8, veiculo.getConcessionaria().getId_concessionaria());
-
-            comando.executeUpdate();
-
-            try (ResultSet resultado = comando.getGeneratedKeys()) {
-                if (resultado.next()) {
-                    veiculo.setId_veiculo(resultado.getLong(1));
-                }
-            }
-
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao salvar veículo no banco.", e);
-        }
+                """,
+                comando -> {
+                    comando.setString(1, veiculo.getMarca());
+                    comando.setString(2, veiculo.getModelo());
+                    comando.setInt(3, veiculo.getAno());
+                    comando.setString(4, veiculo.getPlaca());
+                    comando.setDouble(5, veiculo.getPreco());
+                    comando.setString(6, paraColunaEnum(veiculo.getStatus()));
+                    comando.setBoolean(7, veiculo.isMoto());
+                    comando.setLong(8, veiculo.getConcessionaria().getId_concessionaria());
+                },
+                "Erro ao salvar veículo no banco.");
+        veiculo.setId_veiculo(id);
     }
 
     /**
      * Persiste só o status. Não existe coluna "vendido" separada no banco: o próprio
-     * status_veiculo já contém essa informação (VENDIDO/DISPONIVEL/EM_MANUTENCAO).
+     * status_veiculo já contém essa informação.
      */
+    @Override
     public void atualizarStatus(Veiculo veiculo) {
-        String sql = "UPDATE veiculo SET status_veiculo = ? WHERE id_veiculo = ?";
-
-        try (Connection conexao = ConexaoBanco.conectar();
-             PreparedStatement comando = conexao.prepareStatement(sql)) {
-
-            comando.setString(1, paraColunaEnum(veiculo.getStatus()));
-            comando.setLong(2, veiculo.getId_veiculo());
-
-            comando.executeUpdate();
-
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao atualizar status do veículo no banco.", e);
-        }
+        executor.atualizar(
+                "UPDATE veiculo SET status_veiculo = ? WHERE id_veiculo = ?",
+                comando -> {
+                    comando.setString(1, paraColunaEnum(veiculo.getStatus()));
+                    comando.setLong(2, veiculo.getId_veiculo());
+                },
+                "Erro ao atualizar status do veículo no banco.");
     }
 
+    @Override
     public List<Veiculo> listarDisponiveis() {
-        return listar("SELECT * FROM veiculo WHERE status_veiculo = 'Disponivel'",
+        return executor.consultar(
+                SELECT_COM_CONCESSIONARIA + " WHERE v.status_veiculo = 'Disponivel'",
+                VeiculoDAO::mapear,
                 "Erro ao listar veículos disponíveis.");
     }
 
+    @Override
     public List<Veiculo> listarTodos() {
-        return listar("SELECT * FROM veiculo", "Erro ao listar veículos.");
+        return executor.consultar(
+                SELECT_COM_CONCESSIONARIA,
+                VeiculoDAO::mapear,
+                "Erro ao listar veículos.");
     }
 
-    private List<Veiculo> listar(String sql, String mensagemErro) {
-        List<Veiculo> veiculos = new ArrayList<>();
+    private static Veiculo mapear(ResultSet resultado) throws SQLException {
+        Concessionaria concessionaria = new Concessionaria(
+                resultado.getLong("id_concessionaria"),
+                resultado.getString("name_concessionaria"),
+                resultado.getString("address_concessionaria"));
 
-        try (Connection conexao = ConexaoBanco.conectar();
-             PreparedStatement comando = conexao.prepareStatement(sql);
-             ResultSet resultado = comando.executeQuery()) {
-
-            ConcessionariaDAO concessionariaDAO = new ConcessionariaDAO();
-
-            while (resultado.next()) {
-                veiculos.add(mapear(resultado, concessionariaDAO));
-            }
-
-        } catch (Exception e) {
-            throw new RuntimeException(mensagemErro, e);
-        }
-
-        return veiculos;
-    }
-
-    private Veiculo mapear(ResultSet resultado, ConcessionariaDAO concessionariaDAO) throws SQLException {
-        Concessionaria concessionaria = concessionariaDAO.buscarPorId(resultado.getLong("concessionario_veiculo"));
-
-        // O terceiro parâmetro "vendido" recebe null: o construtor de Veiculo já deriva
-        // esse valor a partir do status (VENDIDO = true, senão false), então não
-        // precisamos de uma coluna própria para isso.
+        // O último parâmetro "vendido" recebe null: o construtor de Veiculo já deriva
+        // esse valor a partir do status, então não precisamos de uma coluna própria.
         return new Veiculo(
                 resultado.getLong("id_veiculo"),
                 resultado.getString("marca_veiculo"),
@@ -117,17 +99,14 @@ public class VeiculoDAO implements VeiculoRepository {
                 paraEnumJava(resultado.getString("status_veiculo")),
                 concessionaria,
                 resultado.getBoolean("moto"),
-                null
-        );
+                null);
     }
 
     /**
-     * A coluna status_veiculo no banco é um ENUM com os valores exatos
-     * 'Disponivel', 'Vendido' e 'Em_Manutencao' (só a primeira letra maiúscula),
-     * diferente da grafia toda maiúscula do enum StatusVeiculo em Java.
-     * Estes dois métodos convertem entre os dois formatos nos dois sentidos.
+     * A coluna status_veiculo é ENUM('Disponivel','Vendido','Em_Manutencao'), diferente da
+     * grafia toda maiúscula do enum StatusVeiculo em Java. Convertem nos dois sentidos.
      */
-    private String paraColunaEnum(StatusVeiculo status) {
+    private static String paraColunaEnum(StatusVeiculo status) {
         return switch (status) {
             case DISPONIVEL -> "Disponivel";
             case VENDIDO -> "Vendido";
@@ -135,7 +114,7 @@ public class VeiculoDAO implements VeiculoRepository {
         };
     }
 
-    private StatusVeiculo paraEnumJava(String valorColuna) {
+    private static StatusVeiculo paraEnumJava(String valorColuna) {
         return switch (valorColuna) {
             case "Disponivel" -> StatusVeiculo.DISPONIVEL;
             case "Vendido" -> StatusVeiculo.VENDIDO;
