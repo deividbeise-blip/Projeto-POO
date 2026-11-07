@@ -1,5 +1,6 @@
 package aplicacao.servico;
 
+import aplicacao.Transacao;
 import dominio.excecao.VeiculoIndisponivelException;
 import dominio.excecao.VendaInvalidaException;
 import dominio.modelo.*;
@@ -18,19 +19,22 @@ public class VendaService {
     private final DetalhePagamentoRepository<PagamentoPix> pagamentoPixRepository;
     private final DetalhePagamentoRepository<PagamentoCartao> pagamentoCartaoRepository;
     private final VeiculoRepository veiculoRepository;
+    private final Transacao transacao;
 
     public VendaService(ClienteRepository clienteRepository,
                         VendaRepository vendaRepository,
                         PagamentoRepository pagamentoRepository,
                         DetalhePagamentoRepository<PagamentoPix> pagamentoPixRepository,
                         DetalhePagamentoRepository<PagamentoCartao> pagamentoCartaoRepository,
-                        VeiculoRepository veiculoRepository) {
+                        VeiculoRepository veiculoRepository,
+                        Transacao transacao) {
         this.clienteRepository = clienteRepository;
         this.vendaRepository = vendaRepository;
         this.pagamentoRepository = pagamentoRepository;
         this.pagamentoPixRepository = pagamentoPixRepository;
         this.pagamentoCartaoRepository = pagamentoCartaoRepository;
         this.veiculoRepository = veiculoRepository;
+        this.transacao = transacao;
     }
 
     public Pagamento venderComPix(Cliente cliente, Vendedor vendedor, Veiculo veiculo,
@@ -61,16 +65,18 @@ public class VendaService {
         // 1) Regras de negócio primeiro: se falhar aqui, NADA foi gravado no banco.
         venda.finalizarVenda();
 
-        // 2) Só então persiste, na ordem que as chaves estrangeiras exigem.
+        // 2) Só então persiste, tudo na mesma transação: se qualquer passo falhar, nada fica gravado.
         try {
-            if (venda.getCliente().getId_cliente() == null) {
-                clienteRepository.salvar(venda.getCliente());
-            }
-            vendaRepository.salvar(venda);
-            pagamentoRepository.salvar(pagamento);
-            salvarDetalhePagamento.run();
-            vendaRepository.atualizarPagamento(venda);
-            veiculoRepository.atualizarStatus(venda.getVeiculo());
+            transacao.executar(() -> {
+                if (venda.getCliente().getId_cliente() == null) {
+                    clienteRepository.salvar(venda.getCliente());
+                }
+                vendaRepository.salvar(venda);
+                pagamentoRepository.salvar(pagamento);
+                salvarDetalhePagamento.run();
+                vendaRepository.atualizarPagamento(venda);
+                veiculoRepository.atualizarStatus(venda.getVeiculo());
+            });
         } catch (RuntimeException e) {
             venda.getVeiculo().cancelarVenda(); // desfaz o estado em memória
             throw e;

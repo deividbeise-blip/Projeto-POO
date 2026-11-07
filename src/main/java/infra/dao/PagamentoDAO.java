@@ -1,45 +1,51 @@
 package infra.dao;
 
-import infra.conexao.ConexaoBanco;
-import dominio.repositorio.PagamentoRepository;
-import dominio.modelo.Pagamento;
+import java.sql.Date;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import dominio.modelo.Pagamento;
+import dominio.modelo.Venda;
+import dominio.repositorio.PagamentoRepository;
+import infra.conexao.ConnectionFactory;
 
 public class PagamentoDAO implements PagamentoRepository {
-    public void salvar(Pagamento pagamento) {
 
-        String sql = """
+    private final ExecutorSql executor;
+
+    public PagamentoDAO(ConnectionFactory connectionFactory) {
+        this.executor = new ExecutorSql(connectionFactory);
+    }
+
+    @Override
+    public void salvar(Pagamento pagamento) {
+        Venda venda = pagamento.getVenda();
+
+        long id = executor.inserir(
+                """
                 INSERT INTO pagamento
                 (forma_pagamento, valor_pagamento, data_pagamento, cliente_pagamento, veiculo_pagamento)
                 VALUES (?, ?, ?, ?, ?)
-                """;
+                """,
+                comando -> {
+                    comando.setString(1, paraColunaEnum(pagamento.getFormaPagamento()));
+                    comando.setDouble(2, pagamento.getValorPago());
+                    comando.setDate(3, Date.valueOf(pagamento.getDataPagamento()));
+                    comando.setLong(4, venda.getCliente().getId_cliente());
+                    comando.setLong(5, venda.getVeiculo().getId_veiculo());
+                },
+                "Erro ao salvar pagamento no banco.");
+        pagamento.setId_pagamento(id);
+    }
 
-        try (Connection conexao = ConexaoBanco.conectar();
-             PreparedStatement comando = conexao.prepareStatement(
-                     sql,
-                     Statement.RETURN_GENERATED_KEYS)) {
-
-            comando.setString(1, pagamento.getFormaPagamento());
-            comando.setDouble(2, pagamento.getValorPago());
-            comando.setDate(3, java.sql.Date.valueOf(pagamento.getDataPagamento()));
-            // Confira no seu schema: a coluna "cliente_pagamento" está recebendo o ID da VENDA.
-            comando.setLong(4, pagamento.getVenda().getId_venda());
-            comando.setLong(5, pagamento.getVenda().getVeiculo().getId_veiculo());
-
-            comando.executeUpdate();
-
-            try (ResultSet resultado = comando.getGeneratedKeys()) {
-                if (resultado.next()) {
-                    pagamento.setId_pagamento(resultado.getLong(1));
-                }
-            }
-
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao salvar pagamento no banco.", e);
-        }
+    /**
+     * A coluna forma_pagamento é ENUM('Dinheiro','Cartao','Pix'); o domínio usa "PIX" e "Cartão"
+     * (é o que a tela mostra). Converte para o valor exato do enum do banco.
+     */
+    private String paraColunaEnum(String formaPagamento) {
+        return switch (formaPagamento.trim().toLowerCase()) {
+            case "pix" -> "Pix";
+            case "cartão", "cartao" -> "Cartao";
+            case "dinheiro" -> "Dinheiro";
+            default -> throw new IllegalArgumentException("Forma de pagamento sem equivalente no banco: " + formaPagamento);
+        };
     }
 }

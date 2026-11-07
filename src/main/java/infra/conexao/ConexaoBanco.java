@@ -34,11 +34,6 @@ public class ConexaoBanco implements ConnectionFactory {
         return DriverManager.getConnection(url, usuario, senha);
     }
 
-    // TEMPORÁRIO: os DAOs ainda chamam este método estático. Remover quando
-    // a ConnectionFactory for injetada nos DAOs.
-    public static Connection conectar() throws SQLException {
-        return new ConexaoBanco().getConnection();
-    }
 
     private static String lerVariavel(String nome, List<String> faltando) {
         String valor = System.getenv(nome);
