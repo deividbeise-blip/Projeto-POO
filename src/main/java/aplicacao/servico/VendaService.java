@@ -1,9 +1,7 @@
 package aplicacao.servico;
 
 import aplicacao.Transacao;
-import aplicacao.dto.DadosCartao;
 import aplicacao.dto.DadosPagamento;
-import aplicacao.dto.DadosPix;
 import aplicacao.dto.DadosVenda;
 import aplicacao.pagamento.FormaPagamento;
 import dominio.excecao.VeiculoIndisponivelException;
@@ -71,25 +69,6 @@ public class VendaService {
 
         Venda venda = new Venda(cliente, vendedor, veiculo, LocalDate.now());
         return concluir(venda, forma, dados.pagamento());
-    }
-
-    /** @deprecated temporário: a tela de vendas passa a usar {@link #vender(DadosVenda)}. */
-    @Deprecated
-    public Pagamento venderComPix(Cliente cliente, Vendedor vendedor, Veiculo veiculo,
-                                  String chavePix, String tipoChave)
-            throws VeiculoIndisponivelException, VendaInvalidaException {
-        return vender(new DadosVenda(cliente.getId_cliente(), vendedor.getId_vendedor(),
-                veiculo.getId_veiculo(), new DadosPix(chavePix, tipoChave)));
-    }
-
-    /** @deprecated temporário: a tela de vendas passa a usar {@link #vender(DadosVenda)}. */
-    @Deprecated
-    public Pagamento venderComCartao(Cliente cliente, Vendedor vendedor, Veiculo veiculo,
-                                     String numeroCartao, String titular, String validade,
-                                     String cvv, int parcelas)
-            throws VeiculoIndisponivelException, VendaInvalidaException {
-        return vender(new DadosVenda(cliente.getId_cliente(), vendedor.getId_vendedor(),
-                veiculo.getId_veiculo(), new DadosCartao(numeroCartao, titular, validade, cvv, parcelas)));
     }
 
     /**

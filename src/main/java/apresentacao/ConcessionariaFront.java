@@ -24,6 +24,10 @@ import dominio.modelo.Cliente;
 import dominio.modelo.Pagamento;
 import dominio.modelo.Veiculo;
 import dominio.modelo.Vendedor;
+import aplicacao.dto.DadosCartao;
+import aplicacao.dto.DadosPagamento;
+import aplicacao.dto.DadosPix;
+import aplicacao.dto.DadosVenda;
 import aplicacao.servico.ClienteService;
 import aplicacao.servico.VeiculoService;
 import aplicacao.servico.VendaService;
@@ -204,16 +208,20 @@ public class ConcessionariaFront extends JPanel {
                 return;
             }
 
-            Pagamento pagamento;
+            DadosPagamento dadosPagamento;
             if ("PIX".equals(comboFormaPagamento.getSelectedItem())) {
-                pagamento = vendaService.venderComPix(cliente, vendedor, veiculo,
+                dadosPagamento = new DadosPix(
                         campoChavePix.getText(), (String) comboTipoChave.getSelectedItem());
             } else {
-                pagamento = vendaService.venderComCartao(cliente, vendedor, veiculo,
+                dadosPagamento = new DadosCartao(
                         campoNumeroCartao.getText(), campoNomeTitular.getText(),
                         campoValidade.getText(), campoCvv.getText(),
                         (int) spinnerParcelas.getValue());
             }
+
+            DadosVenda dados = new DadosVenda(cliente.getId_cliente(), vendedor.getId_vendedor(),
+                    veiculo.getId_veiculo(), dadosPagamento);
+            Pagamento pagamento = vendaService.vender(dados);
 
             JOptionPane.showMessageDialog(this,
                     "Venda realizada com sucesso!\n" + pagamento.obterReciboDetalhado(),
