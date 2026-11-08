@@ -9,8 +9,10 @@ import dominio.repositorio.DetalhePagamentoRepository;
 import dominio.repositorio.PagamentoRepository;
 import dominio.repositorio.VeiculoRepository;
 import dominio.repositorio.VendaRepository;
+import dominio.repositorio.VendedorRepository;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public class VendaService {
     private final ClienteRepository clienteRepository;
@@ -19,6 +21,7 @@ public class VendaService {
     private final DetalhePagamentoRepository<PagamentoPix> pagamentoPixRepository;
     private final DetalhePagamentoRepository<PagamentoCartao> pagamentoCartaoRepository;
     private final VeiculoRepository veiculoRepository;
+    private final VendedorRepository vendedorRepository;
     private final Transacao transacao;
 
     public VendaService(ClienteRepository clienteRepository,
@@ -27,6 +30,7 @@ public class VendaService {
                         DetalhePagamentoRepository<PagamentoPix> pagamentoPixRepository,
                         DetalhePagamentoRepository<PagamentoCartao> pagamentoCartaoRepository,
                         VeiculoRepository veiculoRepository,
+                        VendedorRepository vendedorRepository,
                         Transacao transacao) {
         this.clienteRepository = clienteRepository;
         this.vendaRepository = vendaRepository;
@@ -34,7 +38,12 @@ public class VendaService {
         this.pagamentoPixRepository = pagamentoPixRepository;
         this.pagamentoCartaoRepository = pagamentoCartaoRepository;
         this.veiculoRepository = veiculoRepository;
+        this.vendedorRepository = vendedorRepository;
         this.transacao = transacao;
+    }
+
+    public List<Vendedor> listarVendedores() {
+        return vendedorRepository.listar();
     }
 
     public Pagamento venderComPix(Cliente cliente, Vendedor vendedor, Veiculo veiculo,

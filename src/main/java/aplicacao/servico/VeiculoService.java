@@ -1,16 +1,22 @@
 package aplicacao.servico;
 
+import java.util.List;
+
 import dominio.excecao.VeiculoIndisponivelException;
 import dominio.modelo.Concessionaria;
 import dominio.modelo.StatusVeiculo;
 import dominio.modelo.Veiculo;
+import dominio.repositorio.ConcessionariaRepository;
 import dominio.repositorio.VeiculoRepository;
 
 public class VeiculoService {
     private final VeiculoRepository veiculoRepository;
+    private final ConcessionariaRepository concessionariaRepository;
 
-    public VeiculoService(VeiculoRepository veiculoRepository) {
+    public VeiculoService(VeiculoRepository veiculoRepository,
+                          ConcessionariaRepository concessionariaRepository) {
         this.veiculoRepository = veiculoRepository;
+        this.concessionariaRepository = concessionariaRepository;
     }
 
     /**
@@ -35,5 +41,17 @@ public class VeiculoService {
                     "Um veículo só pode ser marcado como vendido pela tela de vendas.");
         }
         veiculoRepository.atualizarStatus(veiculo);
+    }
+
+    public List<Veiculo> listarTodos() {
+        return veiculoRepository.listarTodos();
+    }
+
+    public List<Veiculo> listarDisponiveis() {
+        return veiculoRepository.listarDisponiveis();
+    }
+
+    public List<Concessionaria> listarConcessionarias() {
+        return concessionariaRepository.listar();
     }
 }

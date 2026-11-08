@@ -38,7 +38,7 @@ public class AppConfig {
     private final PagamentoRepository pagamentoRepository = new PagamentoDAO(transacao);
 
     private final ClienteService clienteService = new ClienteService(clienteRepository);
-    private final VeiculoService veiculoService = new VeiculoService(veiculoRepository);
+    private final VeiculoService veiculoService = new VeiculoService(veiculoRepository, concessionariaRepository);
     private final VendaService vendaService = new VendaService(
             clienteRepository,
             vendaRepository,
@@ -46,14 +46,10 @@ public class AppConfig {
             new PagamentoPixDAO(transacao),
             new PagamentoCartaoDAO(transacao),
             veiculoRepository,
+            vendedorRepository,
             transacao);
 
     public ClienteService clienteService() { return clienteService; }
     public VeiculoService veiculoService() { return veiculoService; }
     public VendaService vendaService() { return vendaService; }
-
-    public ClienteRepository clienteRepository() { return clienteRepository; }
-    public ConcessionariaRepository concessionariaRepository() { return concessionariaRepository; }
-    public VeiculoRepository veiculoRepository() { return veiculoRepository; }
-    public VendedorRepository vendedorRepository() { return vendedorRepository; }
 }
