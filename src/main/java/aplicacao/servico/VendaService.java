@@ -46,6 +46,32 @@ public class VendaService {
         return vendedorRepository.listar();
     }
 
+    // ---- Busca das entidades a partir dos IDs recebidos no DTO ----
+
+    private Cliente buscarCliente(Long id) {
+        Cliente cliente = id == null ? null : clienteRepository.buscarPorId(id);
+        if (cliente == null) {
+            throw new IllegalArgumentException("Cliente não encontrado (id " + id + ").");
+        }
+        return cliente;
+    }
+
+    private Vendedor buscarVendedor(Long id) {
+        Vendedor vendedor = id == null ? null : vendedorRepository.buscarPorId(id);
+        if (vendedor == null) {
+            throw new IllegalArgumentException("Vendedor não encontrado (id " + id + ").");
+        }
+        return vendedor;
+    }
+
+    private Veiculo buscarVeiculo(Long id) {
+        Veiculo veiculo = id == null ? null : veiculoRepository.buscarPorId(id);
+        if (veiculo == null) {
+            throw new IllegalArgumentException("Veículo não encontrado (id " + id + ").");
+        }
+        return veiculo;
+    }
+
     public Pagamento venderComPix(Cliente cliente, Vendedor vendedor, Veiculo veiculo,
                                   String chavePix, String tipoChave)
             throws VeiculoIndisponivelException, VendaInvalidaException {

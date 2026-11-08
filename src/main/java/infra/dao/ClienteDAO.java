@@ -1,5 +1,7 @@
 package infra.dao;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 
 import dominio.modelo.Cliente;
@@ -30,20 +32,31 @@ public class ClienteDAO implements ClienteRepository {
         cliente.setId_cliente(id);
     }
 
+    @Override
+    public Cliente buscarPorId(Long id) {
+        return executor.consultarUm(
+                "SELECT " + COLUNAS + " FROM cliente WHERE id_cliente = ?",
+                comando -> comando.setLong(1, id),
+                ClienteDAO::mapear,
+                "Erro ao buscar cliente no banco.");
+    }
+
     /** Necessário para o combo de clientes na tela de Vendas. */
     @Override
     public List<Cliente> listar() {
         return executor.consultar(
                 "SELECT " + COLUNAS + " FROM cliente",
-                resultado -> {
-                    Cliente cliente = new Cliente(
-                            resultado.getString("name_cliente"),
-                            resultado.getString("cpf"),
-                            resultado.getString("email"),
-                            resultado.getString("phone"));
-                    cliente.setId_cliente(resultado.getLong("id_cliente"));
-                    return cliente;
-                },
+                ClienteDAO::mapear,
                 "Erro ao listar clientes.");
+    }
+
+    private static Cliente mapear(ResultSet resultado) throws SQLException {
+        Cliente cliente = new Cliente(
+                resultado.getString("name_cliente"),
+                resultado.getString("cpf"),
+                resultado.getString("email"),
+                resultado.getString("phone"));
+        cliente.setId_cliente(resultado.getLong("id_cliente"));
+        return cliente;
     }
 }

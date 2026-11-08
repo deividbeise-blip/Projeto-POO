@@ -66,6 +66,15 @@ public class VeiculoDAO implements VeiculoRepository {
     }
 
     @Override
+    public Veiculo buscarPorId(Long id) {
+        return executor.consultarUm(
+                SELECT_COM_CONCESSIONARIA + " WHERE v.id_veiculo = ?",
+                comando -> comando.setLong(1, id),
+                VeiculoDAO::mapear,
+                "Erro ao buscar veículo no banco.");
+    }
+
+    @Override
     public List<Veiculo> listarDisponiveis() {
         return executor.consultar(
                 SELECT_COM_CONCESSIONARIA + " WHERE v.status_veiculo = 'Disponivel'",
