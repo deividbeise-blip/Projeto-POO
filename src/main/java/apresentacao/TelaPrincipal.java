@@ -16,15 +16,11 @@ public class TelaPrincipal extends JFrame {
         JTabbedPane abas = new JTabbedPane();
 
         ClienteFront painelClientes = new ClienteFront(config.clienteService());
-        VeiculoFront painelVeiculos = new VeiculoFront(
-                config.veiculoService(),
-                config.veiculoRepository(),
-                config.concessionariaRepository());
+        VeiculoFront painelVeiculos = new VeiculoFront(config.veiculoService());
         ConcessionariaFront painelVendas = new ConcessionariaFront(
                 config.vendaService(),
-                config.clienteRepository(),
-                config.veiculoRepository(),
-                config.vendedorRepository());
+                config.clienteService(),
+                config.veiculoService());
 
         abas.addTab("Clientes", painelClientes);
         abas.addTab("Veículos", painelVeiculos);

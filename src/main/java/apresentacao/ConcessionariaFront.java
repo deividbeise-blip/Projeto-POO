@@ -24,17 +24,19 @@ import dominio.modelo.Cliente;
 import dominio.modelo.Pagamento;
 import dominio.modelo.Veiculo;
 import dominio.modelo.Vendedor;
+import aplicacao.dto.DadosCartao;
+import aplicacao.dto.DadosPagamento;
+import aplicacao.dto.DadosPix;
+import aplicacao.dto.DadosVenda;
+import aplicacao.servico.ClienteService;
+import aplicacao.servico.VeiculoService;
 import aplicacao.servico.VendaService;
-import dominio.repositorio.ClienteRepository;
-import dominio.repositorio.VeiculoRepository;
-import dominio.repositorio.VendedorRepository;
 
 public class ConcessionariaFront extends JPanel {
 
     private final VendaService vendaService;
-    private final ClienteRepository clienteRepository;
-    private final VeiculoRepository veiculoRepository;
-    private final VendedorRepository vendedorRepository;
+    private final ClienteService clienteService;
+    private final VeiculoService veiculoService;
 
     private JComboBox<Cliente> comboClientes;
 
@@ -58,13 +60,11 @@ public class ConcessionariaFront extends JPanel {
     private JPanel painelFormasDinamico;
 
     public ConcessionariaFront(VendaService vendaService,
-                               ClienteRepository clienteRepository,
-                               VeiculoRepository veiculoRepository,
-                               VendedorRepository vendedorRepository) {
+                               ClienteService clienteService,
+                               VeiculoService veiculoService) {
         this.vendaService = vendaService;
-        this.clienteRepository = clienteRepository;
-        this.veiculoRepository = veiculoRepository;
-        this.vendedorRepository = vendedorRepository;
+        this.clienteService = clienteService;
+        this.veiculoService = veiculoService;
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
@@ -80,9 +80,9 @@ public class ConcessionariaFront extends JPanel {
      */
     public void atualizarDados() {
         comboClientes.setModel(new DefaultComboBoxModel<>(
-                clienteRepository.listar().toArray(new Cliente[0])));
+                clienteService.listar().toArray(new Cliente[0])));
         comboVendedores.setModel(new DefaultComboBoxModel<>(
-                vendedorRepository.listar().toArray(new Vendedor[0])));
+                vendaService.listarVendedores().toArray(new Vendedor[0])));
         recarregarVeiculos();
     }
 
@@ -90,7 +90,7 @@ public class ConcessionariaFront extends JPanel {
         JPanel painel = new JPanel(new GridLayout(1, 2, 5, 5));
         painel.setBorder(BorderFactory.createTitledBorder("Cliente"));
 
-        List<Cliente> clientes = clienteRepository.listar();
+        List<Cliente> clientes = clienteService.listar();
         comboClientes = new JComboBox<>(clientes.toArray(new Cliente[0]));
 
         painel.add(new JLabel("Cliente:"));
@@ -107,10 +107,10 @@ public class ConcessionariaFront extends JPanel {
         JPanel painelSelecao = new JPanel(new GridLayout(2, 2, 5, 5));
         painelSelecao.setBorder(BorderFactory.createTitledBorder("Veículo e Vendedor"));
 
-        List<Veiculo> veiculosDisponiveis = veiculoRepository.listarDisponiveis();
+        List<Veiculo> veiculosDisponiveis = veiculoService.listarDisponiveis();
         comboVeiculos = new JComboBox<>(veiculosDisponiveis.toArray(new Veiculo[0]));
 
-        List<Vendedor> vendedores = vendedorRepository.listar();
+        List<Vendedor> vendedores = vendaService.listarVendedores();
         comboVendedores = new JComboBox<>(vendedores.toArray(new Vendedor[0]));
 
         painelSelecao.add(new JLabel("Veículo:"));
@@ -208,16 +208,20 @@ public class ConcessionariaFront extends JPanel {
                 return;
             }
 
-            Pagamento pagamento;
+            DadosPagamento dadosPagamento;
             if ("PIX".equals(comboFormaPagamento.getSelectedItem())) {
-                pagamento = vendaService.venderComPix(cliente, vendedor, veiculo,
+                dadosPagamento = new DadosPix(
                         campoChavePix.getText(), (String) comboTipoChave.getSelectedItem());
             } else {
-                pagamento = vendaService.venderComCartao(cliente, vendedor, veiculo,
+                dadosPagamento = new DadosCartao(
                         campoNumeroCartao.getText(), campoNomeTitular.getText(),
                         campoValidade.getText(), campoCvv.getText(),
                         (int) spinnerParcelas.getValue());
             }
+
+            DadosVenda dados = new DadosVenda(cliente.getId_cliente(), vendedor.getId_vendedor(),
+                    veiculo.getId_veiculo(), dadosPagamento);
+            Pagamento pagamento = vendaService.vender(dados);
 
             JOptionPane.showMessageDialog(this,
                     "Venda realizada com sucesso!\n" + pagamento.obterReciboDetalhado(),
@@ -249,7 +253,7 @@ public class ConcessionariaFront extends JPanel {
     // sempre refletir status atualizados (ex.: um que foi para manutenção).
     private void recarregarVeiculos() {
         comboVeiculos.setModel(new DefaultComboBoxModel<>(
-                veiculoRepository.listarDisponiveis().toArray(new Veiculo[0])));
+                veiculoService.listarDisponiveis().toArray(new Veiculo[0])));
     }
 
     private void limparFormulario() {

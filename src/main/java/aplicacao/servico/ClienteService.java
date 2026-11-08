@@ -1,5 +1,7 @@
 package aplicacao.servico;
 
+import java.util.List;
+
 import dominio.modelo.Cliente;
 import dominio.repositorio.ClienteRepository;
 
@@ -15,5 +17,9 @@ public class ClienteService {
         Cliente cliente = new Cliente(nome, cpf, email, telefone);
         clienteRepository.salvar(cliente);
         return cliente;
+    }
+
+    public List<Cliente> listar() {
+        return clienteRepository.listar();
     }
 }

@@ -19,14 +19,10 @@ import dominio.modelo.Concessionaria;
 import dominio.modelo.StatusVeiculo;
 import dominio.modelo.Veiculo;
 import aplicacao.servico.VeiculoService;
-import dominio.repositorio.ConcessionariaRepository;
-import dominio.repositorio.VeiculoRepository;
 
 public class VeiculoFront extends JPanel {
 
     private final VeiculoService veiculoService;
-    private final VeiculoRepository veiculoRepository;
-    private final ConcessionariaRepository concessionariaRepository;
 
     // Cadastro
     private JTextField campoMarca;
@@ -43,12 +39,8 @@ public class VeiculoFront extends JPanel {
     private JComboBox<StatusVeiculo> comboNovoStatus;
     private JButton botaoAtualizar;
 
-    public VeiculoFront(VeiculoService veiculoService,
-                        VeiculoRepository veiculoRepository,
-                        ConcessionariaRepository concessionariaRepository) {
+    public VeiculoFront(VeiculoService veiculoService) {
         this.veiculoService = veiculoService;
-        this.veiculoRepository = veiculoRepository;
-        this.concessionariaRepository = concessionariaRepository;
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
@@ -66,7 +58,7 @@ public class VeiculoFront extends JPanel {
      */
     public void atualizarDados() {
         comboConcessionaria.setModel(new DefaultComboBoxModel<>(
-                concessionariaRepository.listar().toArray(new Concessionaria[0])));
+                veiculoService.listarConcessionarias().toArray(new Concessionaria[0])));
         recarregarVeiculos();
     }
 
@@ -83,7 +75,7 @@ public class VeiculoFront extends JPanel {
         campoPreco = new JTextField();
         comboMoto = new JComboBox<>(new String[]{"Não", "Sim"});
 
-        List<Concessionaria> concessionarias = concessionariaRepository.listar();
+        List<Concessionaria> concessionarias = veiculoService.listarConcessionarias();
         comboConcessionaria = new JComboBox<>(concessionarias.toArray(new Concessionaria[0]));
 
         painel.add(new JLabel("Marca:"));
@@ -192,7 +184,7 @@ public class VeiculoFront extends JPanel {
         JPanel painel = new JPanel(new GridLayout(1, 2, 8, 8));
         painel.setBorder(BorderFactory.createTitledBorder("Selecionar Veículo"));
 
-        List<Veiculo> veiculos = veiculoRepository.listarTodos();
+        List<Veiculo> veiculos = veiculoService.listarTodos();
         comboVeiculos = new JComboBox<>(veiculos.toArray(new Veiculo[0]));
         comboVeiculos.addActionListener(e -> atualizarPainelStatus());
 
@@ -276,7 +268,7 @@ public class VeiculoFront extends JPanel {
     // O veículo cadastrado/atualizado precisa refletir na lista de seleção
     private void recarregarVeiculos() {
         comboVeiculos.setModel(new DefaultComboBoxModel<>(
-                veiculoRepository.listarTodos().toArray(new Veiculo[0])));
+                veiculoService.listarTodos().toArray(new Veiculo[0])));
         atualizarPainelStatus();
     }
 }
