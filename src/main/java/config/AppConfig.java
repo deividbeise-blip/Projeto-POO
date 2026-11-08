@@ -1,5 +1,11 @@
 package config;
 
+import aplicacao.dto.DadosCartao;
+import aplicacao.dto.DadosPagamento;
+import aplicacao.dto.DadosPix;
+import aplicacao.pagamento.FormaPagamento;
+import aplicacao.pagamento.FormaPagamentoCartao;
+import aplicacao.pagamento.FormaPagamentoPix;
 import aplicacao.servico.ClienteService;
 import aplicacao.servico.VeiculoService;
 import aplicacao.servico.VendaService;
@@ -9,7 +15,6 @@ import dominio.repositorio.PagamentoRepository;
 import dominio.repositorio.VeiculoRepository;
 import dominio.repositorio.VendaRepository;
 import dominio.repositorio.VendedorRepository;
-import aplicacao.Transacao;
 import infra.conexao.ConexaoBanco;
 import infra.conexao.TransacaoJdbc;
 import infra.dao.ClienteDAO;
@@ -20,6 +25,8 @@ import infra.dao.PagamentoPixDAO;
 import infra.dao.VeiculoDAO;
 import infra.dao.VendaDAO;
 import infra.dao.VendedorDAO;
+
+import java.util.Map;
 
 /**
  * Único lugar do sistema que conhece as implementações concretas (DAOs).
@@ -37,16 +44,20 @@ public class AppConfig {
     private final VendaRepository vendaRepository = new VendaDAO(transacao);
     private final PagamentoRepository pagamentoRepository = new PagamentoDAO(transacao);
 
+    // Formas de pagamento aceitas: para uma nova, basta registrar mais uma linha aqui.
+    private final Map<Class<? extends DadosPagamento>, FormaPagamento<?, ?>> formasPagamento = Map.of(
+            DadosPix.class, new FormaPagamentoPix(new PagamentoPixDAO(transacao)),
+            DadosCartao.class, new FormaPagamentoCartao(new PagamentoCartaoDAO(transacao)));
+
     private final ClienteService clienteService = new ClienteService(clienteRepository);
     private final VeiculoService veiculoService = new VeiculoService(veiculoRepository, concessionariaRepository);
     private final VendaService vendaService = new VendaService(
             clienteRepository,
+            vendedorRepository,
+            veiculoRepository,
             vendaRepository,
             pagamentoRepository,
-            new PagamentoPixDAO(transacao),
-            new PagamentoCartaoDAO(transacao),
-            veiculoRepository,
-            vendedorRepository,
+            formasPagamento,
             transacao);
 
     public ClienteService clienteService() { return clienteService; }
