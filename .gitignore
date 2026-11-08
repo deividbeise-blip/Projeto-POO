@@ -4,3 +4,4 @@ target/
 *.zip
 .vscode/
 tudo_junto.txt
+*.bat
