@@ -2,4 +2,5 @@ target/
 *.class
 .env
 *.zip
+.vscode/
 tudo_junto.txt
