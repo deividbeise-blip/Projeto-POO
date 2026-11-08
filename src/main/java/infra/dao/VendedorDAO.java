@@ -1,94 +1,61 @@
 package infra.dao;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.List;
 
-import infra.conexao.ConexaoBanco;
-import dominio.repositorio.VendedorRepository;
 import dominio.modelo.Concessionaria;
 import dominio.modelo.Vendedor;
+import dominio.repositorio.VendedorRepository;
+import infra.conexao.ConnectionFactory;
 
 public class VendedorDAO implements VendedorRepository {
 
-    public void salvar(Vendedor vendedor) {
+    private final ExecutorSql executor;
 
+    public VendedorDAO(ConnectionFactory connectionFactory) {
+        this.executor = new ExecutorSql(connectionFactory);
+    }
+
+    public void salvar(Vendedor vendedor) {
         // A coluna no banco é "concessionario_vendedor" (sem "a"), não "concessionaria_vendedor".
-        String sql = """
+        long id = executor.inserir(
+                """
                 INSERT INTO vendedor
                 (name_vendedor, cpf_vendedor, comissao_percentual, concessionario_vendedor)
                 VALUES (?, ?, ?, ?)
-                """;
-
-        try (Connection conexao = ConexaoBanco.conectar();
-             PreparedStatement comando = conexao.prepareStatement(
-                     sql,
-                     Statement.RETURN_GENERATED_KEYS)) {
-
-            comando.setString(1, vendedor.getName());
-            comando.setString(2, vendedor.getCpf());
-            comando.setDouble(3, vendedor.getComissaoPercentual());
-            comando.setLong(4, vendedor.getConcessionaria().getId_concessionaria());
-
-            comando.executeUpdate();
-
-            try (ResultSet resultado = comando.getGeneratedKeys()) {
-                if (resultado.next()) {
-                    vendedor.setId_vendedor(resultado.getLong(1));
-                }
-            }
-
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao salvar Vendedor no banco.", e);
-        }
+                """,
+                comando -> {
+                    comando.setString(1, vendedor.getName());
+                    comando.setString(2, vendedor.getCpf());
+                    comando.setDouble(3, vendedor.getComissaoPercentual());
+                    comando.setLong(4, vendedor.getConcessionaria().getId_concessionaria());
+                },
+                "Erro ao salvar Vendedor no banco.");
+        vendedor.setId_vendedor(id);
     }
 
-    public void atualizar(Vendedor vendedor, String atributo, String novoValor) {
-        String sql = "UPDATE vendedor SET " + atributo + " = ? WHERE id_vendedor = ?";
-
-        try (Connection conexao = ConexaoBanco.conectar();
-             PreparedStatement comando = conexao.prepareStatement(sql)) {
-
-            comando.setString(1, novoValor);
-            comando.setLong(2, vendedor.getId_vendedor());
-
-            comando.executeUpdate();
-
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao atualizar vendedor no banco.", e);
-        }
-    }
-
+    @Override
     public List<Vendedor> listar() {
-        String sql = "SELECT * FROM vendedor";
-        List<Vendedor> vendedores = new ArrayList<>();
+        // Uma consulta só: o JOIN traz a concessionária junto, sem consulta extra por linha.
+        return executor.consultar(
+                """
+                SELECT v.id_vendedor, v.name_vendedor, v.cpf_vendedor, v.comissao_percentual,
+                       c.id_concessionaria, c.name_concessionaria, c.address_concessionaria
+                FROM vendedor v
+                JOIN concessionaria c ON c.id_concessionaria = v.concessionario_vendedor
+                """,
+                resultado -> {
+                    Concessionaria concessionaria = new Concessionaria(
+                            resultado.getLong("id_concessionaria"),
+                            resultado.getString("name_concessionaria"),
+                            resultado.getString("address_concessionaria"));
 
-        try (Connection conexao = ConexaoBanco.conectar();
-             PreparedStatement comando = conexao.prepareStatement(sql);
-             ResultSet resultado = comando.executeQuery()) {
-
-            ConcessionariaDAO concessionariaDAO = new ConcessionariaDAO();
-
-            while (resultado.next()) {
-                Concessionaria concessionaria = concessionariaDAO.buscarPorId(resultado.getLong("concessionario_vendedor"));
-
-                Vendedor vendedor = new Vendedor(
-                        resultado.getLong("id_vendedor"),
-                        resultado.getString("name_vendedor"),
-                        resultado.getString("cpf_vendedor"),
-                        resultado.getDouble("comissao_percentual"),
-                        concessionaria
-                );
-                vendedores.add(vendedor);
-            }
-
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao listar vendedores.", e);
-        }
-
-        return vendedores;
+                    return new Vendedor(
+                            resultado.getLong("id_vendedor"),
+                            resultado.getString("name_vendedor"),
+                            resultado.getString("cpf_vendedor"),
+                            resultado.getDouble("comissao_percentual"),
+                            concessionaria);
+                },
+                "Erro ao listar vendedores.");
     }
 }
