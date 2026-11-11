@@ -224,7 +224,7 @@ public class ConcessionariaFront extends JPanel {
             Pagamento pagamento = vendaService.vender(dados);
 
             JOptionPane.showMessageDialog(this,
-                    "Venda realizada com sucesso!\n" + pagamento.obterReciboDetalhado(),
+                    "Venda realizada com sucesso!\n" + pagamento.getVenda().obterRecibo(),
                     "Sucesso", JOptionPane.INFORMATION_MESSAGE);
 
             limparFormulario();

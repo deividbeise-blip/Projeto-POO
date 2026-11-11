@@ -69,6 +69,16 @@ public class Venda {
         return vendedor.calcularComissao(valorFinal, politicaComissao());
     }
 
+    /** Recibo da venda: o recibo do pagamento + o vendedor e a sua comissão. */
+    public String obterRecibo() {
+        if (pagamento == null) {
+            throw new IllegalStateException("A venda ainda não tem pagamento registrado.");
+        }
+        return pagamento.obterReciboDetalhado() + "\n" +
+                "Vendedor: " + vendedor.getNome() + "\n" +
+                "Comissão do vendedor: R$ " + String.format("%.2f", calcularComissao());
+    }
+
     /** Único ponto que escolhe a regra de comissão pelo tipo do veículo. */
     private PoliticaComissao politicaComissao() {
         return veiculo.isMoto() ? new ComissaoMoto() : new ComissaoCarro();
