@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import dominio.excecao.VeiculoIndisponivelException;
 
 public class Veiculo {
+    public static final int ANO_MINIMO = 1900;
+
     private Long idVeiculo; // AUTO_INCREMENT
     private final String marca;
     private final String modelo;
@@ -25,7 +27,7 @@ public class Veiculo {
         if (modelo == null || modelo.isBlank()) {
             throw new IllegalArgumentException("Modelo é obrigatório.");
         }
-        if (ano == null || ano < 1900 || ano > LocalDate.now().getYear() + 1) {
+        if (ano == null || ano < ANO_MINIMO || ano > LocalDate.now().getYear() + 1) {
             throw new IllegalArgumentException("Ano inválido.");
         }
         validarPlaca(placa);
