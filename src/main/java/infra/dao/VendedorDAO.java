@@ -34,13 +34,13 @@ public class VendedorDAO implements VendedorRepository {
                 VALUES (?, ?, ?, ?)
                 """,
                 comando -> {
-                    comando.setString(1, vendedor.getName());
+                    comando.setString(1, vendedor.getNome());
                     comando.setString(2, vendedor.getCpf());
                     comando.setDouble(3, vendedor.getComissaoPercentual());
-                    comando.setLong(4, vendedor.getConcessionaria().getId_concessionaria());
+                    comando.setLong(4, vendedor.getConcessionaria().getIdConcessionaria());
                 },
                 "Erro ao salvar Vendedor no banco.");
-        vendedor.setId_vendedor(id);
+        vendedor.setIdVendedor(id);
     }
 
     @Override

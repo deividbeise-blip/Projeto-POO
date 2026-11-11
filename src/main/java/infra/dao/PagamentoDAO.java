@@ -29,11 +29,11 @@ public class PagamentoDAO implements PagamentoRepository {
                     comando.setString(1, paraColunaEnum(pagamento.getFormaPagamento()));
                     comando.setDouble(2, pagamento.getValorPago());
                     comando.setDate(3, Date.valueOf(pagamento.getDataPagamento()));
-                    comando.setLong(4, venda.getCliente().getId_cliente());
-                    comando.setLong(5, venda.getVeiculo().getId_veiculo());
+                    comando.setLong(4, venda.getCliente().getIdCliente());
+                    comando.setLong(5, venda.getVeiculo().getIdVeiculo());
                 },
                 "Erro ao salvar pagamento no banco.");
-        pagamento.setId_pagamento(id);
+        pagamento.setIdPagamento(id);
     }
 
     /**

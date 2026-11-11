@@ -25,14 +25,14 @@ public class VendaDAO implements VendaRepository {
                 """,
                 comando -> {
                     comando.setDate(1, Date.valueOf(venda.getDataVenda()));
-                    comando.setLong(2, venda.getCliente().getId_cliente());
-                    comando.setLong(3, venda.getVeiculo().getId_veiculo());
-                    comando.setLong(4, venda.getVendedor().getId_vendedor());
+                    comando.setLong(2, venda.getCliente().getIdCliente());
+                    comando.setLong(3, venda.getVeiculo().getIdVeiculo());
+                    comando.setLong(4, venda.getVendedor().getIdVendedor());
                     // O pagamento ainda não existe neste momento; é preenchido em atualizarPagamento().
                     comando.setNull(5, Types.BIGINT);
                 },
                 "Erro ao salvar venda no banco.");
-        venda.setId_venda(id);
+        venda.setIdVenda(id);
     }
 
     /** Liga a venda ao pagamento depois que o pagamento já foi gravado. */
@@ -41,8 +41,8 @@ public class VendaDAO implements VendaRepository {
         executor.atualizar(
                 "UPDATE venda SET pagamento_venda = ? WHERE id_venda = ?",
                 comando -> {
-                    comando.setLong(1, venda.getPagamento().getId_pagamento());
-                    comando.setLong(2, venda.getId_venda());
+                    comando.setLong(1, venda.getPagamento().getIdPagamento());
+                    comando.setLong(2, venda.getIdVenda());
                 },
                 "Erro ao atualizar pagamento da venda no banco.");
     }

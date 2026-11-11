@@ -6,7 +6,7 @@ import dominio.excecao.VendaInvalidaException;
 import java.time.LocalDate;
 
 public class Venda {
-    private Long id_venda;
+    private Long idVenda;
     private final Cliente cliente;
     private final Vendedor vendedor;
     private final Veiculo veiculo;
@@ -43,15 +43,15 @@ public class Venda {
         this.valorFinal = pagamento.getValorPago();
     }
 
-    public Long getId_venda() {
-        return id_venda;
+    public Long getIdVenda() {
+        return idVenda;
     }
 
-    public void setId_venda(Long id) {
-        if (this.id_venda != null) {
+    public void setIdVenda(Long id) {
+        if (this.idVenda != null) {
             throw new IllegalStateException("O ID da venda já foi definido.");
         }
-        this.id_venda = id;
+        this.idVenda = id;
     }
 
     public Pagamento getPagamento() { return pagamento; }

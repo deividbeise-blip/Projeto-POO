@@ -1,53 +1,53 @@
 package dominio.modelo;
 
 public class Cliente {
-    private Long id_cliente;
-    private final String name_cliente;
-    private final String cpf_cliente;
-    private final String email_cliente;
-    private final String phone_cliente;
+    private Long idCliente;
+    private final String nome;
+    private final String cpf;
+    private final String email;
+    private final String telefone;
 
-    public Cliente(String name_cliente, String cpf_cliente, String email_cliente, String phone_cliente) {
-        if (name_cliente == null || name_cliente.isBlank()) {
+    public Cliente(String nome, String cpf, String email, String telefone) {
+        if (nome == null || nome.isBlank()) {
             throw new IllegalArgumentException("Nome do cliente é obrigatório.");
         }
-        String cpf = cpf_cliente == null ? "" : cpf_cliente.replaceAll("\\D", "");
-        if (cpf.length() != 11) {
+        String cpfNormalizado = cpf == null ? "" : cpf.replaceAll("\\D", "");
+        if (cpfNormalizado.length() != 11) {
             throw new IllegalArgumentException("CPF deve conter 11 dígitos.");
         }
-        if (email_cliente == null || !email_cliente.trim().matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+        if (email == null || !email.trim().matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
             throw new IllegalArgumentException("E-mail inválido.");
         }
-        String telefone = phone_cliente == null ? "" : phone_cliente.replaceAll("\\D", "");
-        if (telefone.length() < 10 || telefone.length() > 11) {
+        String telefoneNormalizado = telefone == null ? "" : telefone.replaceAll("\\D", "");
+        if (telefoneNormalizado.length() < 10 || telefoneNormalizado.length() > 11) {
             throw new IllegalArgumentException("Telefone deve ter DDD + número (10 ou 11 dígitos).");
         }
 
-        this.name_cliente = name_cliente.trim();
-        this.cpf_cliente = cpf;
-        this.email_cliente = email_cliente.trim();
-        this.phone_cliente = telefone;
+        this.nome = nome.trim();
+        this.cpf = cpfNormalizado;
+        this.email = email.trim();
+        this.telefone = telefoneNormalizado;
     }
 
-    public Long getId_cliente() {
-        return id_cliente;
+    public Long getIdCliente() {
+        return idCliente;
     }
 
     /** O ID é gerado pelo banco e só pode ser definido uma vez (pelo DAO após o INSERT). */
-    public void setId_cliente(Long id) {
-        if (this.id_cliente != null) {
+    public void setIdCliente(Long id) {
+        if (this.idCliente != null) {
             throw new IllegalStateException("O ID do cliente já foi definido.");
         }
-        this.id_cliente = id;
+        this.idCliente = id;
     }
 
-    public String getName_cliente() { return name_cliente; }
-    public String getCpf_cliente() { return cpf_cliente; }
-    public String getEmail_cliente() { return email_cliente; }
-    public String getPhone_cliente() { return phone_cliente; }
+    public String getNome() { return nome; }
+    public String getCpf() { return cpf; }
+    public String getEmail() { return email; }
+    public String getTelefone() { return telefone; }
 
     @Override
     public String toString() {
-        return name_cliente + " - " + cpf_cliente + " - " + email_cliente + " - " + phone_cliente;
+        return nome + " - " + cpf + " - " + email + " - " + telefone;
     }
 }

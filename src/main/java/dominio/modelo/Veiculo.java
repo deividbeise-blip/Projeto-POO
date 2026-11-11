@@ -5,7 +5,7 @@ import java.time.LocalDate;
 import dominio.excecao.VeiculoIndisponivelException;
 
 public class Veiculo {
-    private Long id_veiculo; // AUTO_INCREMENT
+    private Long idVeiculo; // AUTO_INCREMENT
     private final String marca;
     private final String modelo;
     private final Integer ano;
@@ -52,10 +52,10 @@ public class Veiculo {
     }
 
     // Construtor DE CARGA: usado pelo VeiculoDAO ao ler um registro existente.
-    public Veiculo(Long id_veiculo, String marca, String modelo, Integer ano, String placa, Double preco,
+    public Veiculo(Long idVeiculo, String marca, String modelo, Integer ano, String placa, Double preco,
                    StatusVeiculo status, Concessionaria concessionaria, Boolean moto, Boolean vendido) {
         this(marca, modelo, ano, placa, preco, status, concessionaria, moto, vendido);
-        this.id_veiculo = id_veiculo;
+        this.idVeiculo = idVeiculo;
     }
 
     private static void validarPlaca(String placa) {
@@ -70,15 +70,15 @@ public class Veiculo {
         }
     }
 
-    public Long getId_veiculo() {
-        return id_veiculo;
+    public Long getIdVeiculo() {
+        return idVeiculo;
     }
 
-    public void setId_veiculo(Long id) {
-        if (this.id_veiculo != null) {
+    public void setIdVeiculo(Long id) {
+        if (this.idVeiculo != null) {
             throw new IllegalStateException("O ID do veículo já foi definido.");
         }
-        this.id_veiculo = id;
+        this.idVeiculo = id;
     }
 
     public String getMarca() { return marca; }

@@ -23,13 +23,13 @@ public class ClienteDAO implements ClienteRepository {
         long id = executor.inserir(
                 "INSERT INTO cliente (name_cliente, cpf, email, phone) VALUES (?, ?, ?, ?)",
                 comando -> {
-                    comando.setString(1, cliente.getName_cliente());
-                    comando.setString(2, cliente.getCpf_cliente());
-                    comando.setString(3, cliente.getEmail_cliente());
-                    comando.setString(4, cliente.getPhone_cliente());
+                    comando.setString(1, cliente.getNome());
+                    comando.setString(2, cliente.getCpf());
+                    comando.setString(3, cliente.getEmail());
+                    comando.setString(4, cliente.getTelefone());
                 },
                 "Erro ao salvar cliente no banco.");
-        cliente.setId_cliente(id);
+        cliente.setIdCliente(id);
     }
 
     @Override
@@ -56,7 +56,7 @@ public class ClienteDAO implements ClienteRepository {
                 resultado.getString("cpf"),
                 resultado.getString("email"),
                 resultado.getString("phone"));
-        cliente.setId_cliente(resultado.getLong("id_cliente"));
+        cliente.setIdCliente(resultado.getLong("id_cliente"));
         return cliente;
     }
 }

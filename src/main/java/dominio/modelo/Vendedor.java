@@ -3,15 +3,15 @@ package dominio.modelo;
 public class Vendedor {
     private static final double REDUCAO_COMISSAO_MOTO = 3;
 
-    private Long id_vendedor;
-    private final String name;
+    private Long idVendedor;
+    private final String nome;
     private final String cpf;
     private final Double comissaoPercentual;
     private final Concessionaria concessionaria;
 
     // Construtor de CADASTRO (sem id): valida os dados. Quem grava no banco é o DAO/serviço.
-    public Vendedor(String name, String cpf, Double comissaoPercentual, Concessionaria concessionaria) {
-        if (name == null || name.isBlank()) {
+    public Vendedor(String nome, String cpf, Double comissaoPercentual, Concessionaria concessionaria) {
+        if (nome == null || nome.isBlank()) {
             throw new IllegalArgumentException("Nome do vendedor é obrigatório.");
         }
         if (cpf == null || cpf.isBlank()) {
@@ -23,30 +23,30 @@ public class Vendedor {
         if (concessionaria == null) {
             throw new IllegalArgumentException("O vendedor precisa pertencer a uma concessionária.");
         }
-        this.name = name.trim();
+        this.nome = nome.trim();
         this.cpf = cpf.trim();
         this.comissaoPercentual = comissaoPercentual;
         this.concessionaria = concessionaria;
     }
 
     // Construtor DE CARGA (com id, vindo do banco)
-    public Vendedor(Long id_vendedor, String name, String cpf, Double comissaoPercentual, Concessionaria concessionaria) {
-        this(name, cpf, comissaoPercentual, concessionaria);
-        this.id_vendedor = id_vendedor;
+    public Vendedor(Long idVendedor, String nome, String cpf, Double comissaoPercentual, Concessionaria concessionaria) {
+        this(nome, cpf, comissaoPercentual, concessionaria);
+        this.idVendedor = idVendedor;
     }
 
-    public Long getId_vendedor() {
-        return id_vendedor;
+    public Long getIdVendedor() {
+        return idVendedor;
     }
 
-    public void setId_vendedor(Long id) {
-        if (this.id_vendedor != null) {
+    public void setIdVendedor(Long id) {
+        if (this.idVendedor != null) {
             throw new IllegalStateException("O ID do vendedor já foi definido.");
         }
-        this.id_vendedor = id;
+        this.idVendedor = id;
     }
 
-    public String getName() { return name; }
+    public String getNome() { return nome; }
     public String getCpf() { return cpf; }
     public Double getComissaoPercentual() { return comissaoPercentual; }
     public Concessionaria getConcessionaria() { return concessionaria; }
@@ -60,11 +60,11 @@ public class Vendedor {
     }
 
     public boolean validarVendedor() {
-        return name != null && cpf != null && comissaoPercentual > 0;
+        return nome != null && cpf != null && comissaoPercentual > 0;
     }
 
     @Override
     public String toString() {
-        return name;
+        return nome;
     }
 }

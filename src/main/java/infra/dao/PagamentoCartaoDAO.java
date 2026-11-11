@@ -38,9 +38,9 @@ public class PagamentoCartaoDAO implements DetalhePagamentoRepository<PagamentoC
                     comando.setString(4, pagamentoCartao.getCvv());
                     comando.setInt(5, pagamentoCartao.getNumeroParcelas());
                     comando.setDouble(6, pagamentoCartao.getValorParcela());
-                    comando.setLong(7, pagamentoCartao.getId_pagamento());
+                    comando.setLong(7, pagamentoCartao.getIdPagamento());
                 },
                 "Erro ao salvar pagamento no cartão no banco.");
-        pagamentoCartao.setId_PagamentoCartao(id);
+        pagamentoCartao.setIdPagamentoCartao(id);
     }
 }
