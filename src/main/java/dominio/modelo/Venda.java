@@ -85,11 +85,9 @@ public class Venda {
     }
 
     public boolean validarVenda() {
-        return cliente != null
-                && veiculo != null
-                && vendedor != null
-                && dataVenda != null
-                && pagamento != null
+        // cliente, vendedor, veículo e data já são garantidos pelo construtor;
+        // o pagamento não, porque é ligado depois por registrarPagamento().
+        return pagamento != null
                 && valorFinal > 0
                 && vendedor.validarVendedor()
                 && pagamento.validarPagamento();

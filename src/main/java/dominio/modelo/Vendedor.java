@@ -57,7 +57,7 @@ public class Vendedor {
     }
 
     public boolean validarVendedor() {
-        return nome != null && cpf != null && comissaoPercentual > 0;
+        return comissaoPercentual > 0;
     }
 
     @Override
