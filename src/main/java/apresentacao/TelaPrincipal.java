@@ -1,5 +1,6 @@
 package apresentacao;
 
+import apresentacao.comum.BarraStatus;
 import apresentacao.estilo.Componentes;
 import apresentacao.estilo.Tema;
 import com.formdev.flatlaf.FlatLightLaf;
@@ -41,6 +42,7 @@ public class TelaPrincipal extends JFrame {
         conteudo.add(telas, BorderLayout.CENTER);
         add(criarMenu(), BorderLayout.WEST);
         add(conteudo, BorderLayout.CENTER);
+        add(new BarraStatus(), BorderLayout.SOUTH);
         atualizarSelecao("Clientes");
     }
 

@@ -75,7 +75,7 @@ public final class Componentes {
     public static JPanel painelCartao(String texto) {
         JPanel painel = new JPanel(new BorderLayout(0, Tema.MEDIO));
         painel.setBackground(Tema.SUPERFICIE);
-        painel.setBorder(new CompoundBorder(new LineBorder(new Color(221, 228, 237), 1, true),
+        painel.setBorder(new CompoundBorder(new LineBorder(Tema.BORDA, 1, true),
                 BorderFactory.createEmptyBorder(Tema.GRANDE, Tema.GRANDE, Tema.GRANDE, Tema.GRANDE)));
         JLabel titulo = rotulo(texto);
         titulo.setFont(Tema.SUBTITULO);
