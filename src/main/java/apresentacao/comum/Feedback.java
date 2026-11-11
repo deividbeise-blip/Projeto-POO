@@ -3,8 +3,14 @@ package apresentacao.comum;
 import dominio.excecao.VeiculoIndisponivelException;
 import dominio.excecao.VendaInvalidaException;
 import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import javax.swing.AbstractAction;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
+import javax.swing.JRootPane;
+import javax.swing.KeyStroke;
 
 /**
  * Jeito único de avisar o usuário: sucesso na barra de status, erro e confirmação em diálogo.
@@ -19,6 +25,7 @@ public final class Feedback {
 
     private static final String SIM = "Sim";
     private static final String NAO = "Não";
+    private static final String ACAO_FECHAR = "Feedback.fechar";
 
     private Feedback() { }
 
@@ -82,9 +89,18 @@ public final class Feedback {
                 || erro instanceof VendaInvalidaException;
     }
 
-    /** Cria e mostra o diálogo (modal) do painel. */
+    /** Cria e mostra o diálogo (modal) do painel. Esc fecha (em {@link #confirmar} conta como "Não"). */
     private static void mostrar(Component origem, JOptionPane painel, String titulo) {
         JDialog dialogo = painel.createDialog(origem, titulo);
+        JRootPane raiz = dialogo.getRootPane();
+        raiz.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), ACAO_FECHAR);
+        raiz.getActionMap().put(ACAO_FECHAR, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                painel.setValue(JOptionPane.CLOSED_OPTION); // o próprio JOptionPane fecha o diálogo
+            }
+        });
         dialogo.setVisible(true);
         dialogo.dispose();
     }

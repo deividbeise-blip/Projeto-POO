@@ -1,13 +1,14 @@
 package apresentacao;
 
 import aplicacao.servico.ClienteService;
+import apresentacao.comum.TelaComBotaoPrincipal;
 import apresentacao.estilo.Componentes;
 import apresentacao.estilo.Tema;
 
 import javax.swing.*;
 import java.awt.*;
 
-public class ClienteFront extends JPanel {
+public class ClienteFront extends JPanel implements TelaComBotaoPrincipal {
 
     private final ClienteService clienteService;
 
@@ -15,6 +16,7 @@ public class ClienteFront extends JPanel {
     private JTextField campoCpf;
     private JTextField campoEmail;
     private JTextField campoTelefone;
+    private JButton botaoCadastrar;
 
     public ClienteFront(ClienteService clienteService) {
         this.clienteService = clienteService;
@@ -46,11 +48,21 @@ public class ClienteFront extends JPanel {
     private JPanel criarPainelBotao() {
         JPanel painel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         painel.setOpaque(false);
-        JButton botaoCadastrar = Componentes.botaoPrimario("Cadastrar cliente");
-        botaoCadastrar.setMnemonic('C');
+        botaoCadastrar = Componentes.botaoPrimario("Cadastrar cliente");
+        botaoCadastrar.setMnemonic('A'); // Alt+C é do item "Clientes" do menu
         botaoCadastrar.addActionListener(e -> cadastrarCliente());
         painel.add(botaoCadastrar);
         return painel;
+    }
+
+    /**
+     * O Enter nesta tela cadastra o cliente.
+     *
+     * @return o botão "Cadastrar cliente"
+     */
+    @Override
+    public JButton botaoPrincipal() {
+        return botaoCadastrar;
     }
 
     private void cadastrarCliente() {

@@ -1,12 +1,15 @@
 package apresentacao.estilo;
 
 import java.awt.*;
+import java.util.Map;
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.LineBorder;
 
 /** Fábrica de componentes visuais usados pelas telas. */
 public final class Componentes {
+    private static final int ALTURA_ITEM_MENU = 44;
+
     private Componentes() { }
 
     private static JButton botao(String texto, Color fundo, Color textoCor) {
@@ -22,6 +25,24 @@ public final class Componentes {
     public static JButton botaoPrimario(String texto) { return botao(texto, Tema.PRIMARIA, Color.WHITE); }
     public static JButton botaoSecundario(String texto) { return botao(texto, Tema.SUPERFICIE, Tema.PRIMARIA); }
     public static JButton botaoPerigo(String texto) { return botao(texto, Tema.ERRO, Color.WHITE); }
+
+    /**
+     * Item do menu lateral (fundo escuro). O anel de foco é claro para aparecer sobre o fundo
+     * do menu; a cor de fundo de cada item é definida por quem marca o item selecionado.
+     *
+     * @param texto  nome da tela
+     * @param atalho letra do atalho Alt+letra; precisa existir no texto e não se repetir no menu
+     * @return o botão do menu
+     */
+    public static JButton botaoMenu(String texto, char atalho) {
+        JButton botao = botao(texto, Tema.PRIMARIA, Tema.SUPERFICIE);
+        botao.setHorizontalAlignment(SwingConstants.LEFT);
+        botao.setAlignmentX(Component.LEFT_ALIGNMENT);
+        botao.setMaximumSize(new Dimension(Integer.MAX_VALUE, ALTURA_ITEM_MENU));
+        botao.setMnemonic(atalho);
+        botao.putClientProperty("FlatLaf.style", Map.of("focusColor", Tema.SUPERFICIE));
+        return botao;
+    }
 
     public static JTextField campoTexto() {
         JTextField campo = new JTextField(24);

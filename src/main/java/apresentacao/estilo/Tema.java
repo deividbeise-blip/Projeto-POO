@@ -32,6 +32,9 @@ public final class Tema {
     public static void aplicar() {
         UIManager.put("defaultFont", TEXTO_FONTE);
         UIManager.put("Component.focusColor", SECUNDARIA);
+        // O padrão do FlatLaf Light (focusWidth 0) quase não mostra o foco em botões com fundo próprio;
+        // um anel de 2px deixa visível quem está com o foco ao navegar pelo teclado.
+        UIManager.put("Component.focusWidth", 2);
         UIManager.put("Component.arc", 12);
         UIManager.put("Button.arc", 12);
         UIManager.put("TextComponent.arc", 10);
