@@ -51,7 +51,7 @@ public class Vendedor {
     public Double getComissaoPercentual() { return comissaoPercentual; }
     public Concessionaria getConcessionaria() { return concessionaria; }
 
-    public double caucularcomissao(double valorVenda, Veiculo veiculo) {
+    public double calcularComissao(double valorVenda, Veiculo veiculo) {
         double percentual = comissaoPercentual;
         if (veiculo.isMoto()) {
             percentual = Math.max(0, percentual - REDUCAO_COMISSAO_MOTO);

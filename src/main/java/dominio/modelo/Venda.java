@@ -62,8 +62,8 @@ public class Venda {
     public double getValorFinal() { return valorFinal; }
 
     // comissão do vendedor de acordo com o valor final da venda
-    public double getcomissao() {
-        return vendedor.caucularcomissao(valorFinal, veiculo);
+    public double calcularComissao() {
+        return vendedor.calcularComissao(valorFinal, veiculo);
     }
 
     public boolean validarVenda() {
