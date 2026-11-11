@@ -2,6 +2,9 @@ package dominio.modelo;
 
 import dominio.excecao.VeiculoIndisponivelException;
 import dominio.excecao.VendaInvalidaException;
+import dominio.politica.ComissaoCarro;
+import dominio.politica.ComissaoMoto;
+import dominio.politica.PoliticaComissao;
 
 import java.time.LocalDate;
 
@@ -63,7 +66,12 @@ public class Venda {
 
     // comissão do vendedor de acordo com o valor final da venda
     public double calcularComissao() {
-        return vendedor.calcularComissao(valorFinal, veiculo);
+        return vendedor.calcularComissao(valorFinal, politicaComissao());
+    }
+
+    /** Único ponto que escolhe a regra de comissão pelo tipo do veículo. */
+    private PoliticaComissao politicaComissao() {
+        return veiculo.isMoto() ? new ComissaoMoto() : new ComissaoCarro();
     }
 
     public boolean validarVenda() {
