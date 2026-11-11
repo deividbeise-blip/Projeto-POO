@@ -1,6 +1,6 @@
 package dominio.modelo;
 
-import dominio.politica.SemDesconto;
+import dominio.politica.PoliticaDesconto;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -20,8 +20,8 @@ public class PagamentoCartao extends Pagamento {
 
     public PagamentoCartao(Venda venda, double valorBase, LocalDate dataPagamento,
                            String numeroCartao, String nomeTitular, String validade,
-                           String cvv, int numeroParcelas) {
-        super(venda, "Cartão", valorBase, dataPagamento, new SemDesconto());
+                           String cvv, int numeroParcelas, PoliticaDesconto politicaDesconto) {
+        super(venda, "Cartão", valorBase, dataPagamento, politicaDesconto);
 
         if (numeroCartao == null || !numeroCartao.matches("\\d{16}")) {
             throw new IllegalArgumentException("Número de cartão inválido. Deve conter 16 dígitos.");

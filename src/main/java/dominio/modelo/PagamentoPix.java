@@ -1,6 +1,6 @@
 package dominio.modelo;
 
-import dominio.politica.DescontoPix;
+import dominio.politica.PoliticaDesconto;
 
 import java.time.LocalDate;
 
@@ -10,8 +10,8 @@ public class PagamentoPix extends Pagamento {
     private final String tipoChave; // CPF, CNPJ, E-mail, Telefone ou Aleatória
 
     public PagamentoPix(Venda venda, double valorBase, LocalDate dataPagamento,
-                        String chavePix, String tipoChave) {
-        super(venda, "PIX", valorBase, dataPagamento, new DescontoPix());
+                        String chavePix, String tipoChave, PoliticaDesconto politicaDesconto) {
+        super(venda, "PIX", valorBase, dataPagamento, politicaDesconto);
         if (chavePix == null || chavePix.isBlank()) {
             throw new IllegalArgumentException("Informe a chave PIX.");
         }
