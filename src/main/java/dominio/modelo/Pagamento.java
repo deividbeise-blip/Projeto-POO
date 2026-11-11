@@ -5,7 +5,7 @@ import dominio.politica.PoliticaDesconto;
 import java.time.LocalDate;
 
 public abstract class Pagamento {
-    private Long id_pagamento; // AUTO_INCREMENT
+    private Long idPagamento; // AUTO_INCREMENT
     private final Venda venda;
     private final String formaPagamento;
     private final Double valorPago;
@@ -38,15 +38,15 @@ public abstract class Pagamento {
         this.valorPago = politica.calcular(valorBase);
     }
 
-    public Long getId_pagamento() {
-        return id_pagamento;
+    public Long getIdPagamento() {
+        return idPagamento;
     }
 
-    public void setId_pagamento(Long id) {
-        if (this.id_pagamento != null) {
+    public void setIdPagamento(Long id) {
+        if (this.idPagamento != null) {
             throw new IllegalStateException("O ID do pagamento já foi definido.");
         }
-        this.id_pagamento = id;
+        this.idPagamento = id;
     }
 
     public Venda getVenda() { return venda; }
@@ -64,7 +64,7 @@ public abstract class Pagamento {
 
     public void exibirResumo() {
         System.out.println("Resumo do Pagamento:");
-        System.out.println("ID: " + id_pagamento);
+        System.out.println("ID: " + idPagamento);
         System.out.println("Forma de Pagamento: " + formaPagamento);
         System.out.println("Valor Pago: " + valorPago);
         System.out.println("Data do Pagamento: " + dataPagamento);

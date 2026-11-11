@@ -44,10 +44,10 @@ public class VeiculoDAO implements VeiculoRepository {
                     comando.setDouble(5, veiculo.getPreco());
                     comando.setString(6, paraColunaEnum(veiculo.getStatus()));
                     comando.setBoolean(7, veiculo.isMoto());
-                    comando.setLong(8, veiculo.getConcessionaria().getId_concessionaria());
+                    comando.setLong(8, veiculo.getConcessionaria().getIdConcessionaria());
                 },
                 "Erro ao salvar veículo no banco.");
-        veiculo.setId_veiculo(id);
+        veiculo.setIdVeiculo(id);
     }
 
     /**
@@ -60,7 +60,7 @@ public class VeiculoDAO implements VeiculoRepository {
                 "UPDATE veiculo SET status_veiculo = ? WHERE id_veiculo = ?",
                 comando -> {
                     comando.setString(1, paraColunaEnum(veiculo.getStatus()));
-                    comando.setLong(2, veiculo.getId_veiculo());
+                    comando.setLong(2, veiculo.getIdVeiculo());
                 },
                 "Erro ao atualizar status do veículo no banco.");
     }

@@ -5,7 +5,7 @@ import dominio.politica.DescontoPix;
 import java.time.LocalDate;
 
 public class PagamentoPix extends Pagamento {
-    private Long id_pagamentoPix; // AUTO_INCREMENT
+    private Long idPagamentoPix; // AUTO_INCREMENT
     private final String chavePix;
     private final String tipoChave; // CPF, CNPJ, E-mail, Telefone ou Aleatória
 
@@ -25,15 +25,15 @@ public class PagamentoPix extends Pagamento {
     public String getChavePix() { return chavePix; }
     public String getTipoChave() { return tipoChave; }
 
-    public Long getId_pagamentoPix() {
-        return id_pagamentoPix;
+    public Long getIdPagamentoPix() {
+        return idPagamentoPix;
     }
 
-    public void setId_pagamentoPix(Long id) {
-        if (this.id_pagamentoPix != null) {
+    public void setIdPagamentoPix(Long id) {
+        if (this.idPagamentoPix != null) {
             throw new IllegalStateException("O ID do pagamento PIX já foi definido.");
         }
-        this.id_pagamentoPix = id;
+        this.idPagamentoPix = id;
     }
 
     @Override

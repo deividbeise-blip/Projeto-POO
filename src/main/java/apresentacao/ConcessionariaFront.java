@@ -219,8 +219,8 @@ public class ConcessionariaFront extends JPanel {
                         (int) spinnerParcelas.getValue());
             }
 
-            DadosVenda dados = new DadosVenda(cliente.getId_cliente(), vendedor.getId_vendedor(),
-                    veiculo.getId_veiculo(), dadosPagamento);
+            DadosVenda dados = new DadosVenda(cliente.getIdCliente(), vendedor.getIdVendedor(),
+                    veiculo.getIdVeiculo(), dadosPagamento);
             Pagamento pagamento = vendaService.vender(dados);
 
             JOptionPane.showMessageDialog(this,

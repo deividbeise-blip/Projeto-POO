@@ -10,7 +10,7 @@ import java.time.format.DateTimeParseException;
 public class PagamentoCartao extends Pagamento {
     private static final DateTimeFormatter FORMATO_VALIDADE = DateTimeFormatter.ofPattern("MM/yy");
 
-    private Long id_PagamentoCartao;
+    private Long idPagamentoCartao;
     private final String numeroCartao;
     private final String nomeTitular;
     private final String validade;
@@ -56,15 +56,15 @@ public class PagamentoCartao extends Pagamento {
         }
     }
 
-    public Long getId_PagamentoCartao() {
-        return id_PagamentoCartao;
+    public Long getIdPagamentoCartao() {
+        return idPagamentoCartao;
     }
 
-    public void setId_PagamentoCartao(Long id) {
-        if (this.id_PagamentoCartao != null) {
+    public void setIdPagamentoCartao(Long id) {
+        if (this.idPagamentoCartao != null) {
             throw new IllegalStateException("O ID do pagamento no cartão já foi definido.");
         }
-        this.id_PagamentoCartao = id;
+        this.idPagamentoCartao = id;
     }
 
     public String getNumeroCartao() { return numeroCartao; }
