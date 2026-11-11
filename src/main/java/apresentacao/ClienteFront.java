@@ -1,6 +1,8 @@
 package apresentacao;
 
 import aplicacao.servico.ClienteService;
+import apresentacao.estilo.Componentes;
+import apresentacao.estilo.Tema;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,37 +18,36 @@ public class ClienteFront extends JPanel {
 
     public ClienteFront(ClienteService clienteService) {
         this.clienteService = clienteService;
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setLayout(new BorderLayout(Tema.GRANDE, Tema.GRANDE));
+        setBackground(Tema.FUNDO);
 
         add(criarFormulario(), BorderLayout.CENTER);
         add(criarPainelBotao(), BorderLayout.SOUTH);
     }
 
     private JPanel criarFormulario() {
-        JPanel painel = new JPanel(new GridLayout(4, 2, 8, 8));
-        painel.setBorder(BorderFactory.createTitledBorder("Cadastro de Cliente"));
-
-        campoNome = new JTextField();
-        campoCpf = new JTextField();
-        campoEmail = new JTextField();
-        campoTelefone = new JTextField();
-
-        painel.add(new JLabel("Nome:"));
-        painel.add(campoNome);
-        painel.add(new JLabel("CPF:"));
-        painel.add(campoCpf);
-        painel.add(new JLabel("E-mail:"));
-        painel.add(campoEmail);
-        painel.add(new JLabel("Telefone:"));
-        painel.add(campoTelefone);
-
-        return painel;
+        JPanel cartao = Componentes.painelCartao("Cadastro de cliente");
+        JPanel formulario = Componentes.painelFormulario();
+        campoNome = Componentes.campoTexto();
+        campoCpf = Componentes.campoTexto();
+        campoEmail = Componentes.campoTexto();
+        campoTelefone = Componentes.campoTexto();
+        Componentes.adicionarCampo(formulario, 0, "Nome", campoNome);
+        Componentes.adicionarCampo(formulario, 1, "CPF", campoCpf);
+        Componentes.adicionarCampo(formulario, 2, "E-mail", campoEmail);
+        Componentes.adicionarCampo(formulario, 3, "Telefone", campoTelefone);
+        JPanel alinhamento = new JPanel(new BorderLayout());
+        alinhamento.setOpaque(false);
+        alinhamento.add(formulario, BorderLayout.NORTH);
+        cartao.add(alinhamento, BorderLayout.CENTER);
+        return cartao;
     }
 
     private JPanel criarPainelBotao() {
         JPanel painel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton botaoCadastrar = new JButton("Cadastrar Cliente");
+        painel.setOpaque(false);
+        JButton botaoCadastrar = Componentes.botaoPrimario("Cadastrar cliente");
+        botaoCadastrar.setMnemonic('C');
         botaoCadastrar.addActionListener(e -> cadastrarCliente());
         painel.add(botaoCadastrar);
         return painel;
