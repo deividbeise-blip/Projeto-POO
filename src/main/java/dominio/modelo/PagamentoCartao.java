@@ -11,7 +11,8 @@ public class PagamentoCartao extends Pagamento {
     public static final int MAX_PARCELAS = 12;
     public static final int DIGITOS_CARTAO = 16;
 
-    private static final DateTimeFormatter FORMATO_VALIDADE = DateTimeFormatter.ofPattern("MM/yy");
+    /** Formato da validade do cartão ("MM/aa", ex: "12/30"). Usado também pela persistência. */
+    public static final DateTimeFormatter FORMATO_VALIDADE = DateTimeFormatter.ofPattern("MM/yy");
 
     private Long idPagamentoCartao;
     private final String numeroCartao;
