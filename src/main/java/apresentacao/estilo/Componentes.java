@@ -55,21 +55,71 @@ public final class Componentes {
         return painel;
     }
 
-    /** Adiciona uma linha alinhada ao formulário compartilhado. */
+    /** Chave (client property do campo) que guarda o rótulo da mensagem de erro reservado para ele. */
+    private static final String CHAVE_MENSAGEM_ERRO = "Componentes.mensagemErro";
+    /** Texto do rótulo de erro vazio: um espaço mantém a altura e evita o formulário "pular". */
+    private static final String SEM_MENSAGEM = " ";
+
+    /**
+     * Adiciona uma linha alinhada ao formulário compartilhado: rótulo à esquerda, campo à direita
+     * e, logo abaixo do campo, um espaço reservado para a mensagem de erro da {@code Validacao}.
+     * Cada linha ocupa duas linhas da grade, então {@code linha} continua sendo 0, 1, 2...
+     *
+     * @param formulario painel criado por {@link #painelFormulario()}
+     * @param linha      posição do campo no formulário, começando em 0
+     * @param nome       texto do rótulo
+     * @param campo      o campo de entrada
+     */
     public static void adicionarCampo(JPanel formulario, int linha, String nome, JComponent campo) {
         JLabel rotulo = rotulo(nome);
         rotulo.setLabelFor(campo);
         GridBagConstraints c = new GridBagConstraints();
-        c.gridy = linha;
+        c.gridy = linha * 2;
         c.gridx = 0;
         c.anchor = GridBagConstraints.LINE_START;
-        c.insets = new Insets(Tema.PEQUENO, 0, Tema.PEQUENO, Tema.GRANDE);
+        c.insets = new Insets(Tema.PEQUENO, 0, 0, Tema.GRANDE);
         formulario.add(rotulo, c);
         c.gridx = 1;
         c.weightx = 1;
         c.fill = GridBagConstraints.HORIZONTAL;
-        c.insets = new Insets(Tema.PEQUENO, 0, Tema.PEQUENO, 0);
+        c.insets = new Insets(Tema.PEQUENO, 0, 0, 0);
         formulario.add(campo, c);
+
+        JLabel mensagemErro = new JLabel(SEM_MENSAGEM);
+        mensagemErro.setFont(Tema.LEGENDA);
+        mensagemErro.setForeground(Tema.ERRO);
+        campo.putClientProperty(CHAVE_MENSAGEM_ERRO, mensagemErro);
+        c.gridy = linha * 2 + 1;
+        c.insets = new Insets(0, 0, 0, 0);
+        formulario.add(mensagemErro, c);
+    }
+
+    /**
+     * Devolve o rótulo de mensagem de erro reservado abaixo do campo por
+     * {@link #adicionarCampo(JPanel, int, String, JComponent)}.
+     *
+     * @param campo o campo do formulário
+     * @return o rótulo, ou {@code null} se o campo não foi adicionado por {@code adicionarCampo}
+     */
+    public static JLabel mensagemErroDo(JComponent campo) {
+        Object valor = campo.getClientProperty(CHAVE_MENSAGEM_ERRO);
+        return valor instanceof JLabel rotulo ? rotulo : null;
+    }
+
+    /**
+     * Mostra (ou, com {@code null}, apaga) o texto de erro reservado abaixo do campo.
+     *
+     * @param campo    o campo do formulário
+     * @param mensagem o texto, ou {@code null} para apagar
+     * @return {@code true} se o campo tinha espaço reservado; {@code false} se não tinha (nada mudou)
+     */
+    public static boolean definirMensagemErro(JComponent campo, String mensagem) {
+        JLabel rotulo = mensagemErroDo(campo);
+        if (rotulo == null) {
+            return false;
+        }
+        rotulo.setText(mensagem == null || mensagem.isBlank() ? SEM_MENSAGEM : mensagem);
+        return true;
     }
 
     public static JPanel painelCartao(String texto) {

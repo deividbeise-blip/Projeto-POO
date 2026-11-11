@@ -23,6 +23,8 @@ public final class Tema {
     public static final Font TEXTO_FONTE = new Font(Font.SANS_SERIF, Font.PLAIN, 14);
     public static final Font ROTULO = new Font(Font.SANS_SERIF, Font.PLAIN, 14);
     public static final Font BOTAO = new Font(Font.SANS_SERIF, Font.BOLD, 14);
+    /** Texto pequeno de apoio, como a mensagem de erro abaixo de um campo. */
+    public static final Font LEGENDA = new Font(Font.SANS_SERIF, Font.PLAIN, 12);
 
     private Tema() { }
 
