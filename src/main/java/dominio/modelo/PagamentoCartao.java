@@ -1,6 +1,6 @@
 package dominio.modelo;
 
-import dominio.politica.SemDesconto;
+import dominio.politica.PoliticaDesconto;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -8,7 +8,11 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
 public class PagamentoCartao extends Pagamento {
-    private static final DateTimeFormatter FORMATO_VALIDADE = DateTimeFormatter.ofPattern("MM/yy");
+    public static final int MAX_PARCELAS = 12;
+    public static final int DIGITOS_CARTAO = 16;
+
+    /** Formato da validade do cartão ("MM/aa", ex: "12/30"). Usado também pela persistência. */
+    public static final DateTimeFormatter FORMATO_VALIDADE = DateTimeFormatter.ofPattern("MM/yy");
 
     private Long idPagamentoCartao;
     private final String numeroCartao;
@@ -20,11 +24,12 @@ public class PagamentoCartao extends Pagamento {
 
     public PagamentoCartao(Venda venda, double valorBase, LocalDate dataPagamento,
                            String numeroCartao, String nomeTitular, String validade,
-                           String cvv, int numeroParcelas) {
-        super(venda, "Cartão", valorBase, dataPagamento, new SemDesconto());
+                           String cvv, int numeroParcelas, PoliticaDesconto politicaDesconto) {
+        super(venda, "Cartão", valorBase, dataPagamento, politicaDesconto);
 
-        if (numeroCartao == null || !numeroCartao.matches("\\d{16}")) {
-            throw new IllegalArgumentException("Número de cartão inválido. Deve conter 16 dígitos.");
+        if (numeroCartao == null || !numeroCartao.matches("\\d{" + DIGITOS_CARTAO + "}")) {
+            throw new IllegalArgumentException(
+                    "Número de cartão inválido. Deve conter " + DIGITOS_CARTAO + " dígitos.");
         }
         if (nomeTitular == null || nomeTitular.isBlank()) {
             throw new IllegalArgumentException("Informe o nome do titular.");
@@ -33,8 +38,9 @@ public class PagamentoCartao extends Pagamento {
         if (cvv == null || !cvv.matches("\\d{3,4}")) {
             throw new IllegalArgumentException("CVV inválido. Deve conter 3 ou 4 dígitos.");
         }
-        if (numeroParcelas < 1 || numeroParcelas > 12) {
-            throw new IllegalArgumentException("Número de parcelas inválido. Deve ser entre 1 e 12.");
+        if (numeroParcelas < 1 || numeroParcelas > MAX_PARCELAS) {
+            throw new IllegalArgumentException(
+                    "Número de parcelas inválido. Deve ser entre 1 e " + MAX_PARCELAS + ".");
         }
 
         this.numeroCartao = numeroCartao;

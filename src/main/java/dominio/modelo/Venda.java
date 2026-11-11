@@ -2,6 +2,9 @@ package dominio.modelo;
 
 import dominio.excecao.VeiculoIndisponivelException;
 import dominio.excecao.VendaInvalidaException;
+import dominio.politica.ComissaoCarro;
+import dominio.politica.ComissaoMoto;
+import dominio.politica.PoliticaComissao;
 
 import java.time.LocalDate;
 
@@ -63,15 +66,28 @@ public class Venda {
 
     // comissão do vendedor de acordo com o valor final da venda
     public double calcularComissao() {
-        return vendedor.calcularComissao(valorFinal, veiculo);
+        return vendedor.calcularComissao(valorFinal, politicaComissao());
+    }
+
+    /** Recibo da venda: o recibo do pagamento + o vendedor e a sua comissão. */
+    public String obterRecibo() {
+        if (pagamento == null) {
+            throw new IllegalStateException("A venda ainda não tem pagamento registrado.");
+        }
+        return pagamento.obterReciboDetalhado() + "\n" +
+                "Vendedor: " + vendedor.getNome() + "\n" +
+                "Comissão do vendedor: R$ " + String.format("%.2f", calcularComissao());
+    }
+
+    /** Único ponto que escolhe a regra de comissão pelo tipo do veículo. */
+    private PoliticaComissao politicaComissao() {
+        return veiculo.isMoto() ? new ComissaoMoto() : new ComissaoCarro();
     }
 
     public boolean validarVenda() {
-        return cliente != null
-                && veiculo != null
-                && vendedor != null
-                && dataVenda != null
-                && pagamento != null
+        // cliente, vendedor, veículo e data já são garantidos pelo construtor;
+        // o pagamento não, porque é ligado depois por registrarPagamento().
+        return pagamento != null
                 && valorFinal > 0
                 && vendedor.validarVendedor()
                 && pagamento.validarPagamento();

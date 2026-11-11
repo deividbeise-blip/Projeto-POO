@@ -3,6 +3,7 @@ package aplicacao.pagamento;
 import aplicacao.dto.DadosCartao;
 import dominio.modelo.PagamentoCartao;
 import dominio.modelo.Venda;
+import dominio.politica.SemDesconto;
 import dominio.repositorio.DetalhePagamentoRepository;
 
 import java.time.LocalDate;
@@ -19,7 +20,7 @@ public class FormaPagamentoCartao implements FormaPagamento<DadosCartao, Pagamen
     public PagamentoCartao criarPagamento(Venda venda, DadosCartao dados) {
         return new PagamentoCartao(venda, venda.getVeiculo().getPreco(), LocalDate.now(),
                 dados.numeroCartao(), dados.titular(), dados.validade(),
-                dados.cvv(), dados.parcelas());
+                dados.cvv(), dados.parcelas(), new SemDesconto());
     }
 
     @Override

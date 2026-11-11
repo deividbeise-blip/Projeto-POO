@@ -22,6 +22,7 @@ import dominio.excecao.VeiculoIndisponivelException;
 import dominio.excecao.VendaInvalidaException;
 import dominio.modelo.Cliente;
 import dominio.modelo.Pagamento;
+import dominio.modelo.PagamentoCartao;
 import dominio.modelo.Veiculo;
 import dominio.modelo.Vendedor;
 import aplicacao.dto.DadosCartao;
@@ -167,7 +168,7 @@ public class ConcessionariaFront extends JPanel {
         campoNomeTitular = new JTextField();
         campoValidade = new JTextField();
         campoCvv = new JTextField();
-        spinnerParcelas = new JSpinner(new SpinnerNumberModel(1, 1, 12, 1));
+        spinnerParcelas = new JSpinner(new SpinnerNumberModel(1, 1, PagamentoCartao.MAX_PARCELAS, 1));
 
         painelCartao.add(new JLabel("Número do cartão:"));
         painelCartao.add(campoNumeroCartao);
@@ -224,7 +225,7 @@ public class ConcessionariaFront extends JPanel {
             Pagamento pagamento = vendaService.vender(dados);
 
             JOptionPane.showMessageDialog(this,
-                    "Venda realizada com sucesso!\n" + pagamento.obterReciboDetalhado(),
+                    "Venda realizada com sucesso!\n" + pagamento.getVenda().obterRecibo(),
                     "Sucesso", JOptionPane.INFORMATION_MESSAGE);
 
             limparFormulario();

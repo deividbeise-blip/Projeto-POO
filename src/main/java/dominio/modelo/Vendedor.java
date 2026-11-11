@@ -1,8 +1,8 @@
 package dominio.modelo;
 
-public class Vendedor {
-    private static final double REDUCAO_COMISSAO_MOTO = 3;
+import dominio.politica.PoliticaComissao;
 
+public class Vendedor {
     private Long idVendedor;
     private final String nome;
     private final String cpf;
@@ -51,16 +51,13 @@ public class Vendedor {
     public Double getComissaoPercentual() { return comissaoPercentual; }
     public Concessionaria getConcessionaria() { return concessionaria; }
 
-    public double calcularComissao(double valorVenda, Veiculo veiculo) {
-        double percentual = comissaoPercentual;
-        if (veiculo.isMoto()) {
-            percentual = Math.max(0, percentual - REDUCAO_COMISSAO_MOTO);
-        }
-        return valorVenda * percentual / 100;
+    /** A regra (carro, moto...) vem de fora: o Vendedor só fornece o seu percentual. */
+    public double calcularComissao(double valorVenda, PoliticaComissao politica) {
+        return politica.calcular(valorVenda, comissaoPercentual);
     }
 
     public boolean validarVendedor() {
-        return nome != null && cpf != null && comissaoPercentual > 0;
+        return comissaoPercentual > 0;
     }
 
     @Override

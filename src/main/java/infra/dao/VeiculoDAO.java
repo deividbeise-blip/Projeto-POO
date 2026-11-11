@@ -96,8 +96,6 @@ public class VeiculoDAO implements VeiculoRepository {
                 resultado.getString("name_concessionaria"),
                 resultado.getString("address_concessionaria"));
 
-        // O último parâmetro "vendido" recebe null: o construtor de Veiculo já deriva
-        // esse valor a partir do status, então não precisamos de uma coluna própria.
         return new Veiculo(
                 resultado.getLong("id_veiculo"),
                 resultado.getString("marca_veiculo"),
@@ -107,8 +105,7 @@ public class VeiculoDAO implements VeiculoRepository {
                 resultado.getDouble("preco_veiculo"),
                 paraEnumJava(resultado.getString("status_veiculo")),
                 concessionaria,
-                resultado.getBoolean("moto"),
-                null);
+                resultado.getBoolean("moto"));
     }
 
     /**
