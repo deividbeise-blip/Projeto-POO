@@ -1,5 +1,6 @@
 package dominio.modelo;
 
+import dominio.politica.DescontoPix;
 import dominio.politica.PoliticaDesconto;
 
 import java.time.LocalDate;
@@ -40,7 +41,8 @@ public class PagamentoPix extends Pagamento {
     public String obterReciboDetalhado() {
         return "===== Recibo de Pagamento (PIX) =====\n" +
                 "Chave PIX: " + chavePix + " (" + tipoChave + ")\n" +
-                "Valor pago (com 5% de desconto PIX): " + getValorPago() + "\n" +
+                "Valor pago (com " + String.format("%.0f", DescontoPix.PERCENTUAL) + "% de desconto PIX): "
+                + getValorPago() + "\n" +
                 "Data do pagamento: " + getDataPagamento() + "\n" +
                 "======================================";
     }
