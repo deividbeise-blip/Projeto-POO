@@ -27,7 +27,7 @@ public class VeiculoService {
     public Veiculo cadastrar(String marca, String modelo, Integer ano, String placa,
                              Double preco, boolean moto, Concessionaria concessionaria) {
         Veiculo veiculo = new Veiculo(marca, modelo, ano, placa, preco,
-                StatusVeiculo.DISPONIVEL, concessionaria, moto, false);
+                StatusVeiculo.DISPONIVEL, concessionaria, moto);
         veiculoRepository.salvar(veiculo);
         return veiculo;
     }

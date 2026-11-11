@@ -58,18 +58,6 @@ public abstract class Pagamento {
         return valorPago > 0;
     }
 
-    public boolean validarFormaPagamento() {
-        return formaPagamento.equalsIgnoreCase("pix") || formaPagamento.equalsIgnoreCase("cartão");
-    }
-
-    public void exibirResumo() {
-        System.out.println("Resumo do Pagamento:");
-        System.out.println("ID: " + idPagamento);
-        System.out.println("Forma de Pagamento: " + formaPagamento);
-        System.out.println("Valor Pago: " + valorPago);
-        System.out.println("Data do Pagamento: " + dataPagamento);
-    }
-
     /** Cada forma de pagamento monta seu próprio recibo (polimorfismo). */
     public abstract String obterReciboDetalhado();
 }
