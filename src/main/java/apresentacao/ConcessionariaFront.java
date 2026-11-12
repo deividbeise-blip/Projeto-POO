@@ -32,8 +32,9 @@ import aplicacao.dto.DadosVenda;
 import aplicacao.servico.ClienteService;
 import aplicacao.servico.VeiculoService;
 import aplicacao.servico.VendaService;
+import apresentacao.comum.TelaComDados;
 
-public class ConcessionariaFront extends JPanel {
+public class ConcessionariaFront extends JPanel implements TelaComDados<ConcessionariaFront.Dados> {
 
     private final VendaService vendaService;
     private final ClienteService clienteService;
@@ -74,17 +75,32 @@ public class ConcessionariaFront extends JPanel {
         add(criarPainelBotao(), BorderLayout.SOUTH);
     }
 
+    /** O que esta tela busca no banco ao ficar visível. */
+    record Dados(List<Cliente> clientes, List<Vendedor> vendedores, List<Veiculo> veiculosDisponiveis) { }
+
     /**
-     * Recarrega os combos a partir do banco. Chamado pelo TelaPrincipal sempre
-     * que o usuário troca para esta aba, para refletir cadastros feitos em
-     * outras abas e mudanças de status (ex.: veículo colocado em manutenção).
+     * Busca clientes, vendedores e veículos disponíveis. Chamado pelo TelaPrincipal, fora da
+     * thread da tela, sempre que o usuário troca para esta aba, para refletir cadastros feitos
+     * em outras abas e mudanças de status (ex.: veículo colocado em manutenção).
+     *
+     * @return clientes, vendedores e veículos disponíveis atuais
      */
-    public void atualizarDados() {
-        comboClientes.setModel(new DefaultComboBoxModel<>(
-                clienteService.listar().toArray(new Cliente[0])));
-        comboVendedores.setModel(new DefaultComboBoxModel<>(
-                vendaService.listarVendedores().toArray(new Vendedor[0])));
-        recarregarVeiculos();
+    @Override
+    public Dados carregarDados() {
+        return new Dados(clienteService.listar(), vendaService.listarVendedores(),
+                veiculoService.listarDisponiveis());
+    }
+
+    /**
+     * Recarrega os combos com os dados buscados.
+     *
+     * @param dados resultado de {@link #carregarDados()}
+     */
+    @Override
+    public void exibirDados(Dados dados) {
+        comboClientes.setModel(new DefaultComboBoxModel<>(dados.clientes().toArray(new Cliente[0])));
+        comboVendedores.setModel(new DefaultComboBoxModel<>(dados.vendedores().toArray(new Vendedor[0])));
+        comboVeiculos.setModel(new DefaultComboBoxModel<>(dados.veiculosDisponiveis().toArray(new Veiculo[0])));
     }
 
     private JPanel criarPainelCliente() {

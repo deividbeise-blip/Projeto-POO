@@ -1,7 +1,10 @@
 package apresentacao;
 
 import apresentacao.comum.BarraStatus;
+import apresentacao.comum.Feedback;
+import apresentacao.comum.TarefaEmSegundoPlano;
 import apresentacao.comum.TelaComBotaoPrincipal;
+import apresentacao.comum.TelaComDados;
 import apresentacao.estilo.Componentes;
 import apresentacao.estilo.Tema;
 import com.formdev.flatlaf.FlatLightLaf;
@@ -19,8 +22,6 @@ public class TelaPrincipal extends JFrame {
     private final JLabel titulo = Componentes.titulo("Clientes");
     private final Map<String, JButton> botoesMenu = new LinkedHashMap<>();
     private final Map<String, Component> telasPorNome = new LinkedHashMap<>();
-    private final VeiculoFront veiculos;
-    private final ConcessionariaFront vendas;
 
     public TelaPrincipal(AppConfig config) {
         setTitle("Concessionária");
@@ -29,8 +30,8 @@ public class TelaPrincipal extends JFrame {
         setSize(1280, 720);
         setLocationRelativeTo(null);
         ClienteFront clientes = new ClienteFront(config.clienteService());
-        veiculos = new VeiculoFront(config.veiculoService());
-        vendas = new ConcessionariaFront(config.vendaService(), config.clienteService(), config.veiculoService());
+        VeiculoFront veiculos = new VeiculoFront(config.veiculoService());
+        ConcessionariaFront vendas = new ConcessionariaFront(config.vendaService(), config.clienteService(), config.veiculoService());
         telas.setOpaque(false);
         adicionarTela("Clientes", clientes);
         adicionarTela("Veículos", veiculos);
@@ -86,15 +87,16 @@ public class TelaPrincipal extends JFrame {
         return cartao;
     }
 
+    /** Troca de tela na hora; os dados dela chegam em segundo plano, sem travar a janela. */
     private void navegar(String nome) {
-        try {
-            if ("Veículos".equals(nome)) veiculos.atualizarDados();
-            if ("Vendas".equals(nome)) vendas.atualizarDados();
-            mostrarTela(nome);
-        } catch (RuntimeException ex) {
-            JOptionPane.showMessageDialog(this, "Não foi possível carregar os dados: " + ex.getMessage(),
-                    "Erro", JOptionPane.ERROR_MESSAGE);
+        mostrarTela(nome);
+        if (telasPorNome.get(nome) instanceof TelaComDados<?> tela) {
+            carregar(tela);
         }
+    }
+
+    private <T> void carregar(TelaComDados<T> tela) {
+        TarefaEmSegundoPlano.executar(tela::carregarDados, tela::exibirDados, erro -> Feedback.erro(this, erro));
     }
 
     /** Troca a tela visível e faz o Enter acionar o botão principal dela (se tiver). */

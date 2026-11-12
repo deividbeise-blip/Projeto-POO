@@ -1,13 +1,21 @@
 package apresentacao;
 
 import aplicacao.servico.ClienteService;
+import apresentacao.comum.Feedback;
+import apresentacao.comum.TarefaEmSegundoPlano;
 import apresentacao.comum.TelaComBotaoPrincipal;
+import apresentacao.comum.Validacao;
 import apresentacao.estilo.Componentes;
 import apresentacao.estilo.Tema;
+import dominio.modelo.Cliente;
 
 import javax.swing.*;
 import java.awt.*;
 
+/**
+ * Cadastro de clientes. Serve de exemplo de uso de {@link TarefaEmSegundoPlano},
+ * {@link Feedback} e {@link Validacao} para as outras telas.
+ */
 public class ClienteFront extends JPanel implements TelaComBotaoPrincipal {
 
     private final ClienteService clienteService;
@@ -18,6 +26,11 @@ public class ClienteFront extends JPanel implements TelaComBotaoPrincipal {
     private JTextField campoTelefone;
     private JButton botaoCadastrar;
 
+    /**
+     * Cria a tela de cadastro de clientes.
+     *
+     * @param clienteService serviço usado para gravar o cliente
+     */
     public ClienteFront(ClienteService clienteService) {
         this.clienteService = clienteService;
         setLayout(new BorderLayout(Tema.GRANDE, Tema.GRANDE));
@@ -66,28 +79,50 @@ public class ClienteFront extends JPanel implements TelaComBotaoPrincipal {
     }
 
     private void cadastrarCliente() {
-        try {
-            clienteService.cadastrar(
-                    campoNome.getText(),
-                    campoCpf.getText(),
-                    campoEmail.getText(),
-                    campoTelefone.getText());
-
-            JOptionPane.showMessageDialog(this,
-                    "Cliente cadastrado com sucesso!",
-                    "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-
-            limparFormulario();
-
-        } catch (IllegalArgumentException ex) {
-            JOptionPane.showMessageDialog(this,
-                    ex.getMessage(),
-                    "Dados inválidos", JOptionPane.WARNING_MESSAGE);
-        } catch (RuntimeException ex) {
-            JOptionPane.showMessageDialog(this,
-                    "Erro ao cadastrar cliente: " + ex.getMessage(),
-                    "Erro", JOptionPane.ERROR_MESSAGE);
+        if (!validarFormulario()) {
+            return;
         }
+        // Lê os campos aqui, na thread da tela; o lambda abaixo roda em outra thread.
+        String nome = campoNome.getText();
+        String cpf = campoCpf.getText();
+        String email = campoEmail.getText();
+        String telefone = campoTelefone.getText();
+
+        TarefaEmSegundoPlano.executar(botaoCadastrar,
+                () -> clienteService.cadastrar(nome, cpf, email, telefone),
+                cliente -> {
+                    Feedback.sucesso(this, "Cliente " + cliente.getNome() + " cadastrado com sucesso.");
+                    limparFormulario();
+                },
+                erro -> Feedback.erro(this, erro));
+    }
+
+    /**
+     * Confere todos os campos com as regras do próprio {@link Cliente} e marca os inválidos de
+     * uma vez só. O foco vai para o primeiro campo com erro.
+     */
+    private boolean validarFormulario() {
+        JComponent primeiroInvalido = null;
+        if (!Validacao.verificar(campoNome, () -> Cliente.validarNome(campoNome.getText()))) {
+            primeiroInvalido = campoNome;
+        }
+        if (!Validacao.verificar(campoCpf, () -> Cliente.validarCpf(campoCpf.getText()))
+                && primeiroInvalido == null) {
+            primeiroInvalido = campoCpf;
+        }
+        if (!Validacao.verificar(campoEmail, () -> Cliente.validarEmail(campoEmail.getText()))
+                && primeiroInvalido == null) {
+            primeiroInvalido = campoEmail;
+        }
+        if (!Validacao.verificar(campoTelefone, () -> Cliente.validarTelefone(campoTelefone.getText()))
+                && primeiroInvalido == null) {
+            primeiroInvalido = campoTelefone;
+        }
+        if (primeiroInvalido != null) {
+            primeiroInvalido.requestFocusInWindow();
+            return false;
+        }
+        return true;
     }
 
     private void limparFormulario() {
@@ -95,5 +130,6 @@ public class ClienteFront extends JPanel implements TelaComBotaoPrincipal {
         campoCpf.setText("");
         campoEmail.setText("");
         campoTelefone.setText("");
+        campoNome.requestFocusInWindow();
     }
 }

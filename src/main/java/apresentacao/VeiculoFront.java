@@ -19,8 +19,9 @@ import dominio.modelo.Concessionaria;
 import dominio.modelo.StatusVeiculo;
 import dominio.modelo.Veiculo;
 import aplicacao.servico.VeiculoService;
+import apresentacao.comum.TelaComDados;
 
-public class VeiculoFront extends JPanel {
+public class VeiculoFront extends JPanel implements TelaComDados<VeiculoFront.Dados> {
 
     private final VeiculoService veiculoService;
 
@@ -52,14 +53,31 @@ public class VeiculoFront extends JPanel {
         add(painelInferior, BorderLayout.CENTER);
     }
 
+    /** O que esta tela busca no banco ao ficar visível. */
+    record Dados(List<Concessionaria> concessionarias, List<Veiculo> veiculos) { }
+
     /**
-     * Recarrega os combos a partir do banco. Chamado pelo TelaPrincipal sempre
-     * que o usuário troca para esta aba, para refletir mudanças feitas em outras.
+     * Busca concessionárias e veículos. Chamado pelo TelaPrincipal, fora da thread da tela,
+     * sempre que o usuário troca para esta aba, para refletir mudanças feitas em outras.
+     *
+     * @return concessionárias e veículos atuais
      */
-    public void atualizarDados() {
+    @Override
+    public Dados carregarDados() {
+        return new Dados(veiculoService.listarConcessionarias(), veiculoService.listarTodos());
+    }
+
+    /**
+     * Recarrega os combos com os dados buscados.
+     *
+     * @param dados resultado de {@link #carregarDados()}
+     */
+    @Override
+    public void exibirDados(Dados dados) {
         comboConcessionaria.setModel(new DefaultComboBoxModel<>(
-                veiculoService.listarConcessionarias().toArray(new Concessionaria[0])));
-        recarregarVeiculos();
+                dados.concessionarias().toArray(new Concessionaria[0])));
+        comboVeiculos.setModel(new DefaultComboBoxModel<>(dados.veiculos().toArray(new Veiculo[0])));
+        atualizarPainelStatus();
     }
 
     // ---------------------- Cadastro de veículo ----------------------
