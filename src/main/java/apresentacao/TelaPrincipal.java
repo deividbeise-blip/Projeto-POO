@@ -1,5 +1,10 @@
 package apresentacao;
 
+import apresentacao.comum.BarraStatus;
+import apresentacao.comum.Feedback;
+import apresentacao.comum.TarefaEmSegundoPlano;
+import apresentacao.comum.TelaComBotaoPrincipal;
+import apresentacao.comum.TelaComDados;
 import apresentacao.estilo.Componentes;
 import apresentacao.estilo.Tema;
 import com.formdev.flatlaf.FlatLightLaf;
@@ -16,8 +21,7 @@ public class TelaPrincipal extends JFrame {
     private final JPanel telas = new JPanel(layoutTelas);
     private final JLabel titulo = Componentes.titulo("Clientes");
     private final Map<String, JButton> botoesMenu = new LinkedHashMap<>();
-    private final VeiculoFront veiculos;
-    private final ConcessionariaFront vendas;
+    private final Map<String, Component> telasPorNome = new LinkedHashMap<>();
 
     public TelaPrincipal(AppConfig config) {
         setTitle("Concessionária");
@@ -26,14 +30,14 @@ public class TelaPrincipal extends JFrame {
         setSize(1280, 720);
         setLocationRelativeTo(null);
         ClienteFront clientes = new ClienteFront(config.clienteService());
-        veiculos = new VeiculoFront(config.veiculoService());
-        vendas = new ConcessionariaFront(config.vendaService(), config.clienteService(), config.veiculoService());
+        VeiculoFront veiculos = new VeiculoFront(config.veiculoService());
+        ConcessionariaFront vendas = new ConcessionariaFront(config.vendaService(), config.clienteService(), config.veiculoService());
         telas.setOpaque(false);
-        telas.add(clientes, "Clientes");
-        telas.add(veiculos, "Veículos");
-        telas.add(vendas, "Vendas");
-        telas.add(painelEmBreve("Concessionárias"), "Concessionárias");
-        telas.add(painelEmBreve("Vendedores"), "Vendedores");
+        adicionarTela("Clientes", clientes);
+        adicionarTela("Veículos", veiculos);
+        adicionarTela("Vendas", vendas);
+        adicionarTela("Concessionárias", painelEmBreve("Concessionárias"));
+        adicionarTela("Vendedores", painelEmBreve("Vendedores"));
         JPanel conteudo = new JPanel(new BorderLayout(0, Tema.GRANDE));
         conteudo.setBackground(Tema.FUNDO);
         conteudo.setBorder(new EmptyBorder(Tema.MARGEM_TELA, Tema.MARGEM_TELA, Tema.MARGEM_TELA, Tema.MARGEM_TELA));
@@ -41,7 +45,8 @@ public class TelaPrincipal extends JFrame {
         conteudo.add(telas, BorderLayout.CENTER);
         add(criarMenu(), BorderLayout.WEST);
         add(conteudo, BorderLayout.CENTER);
-        atualizarSelecao("Clientes");
+        add(new BarraStatus(), BorderLayout.SOUTH);
+        mostrarTela("Clientes");
     }
 
     private JPanel criarMenu() {
@@ -56,11 +61,16 @@ public class TelaPrincipal extends JFrame {
         marca.setAlignmentX(Component.LEFT_ALIGNMENT);
         menu.add(marca);
         menu.add(Box.createVerticalStrut(Tema.MARGEM_TELA));
-        for (String nome : new String[]{"Clientes", "Veículos", "Vendas", "Concessionárias", "Vendedores"}) {
-            JButton botao = Componentes.botaoSecundario(nome);
-            botao.setHorizontalAlignment(SwingConstants.LEFT);
-            botao.setAlignmentX(Component.LEFT_ALIGNMENT);
-            botao.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        // Alt+letra: cada letra só pode aparecer uma vez (o "Cadastrar cliente" usa Alt+A).
+        Map<String, Character> atalhos = new LinkedHashMap<>();
+        atalhos.put("Clientes", 'C');
+        atalhos.put("Veículos", 'V');
+        atalhos.put("Vendas", 'N');
+        atalhos.put("Concessionárias", 'O');
+        atalhos.put("Vendedores", 'D');
+        for (Map.Entry<String, Character> item : atalhos.entrySet()) {
+            String nome = item.getKey();
+            JButton botao = Componentes.botaoMenu(nome, item.getValue());
             botao.addActionListener(e -> navegar(nome));
             botoesMenu.put(nome, botao);
             menu.add(botao);
@@ -77,17 +87,31 @@ public class TelaPrincipal extends JFrame {
         return cartao;
     }
 
+    /** Troca de tela na hora; os dados dela chegam em segundo plano, sem travar a janela. */
     private void navegar(String nome) {
-        try {
-            if ("Veículos".equals(nome)) veiculos.atualizarDados();
-            if ("Vendas".equals(nome)) vendas.atualizarDados();
-            layoutTelas.show(telas, nome);
-            titulo.setText(nome);
-            atualizarSelecao(nome);
-        } catch (RuntimeException ex) {
-            JOptionPane.showMessageDialog(this, "Não foi possível carregar os dados: " + ex.getMessage(),
-                    "Erro", JOptionPane.ERROR_MESSAGE);
+        mostrarTela(nome);
+        if (telasPorNome.get(nome) instanceof TelaComDados<?> tela) {
+            carregar(tela);
         }
+    }
+
+    private <T> void carregar(TelaComDados<T> tela) {
+        TarefaEmSegundoPlano.executar(tela::carregarDados, tela::exibirDados, erro -> Feedback.erro(this, erro));
+    }
+
+    /** Troca a tela visível e faz o Enter acionar o botão principal dela (se tiver). */
+    private void mostrarTela(String nome) {
+        layoutTelas.show(telas, nome);
+        titulo.setText(nome);
+        atualizarSelecao(nome);
+        Component tela = telasPorNome.get(nome);
+        getRootPane().setDefaultButton(
+                tela instanceof TelaComBotaoPrincipal comBotao ? comBotao.botaoPrincipal() : null);
+    }
+
+    private void adicionarTela(String nome, Component tela) {
+        telas.add(tela, nome);
+        telasPorNome.put(nome, tela);
     }
 
     private void atualizarSelecao(String nome) {
