@@ -19,6 +19,12 @@ public class ClienteTableModel extends AbstractTableModel {
         fireTableDataChanged();
     }
 
+    /**
+     * Cliente de uma linha da tabela.
+     *
+     * @param linha índice da linha no modelo (use {@code convertRowIndexToModel} se houver ordenação/filtro)
+     * @return o cliente daquela linha
+     */
     public Cliente getCliente(int linha) {
         return clientes.get(linha);
     }
@@ -42,10 +48,10 @@ public class ClienteTableModel extends AbstractTableModel {
     public Object getValueAt(int linha, int coluna) {
         Cliente cliente = clientes.get(linha);
         return switch (coluna) {
-            case 0 -> cliente.getName_cliente();
-            case 1 -> formatarCpf(cliente.getCpf_cliente());
-            case 2 -> cliente.getEmail_cliente();
-            case 3 -> formatarTelefone(cliente.getPhone_cliente());
+            case 0 -> cliente.getNome();
+            case 1 -> formatarCpf(cliente.getCpf());
+            case 2 -> cliente.getEmail();
+            case 3 -> formatarTelefone(cliente.getTelefone());
             default -> null;
         };
     }

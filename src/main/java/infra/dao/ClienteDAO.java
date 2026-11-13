@@ -1,5 +1,6 @@
 package infra.dao;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -29,13 +30,22 @@ public class ClienteDAO implements ClienteRepository {
         long id = executor.inserir(
                 "INSERT INTO cliente (name_cliente, cpf, email, phone) VALUES (?, ?, ?, ?)",
                 comando -> {
-                    comando.setString(1, cliente.getName_cliente());
-                    comando.setString(2, cliente.getCpf_cliente());
-                    comando.setString(3, cliente.getEmail_cliente());
-                    comando.setString(4, cliente.getPhone_cliente());
+                    comando.setString(1, cliente.getNome());
+                    comando.setString(2, cliente.getCpf());
+                    comando.setString(3, cliente.getEmail());
+                    comando.setString(4, cliente.getTelefone());
                 },
                 "Erro ao salvar cliente no banco.");
-        cliente.setId_cliente(id);
+        cliente.setIdCliente(id);
+    }
+
+    @Override
+    public Cliente buscarPorId(Long id) {
+        return executor.consultarUm(
+                "SELECT " + COLUNAS + " FROM cliente WHERE id_cliente = ?",
+                comando -> comando.setLong(1, id),
+                ClienteDAO::mapear,
+                "Erro ao buscar cliente no banco.");
     }
 
     /** Necessário para o combo de clientes na tela de Vendas e para a lista da tela de Clientes. */
@@ -43,15 +53,7 @@ public class ClienteDAO implements ClienteRepository {
     public List<Cliente> listar() {
         return executor.consultar(
                 "SELECT " + COLUNAS + " FROM cliente",
-                resultado -> {
-                    Cliente cliente = new Cliente(
-                            resultado.getString("name_cliente"),
-                            resultado.getString("cpf"),
-                            resultado.getString("email"),
-                            resultado.getString("phone"));
-                    cliente.setId_cliente(resultado.getLong("id_cliente"));
-                    return cliente;
-                },
+                ClienteDAO::mapear,
                 "Erro ao listar clientes.");
     }
 
@@ -60,11 +62,11 @@ public class ClienteDAO implements ClienteRepository {
         int linhas = executor.atualizar(
                 "UPDATE cliente SET name_cliente = ?, cpf = ?, email = ?, phone = ? WHERE id_cliente = ?",
                 comando -> {
-                    comando.setString(1, cliente.getName_cliente());
-                    comando.setString(2, cliente.getCpf_cliente());
-                    comando.setString(3, cliente.getEmail_cliente());
-                    comando.setString(4, cliente.getPhone_cliente());
-                    comando.setLong(5, cliente.getId_cliente());
+                    comando.setString(1, cliente.getNome());
+                    comando.setString(2, cliente.getCpf());
+                    comando.setString(3, cliente.getEmail());
+                    comando.setString(4, cliente.getTelefone());
+                    comando.setLong(5, cliente.getIdCliente());
                 },
                 "Erro ao atualizar cliente no banco.");
         if (linhas == 0) {
@@ -103,5 +105,15 @@ public class ClienteDAO implements ClienteRepository {
             }
         }
         return false;
+    }
+
+    private static Cliente mapear(ResultSet resultado) throws SQLException {
+        Cliente cliente = new Cliente(
+                resultado.getString("name_cliente"),
+                resultado.getString("cpf"),
+                resultado.getString("email"),
+                resultado.getString("phone"));
+        cliente.setIdCliente(resultado.getLong("id_cliente"));
+        return cliente;
     }
 }

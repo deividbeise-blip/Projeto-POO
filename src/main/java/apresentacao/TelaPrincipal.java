@@ -61,11 +61,11 @@ public class TelaPrincipal extends JFrame {
         marca.setAlignmentX(Component.LEFT_ALIGNMENT);
         menu.add(marca);
         menu.add(Box.createVerticalStrut(Tema.MARGEM_TELA));
-        // Alt+letra: cada letra só pode aparecer uma vez (o "Cadastrar cliente" usa Alt+A).
+        // Alt+letra: cada letra só pode aparecer uma vez (a tela de clientes usa Alt+N, Alt+S e Alt+X).
         Map<String, Character> atalhos = new LinkedHashMap<>();
         atalhos.put("Clientes", 'C');
         atalhos.put("Veículos", 'V');
-        atalhos.put("Vendas", 'N');
+        atalhos.put("Vendas", 'E');
         atalhos.put("Concessionárias", 'O');
         atalhos.put("Vendedores", 'D');
         for (Map.Entry<String, Character> item : atalhos.entrySet()) {
