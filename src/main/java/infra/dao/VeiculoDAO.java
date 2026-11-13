@@ -90,6 +90,46 @@ public class VeiculoDAO implements VeiculoRepository {
                 "Erro ao listar veículos.");
     }
 
+    @Override
+    public void excluir(Long id) {
+        Veiculo veiculo = buscarPorId(id);
+        if (veiculo == null || veiculo.getStatus() != StatusVeiculo.DISPONIVEL) {
+            throw new IllegalStateException("Não é possível excluir um veículo que não está disponível.");
+        }
+
+        executor.atualizar(
+                "DELETE FROM veiculo WHERE id_veiculo = ?",
+                comando -> comando.setLong(1, id),
+                "Erro ao excluir veículo no banco.");
+    }
+
+    @Override
+    public void atualizar(Veiculo veiculo) {
+        if (veiculo.getStatus() != StatusVeiculo.DISPONIVEL) {
+            throw new IllegalStateException("Não é possível atualizar um veículo que não está disponível.");
+        }
+        
+        executor.atualizar(
+                """
+                UPDATE veiculo
+                SET marca_veiculo = ?, modelo_veiculo = ?, ano_veiculo = ?, placa_veiculo = ?,
+                    preco_veiculo = ?, status_veiculo = ?, moto = ?, concessionario_veiculo = ?
+                WHERE id_veiculo = ?
+                """,
+                comando -> {
+                    comando.setString(1, veiculo.getMarca());
+                    comando.setString(2, veiculo.getModelo());
+                    comando.setInt(3, veiculo.getAno());
+                    comando.setString(4, veiculo.getPlaca());
+                    comando.setDouble(5, veiculo.getPreco());
+                    comando.setString(6, paraColunaEnum(veiculo.getStatus()));
+                    comando.setBoolean(7, veiculo.isMoto());
+                    comando.setLong(8, veiculo.getConcessionaria().getIdConcessionaria());
+                    comando.setLong(9, veiculo.getIdVeiculo());
+                },
+                "Erro ao atualizar veículo no banco.");
+    }
+
     private static Veiculo mapear(ResultSet resultado) throws SQLException {
         Concessionaria concessionaria = new Concessionaria(
                 resultado.getLong("id_concessionaria"),

@@ -54,4 +54,21 @@ public class VeiculoService {
     public List<Concessionaria> listarConcessionarias() {
         return concessionariaRepository.listar();
     }
+    public Veiculo atualizar(Long id, String marca, String modelo, Integer ano, String placa,
+                             Double preco, boolean moto, Concessionaria concessionaria) {
+        if (id == null) {
+            throw new IllegalArgumentException("Selecione um veículo para editar.");
+        }   
+        Veiculo veiculo = new Veiculo(marca, modelo, ano, placa, preco,
+                StatusVeiculo.DISPONIVEL, concessionaria, moto);
+        veiculo.setIdVeiculo(id);
+        veiculoRepository.salvar(veiculo);  
+        return veiculo;
+    }
+    public void excluir(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Selecione um veículo para excluir.");
+        }
+        veiculoRepository.excluir(id);
+    }
 }

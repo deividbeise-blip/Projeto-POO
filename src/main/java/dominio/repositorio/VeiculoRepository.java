@@ -17,4 +17,8 @@ public interface VeiculoRepository {
     List<Veiculo> listarDisponiveis();
 
     List<Veiculo> listarTodos();
+
+    void excluir(Long id);
+
+    void atualizar(Veiculo veiculo);
 }
