@@ -19,6 +19,7 @@ public class ClienteService {
         return cliente;
     }
 
+    /** Devolve todos os clientes cadastrados. */
     public List<Cliente> listar() {
         return clienteRepository.listar();
     }
@@ -29,7 +30,7 @@ public class ClienteService {
             throw new IllegalArgumentException("Selecione um cliente para editar.");
         }
         Cliente cliente = new Cliente(nome, cpf, email, telefone);
-        cliente.setId_cliente(id);
+        cliente.setIdCliente(id);
         clienteRepository.atualizar(cliente);
         return cliente;
     }

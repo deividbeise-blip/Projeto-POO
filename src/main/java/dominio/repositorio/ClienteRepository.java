@@ -6,11 +6,13 @@ import dominio.modelo.Cliente;
 
 public interface ClienteRepository {
 
-    /**
-     * Grava o cliente e preenche o ID gerado
-     */
+    /** Grava o cliente e preenche o ID gerado. */
     void salvar(Cliente cliente);
 
+    /** Devolve o cliente com esse ID, ou null se não existir. */
+    Cliente buscarPorId(Long id);
+
+    /** Devolve todos os clientes cadastrados. */
     List<Cliente> listar();
 
     /**

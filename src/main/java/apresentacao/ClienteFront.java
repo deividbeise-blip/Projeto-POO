@@ -3,6 +3,7 @@ package apresentacao;
 import aplicacao.servico.ClienteService;
 import apresentacao.comum.Feedback;
 import apresentacao.comum.TarefaEmSegundoPlano;
+import apresentacao.comum.TelaComBotaoPrincipal;
 import apresentacao.comum.Validacao;
 import apresentacao.estilo.Componentes;
 import apresentacao.estilo.Tema;
@@ -29,7 +30,7 @@ import javax.swing.table.TableRowSorter;
  * Cadastro de clientes: lista com busca à esquerda, formulário à direita.
  * Clicar numa linha carrega o cliente no formulário (modo edição); "Novo" volta ao modo cadastro.
  */
-public class ClienteFront extends JPanel {
+public class ClienteFront extends JPanel implements TelaComBotaoPrincipal {
 
     private final ClienteService clienteService;
     private final ClienteTableModel modeloTabela = new ClienteTableModel();
@@ -48,6 +49,11 @@ public class ClienteFront extends JPanel {
     /** null = modo cadastro; preenchido = modo edição do cliente com esse ID. */
     private Long idEmEdicao;
 
+    /**
+     * Monta a tela e já carrega a lista de clientes em segundo plano.
+     *
+     * @param clienteService serviço usado para listar, cadastrar, atualizar e excluir clientes
+     */
     public ClienteFront(ClienteService clienteService) {
         this.clienteService = clienteService;
 
@@ -126,6 +132,10 @@ public class ClienteFront extends JPanel {
         botaoNovo = Componentes.botaoSecundario("Novo");
         botaoExcluir = Componentes.botaoPerigo("Excluir");
         botaoSalvar = Componentes.botaoPrimario("Salvar");
+        // Alt+letra: C, V, E, O e D já são do menu lateral.
+        botaoNovo.setMnemonic('N');
+        botaoSalvar.setMnemonic('S');
+        botaoExcluir.setMnemonic('X');
         botaoNovo.addActionListener(e -> novo());
         botaoExcluir.addActionListener(e -> excluir());
         botaoSalvar.addActionListener(e -> salvar());
@@ -144,6 +154,16 @@ public class ClienteFront extends JPanel {
         return cartao;
     }
 
+    /**
+     * O Enter nesta tela salva o cliente (cadastra ou atualiza).
+     *
+     * @return o botão "Salvar"
+     */
+    @Override
+    public JButton botaoPrincipal() {
+        return botaoSalvar;
+    }
+
     // ---------------------------------------------------------------- busca
 
     /** Filtra a lista por nome ou CPF enquanto o usuário digita (o CPF aceita pontos e traço). */
@@ -158,8 +178,8 @@ public class ClienteFront extends JPanel {
             @Override
             public boolean include(Entry<? extends ClienteTableModel, ? extends Integer> entrada) {
                 Cliente cliente = entrada.getModel().getCliente(entrada.getIdentifier());
-                return cliente.getName_cliente().toLowerCase().contains(texto)
-                        || (!digitos.isEmpty() && cliente.getCpf_cliente().contains(digitos));
+                return cliente.getNome().toLowerCase().contains(texto)
+                        || (!digitos.isEmpty() && cliente.getCpf().contains(digitos));
             }
         });
     }
@@ -186,12 +206,12 @@ public class ClienteFront extends JPanel {
             return;
         }
         Cliente cliente = modeloTabela.getCliente(tabela.convertRowIndexToModel(linha));
-        idEmEdicao = cliente.getId_cliente();
+        idEmEdicao = cliente.getIdCliente();
         limparErros();
-        campoNome.setText(cliente.getName_cliente());
-        campoCpf.setText(ClienteTableModel.formatarCpf(cliente.getCpf_cliente()));
-        campoEmail.setText(cliente.getEmail_cliente());
-        campoTelefone.setText(ClienteTableModel.formatarTelefone(cliente.getPhone_cliente()));
+        campoNome.setText(cliente.getNome());
+        campoCpf.setText(ClienteTableModel.formatarCpf(cliente.getCpf()));
+        campoEmail.setText(cliente.getEmail());
+        campoTelefone.setText(ClienteTableModel.formatarTelefone(cliente.getTelefone()));
         botaoExcluir.setEnabled(true);
     }
 
