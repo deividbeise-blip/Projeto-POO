@@ -19,9 +19,16 @@ import dominio.modelo.Concessionaria;
 import dominio.modelo.StatusVeiculo;
 import dominio.modelo.Veiculo;
 import aplicacao.servico.VeiculoService;
+import apresentacao.comum.Feedback;
+import apresentacao.comum.TarefaEmSegundoPlano;
+import apresentacao.comum.TelaComBotaoPrincipal;
 import apresentacao.comum.TelaComDados;
+import apresentacao.estilo.Componentes;
+import apresentacao.estilo.Tema;
 
-public class VeiculoFront extends JPanel implements TelaComDados<VeiculoFront.Dados> {
+
+public class VeiculoFront extends JPanel
+        implements TelaComDados<VeiculoFront.Dados>, TelaComBotaoPrincipal {
 
     private final VeiculoService veiculoService;
 
@@ -40,10 +47,23 @@ public class VeiculoFront extends JPanel implements TelaComDados<VeiculoFront.Da
     private JComboBox<StatusVeiculo> comboNovoStatus;
     private JButton botaoAtualizar;
 
+    // Botões da T-04
+    private JButton botaoNovo;
+    private JButton botaoSalvar;
+    private JButton botaoExcluir;
+    private JButton botaoManutencao;
+    private JButton botaoDisponivel;
+
+    /** null = modo cadastro / nada selecionado; preenchido = veículo selecionado (modo edição). */
+    private Veiculo veiculoEmEdicao;
+
     public VeiculoFront(VeiculoService veiculoService) {
         this.veiculoService = veiculoService;
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Os botões precisam existir antes dos painéis abaixo: atualizarPainelStatus() os consulta.
+        JPanel painelBotoes = criarPainelBotoes();
 
         add(criarPainelCadastro(), BorderLayout.NORTH);
 
@@ -51,6 +71,8 @@ public class VeiculoFront extends JPanel implements TelaComDados<VeiculoFront.Da
         painelInferior.add(criarPainelSelecao(), BorderLayout.NORTH);
         painelInferior.add(criarPainelStatus(), BorderLayout.CENTER);
         add(painelInferior, BorderLayout.CENTER);
+
+        add(painelBotoes, BorderLayout.SOUTH);
     }
 
     /** O que esta tela busca no banco ao ficar visível. */
@@ -78,6 +100,117 @@ public class VeiculoFront extends JPanel implements TelaComDados<VeiculoFront.Da
                 dados.concessionarias().toArray(new Concessionaria[0])));
         comboVeiculos.setModel(new DefaultComboBoxModel<>(dados.veiculos().toArray(new Veiculo[0])));
         atualizarPainelStatus();
+    }
+
+    // ---------------------- Botões (Novo, Salvar, Excluir, status) ----------------------
+
+    private JPanel criarPainelBotoes() {
+        botaoNovo = Componentes.botaoSecundario("Novo");
+        botaoExcluir = Componentes.botaoPerigo("Excluir");
+        botaoSalvar = Componentes.botaoPrimario("Salvar");
+        botaoManutencao = Componentes.botaoSecundario("Colocar em manutenção");
+        botaoDisponivel = Componentes.botaoSecundario("Tornar disponível");
+
+        // Alt+letra: C, V, E, O e D são do menu lateral; N, S e X seguem a tela de clientes.
+        botaoNovo.setMnemonic('N');
+        botaoSalvar.setMnemonic('S');
+        botaoExcluir.setMnemonic('X');
+        botaoManutencao.setMnemonic('M');
+        botaoDisponivel.setMnemonic('T');
+
+        botaoNovo.addActionListener(e -> novo());
+        botaoSalvar.addActionListener(e -> salvar());
+        botaoExcluir.addActionListener(e -> excluir());
+        botaoManutencao.addActionListener(e ->
+                alterarStatus(botaoManutencao, StatusVeiculo.EM_MANUTENCAO,
+                        "Veículo colocado em manutenção."));
+        botaoDisponivel.addActionListener(e ->
+                alterarStatus(botaoDisponivel, StatusVeiculo.DISPONIVEL,
+                        "Veículo disponível novamente."));
+
+        // Linha de cima: troca de status. Linha de baixo: Novo / Excluir / Salvar (como em Clientes).
+        JPanel linhaStatus = new JPanel(new GridLayout(1, 2, Tema.PEQUENO, 0));
+        linhaStatus.setOpaque(false);
+        linhaStatus.add(botaoManutencao);
+        linhaStatus.add(botaoDisponivel);
+
+        JPanel linhaPrincipal = new JPanel(new FlowLayout(FlowLayout.RIGHT, Tema.PEQUENO, 0));
+        linhaPrincipal.setOpaque(false);
+        linhaPrincipal.add(botaoNovo);
+        linhaPrincipal.add(botaoExcluir);
+        linhaPrincipal.add(botaoSalvar);
+
+        JPanel painel = new JPanel(new GridLayout(2, 1, 0, Tema.PEQUENO));
+        painel.setOpaque(false);
+        painel.add(linhaStatus);
+        painel.add(linhaPrincipal);
+
+        atualizarBotoes();
+        return painel;
+    }
+
+    /**
+     * O Enter nesta tela salva o veículo (cadastra ou atualiza).
+     *
+     * @return o botão "Salvar"
+     */
+    @Override
+    public JButton botaoPrincipal() {
+        return botaoSalvar;
+    }
+
+    /** Habilita cada botão só quando a ação é permitida para o veículo em edição. */
+    private void atualizarBotoes() {
+        Veiculo veiculo = veiculoEmEdicao;
+        boolean editando = veiculo != null;
+        boolean vendido = editando && veiculo.getStatus() == StatusVeiculo.VENDIDO;
+
+        botaoNovo.setEnabled(true);
+        botaoSalvar.setEnabled(!vendido);                  // vendido: bloqueado para edição
+        botaoExcluir.setEnabled(editando && !vendido);     // só existe o que já foi salvo
+        botaoManutencao.setEnabled(editando && veiculo.getStatus() == StatusVeiculo.DISPONIVEL);
+        botaoDisponivel.setEnabled(editando && veiculo.getStatus() == StatusVeiculo.EM_MANUTENCAO);
+    }
+
+    /**
+     * Troca o status do veículo em edição. Quem decide se a troca é válida é o domínio
+     * (Veiculo/VeiculoService); a tela só pergunta e mostra o resultado.
+     */
+    private void alterarStatus(JButton origem, StatusVeiculo novoStatus, String mensagemSucesso) {
+        Veiculo veiculo = veiculoEmEdicao;
+        if (veiculo == null) {
+            return;
+        }
+
+        TarefaEmSegundoPlano.executar(origem,
+                () -> {
+                    veiculoService.alterarStatus(veiculo, novoStatus);
+                    return veiculo;
+                },
+                atualizado -> {
+                    Feedback.sucesso(this, mensagemSucesso);
+                    atualizarPainelStatus();   // atualiza o rótulo e, de quebra, os botões
+                },
+                erro -> {
+                    Feedback.erro(this, erro);
+                    atualizarBotoes();         // a tarefa reabilita o botão; volta à regra
+                });
+    }
+
+    /** Volta ao modo cadastro: limpa o formulário e a seleção. */
+    private void novo() {
+        limparFormularioCadastro();
+        comboVeiculos.setSelectedItem(null);   // dispara atualizarPainelStatus()
+        veiculoEmEdicao = null;
+        atualizarBotoes();
+    }
+
+    private void salvar() {
+        // TODO (parte do formulário/backend): validar, cadastrar ou atualizar
+    }
+
+    private void excluir() {
+        // TODO (parte do formulário/backend): confirmar e excluir
     }
 
     // ---------------------- Cadastro de veículo ----------------------
@@ -241,6 +374,10 @@ public class VeiculoFront extends JPanel implements TelaComDados<VeiculoFront.Da
 
     private void atualizarPainelStatus() {
         Veiculo veiculo = (Veiculo) comboVeiculos.getSelectedItem();
+
+        // O veículo selecionado no combo é o veículo "em edição" dos botões.
+        veiculoEmEdicao = veiculo;
+        atualizarBotoes();
 
         if (veiculo == null) {
             labelStatusAtual.setText("-");
