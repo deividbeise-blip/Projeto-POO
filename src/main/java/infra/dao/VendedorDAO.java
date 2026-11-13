@@ -8,8 +8,13 @@ import dominio.modelo.Concessionaria;
 import dominio.modelo.Vendedor;
 import dominio.repositorio.VendedorRepository;
 import infra.conexao.ConnectionFactory;
+import infra.excecao.PersistenciaException;
 
+/** Acesso à tabela vendedor. */
 public class VendedorDAO implements VendedorRepository {
+
+    static final String MENSAGEM_DUPLICADO = "Já existe um vendedor com esse nome ou CPF.";
+    static final String MENSAGEM_COM_VENDAS = "Este vendedor possui vendas e não pode ser excluído.";
 
     // Uma consulta só: o JOIN traz a concessionária junto, sem consulta extra por linha.
     private static final String SELECT_COM_CONCESSIONARIA = """
@@ -21,25 +26,32 @@ public class VendedorDAO implements VendedorRepository {
 
     private final ExecutorSql executor;
 
+    /** @param connectionFactory fábrica de conexões (a mesma da transação em andamento) */
     public VendedorDAO(ConnectionFactory connectionFactory) {
         this.executor = new ExecutorSql(connectionFactory);
     }
 
+    @Override
     public void salvar(Vendedor vendedor) {
         // A coluna no banco é "concessionario_vendedor" (sem "a"), não "concessionaria_vendedor".
-        long id = executor.inserir(
-                """
-                INSERT INTO vendedor
-                (name_vendedor, cpf_vendedor, comissao_percentual, concessionario_vendedor)
-                VALUES (?, ?, ?, ?)
-                """,
-                comando -> {
-                    comando.setString(1, vendedor.getNome());
-                    comando.setString(2, vendedor.getCpf());
-                    comando.setDouble(3, vendedor.getComissaoPercentual());
-                    comando.setLong(4, vendedor.getConcessionaria().getIdConcessionaria());
-                },
-                "Erro ao salvar Vendedor no banco.");
+        long id;
+        try {
+            id = executor.inserir(
+                    """
+                    INSERT INTO vendedor
+                    (name_vendedor, cpf_vendedor, comissao_percentual, concessionario_vendedor)
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    comando -> {
+                        comando.setString(1, vendedor.getNome());
+                        comando.setString(2, vendedor.getCpf());
+                        comando.setDouble(3, vendedor.getComissaoPercentual());
+                        comando.setLong(4, vendedor.getConcessionaria().getIdConcessionaria());
+                    },
+                    "Erro ao salvar vendedor no banco.");
+        } catch (PersistenciaException e) {
+            throw traduzirDuplicado(e);
+        }
         vendedor.setIdVendedor(id);
     }
 
@@ -55,9 +67,50 @@ public class VendedorDAO implements VendedorRepository {
     @Override
     public List<Vendedor> listar() {
         return executor.consultar(
-                SELECT_COM_CONCESSIONARIA,
+                SELECT_COM_CONCESSIONARIA + " ORDER BY v.name_vendedor",
                 VendedorDAO::mapear,
                 "Erro ao listar vendedores.");
+    }
+
+    @Override
+    public void atualizar(Vendedor vendedor) {
+        try {
+            executor.atualizar(
+                    """
+                    UPDATE vendedor
+                    SET name_vendedor = ?, cpf_vendedor = ?, comissao_percentual = ?, concessionario_vendedor = ?
+                    WHERE id_vendedor = ?
+                    """,
+                    comando -> {
+                        comando.setString(1, vendedor.getNome());
+                        comando.setString(2, vendedor.getCpf());
+                        comando.setDouble(3, vendedor.getComissaoPercentual());
+                        comando.setLong(4, vendedor.getConcessionaria().getIdConcessionaria());
+                        comando.setLong(5, vendedor.getIdVendedor());
+                    },
+                    "Erro ao atualizar vendedor no banco.");
+        } catch (PersistenciaException e) {
+            throw traduzirDuplicado(e);
+        }
+    }
+
+    @Override
+    public void excluir(Long id) {
+        try {
+            executor.atualizar(
+                    "DELETE FROM vendedor WHERE id_vendedor = ?",
+                    comando -> comando.setLong(1, id),
+                    "Erro ao excluir vendedor no banco.");
+        } catch (PersistenciaException e) {
+            if (ErrosSql.violaChaveEstrangeira(e)) {
+                throw new IllegalStateException(MENSAGEM_COM_VENDAS, e);
+            }
+            throw e;
+        }
+    }
+
+    private static RuntimeException traduzirDuplicado(PersistenciaException e) {
+        return ErrosSql.violaValorUnico(e) ? new IllegalStateException(MENSAGEM_DUPLICADO, e) : e;
     }
 
     private static Vendedor mapear(ResultSet resultado) throws SQLException {

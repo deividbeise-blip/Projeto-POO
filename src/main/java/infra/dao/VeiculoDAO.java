@@ -15,9 +15,6 @@ public class VeiculoDAO implements VeiculoRepository {
 
     static final String MENSAGEM_VEICULO_COM_VENDAS = "Este veículo possui vendas e não pode ser excluído.";
 
-    /** Código de erro do MySQL: "Cannot delete or update a parent row: a foreign key constraint fails". */
-    private static final int MYSQL_ERRO_CHAVE_ESTRANGEIRA = 1451;
-
     // Uma consulta só: o JOIN traz a concessionária junto, sem consulta extra por linha.
     private static final String SELECT_COM_CONCESSIONARIA = """
             SELECT v.id_veiculo, v.marca_veiculo, v.modelo_veiculo, v.ano_veiculo, v.placa_veiculo,
@@ -108,7 +105,7 @@ public class VeiculoDAO implements VeiculoRepository {
                     comando -> comando.setLong(1, id),
                     "Erro ao excluir veículo no banco.");
         } catch (PersistenciaException e) {
-            if (violaChaveEstrangeira(e)) {
+            if (ErrosSql.violaChaveEstrangeira(e)) {
                 throw new IllegalStateException(MENSAGEM_VEICULO_COM_VENDAS, e);
             }
             throw e;
@@ -137,20 +134,6 @@ public class VeiculoDAO implements VeiculoRepository {
                     comando.setLong(9, veiculo.getIdVeiculo());
                 },
                 "Erro ao atualizar veículo no banco.");
-    }
-
-    /** Procura, na cadeia de causas, um SQLException de violação de integridade (SQLState 23xxx). */
-    private static boolean violaChaveEstrangeira(Throwable erro) {
-        for (Throwable causa = erro; causa != null; causa = causa.getCause()) {
-            if (causa instanceof SQLException sql) {
-                String estado = sql.getSQLState();
-                if (sql.getErrorCode() == MYSQL_ERRO_CHAVE_ESTRANGEIRA
-                        || (estado != null && estado.startsWith("23"))) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     private static Veiculo mapear(ResultSet resultado) throws SQLException {

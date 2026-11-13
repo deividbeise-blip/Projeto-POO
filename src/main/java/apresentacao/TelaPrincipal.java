@@ -36,8 +36,8 @@ public class TelaPrincipal extends JFrame {
         adicionarTela("Clientes", clientes);
         adicionarTela("Veículos", veiculos);
         adicionarTela("Vendas", vendas);
-        adicionarTela("Concessionárias", painelEmBreve("Concessionárias"));
-        adicionarTela("Vendedores", painelEmBreve("Vendedores"));
+        adicionarTela("Concessionárias", new ConcessionariaCadastroFront(config.concessionariaService()));
+        adicionarTela("Vendedores", new VendedorFront(config.vendedorService()));
         JPanel conteudo = new JPanel(new BorderLayout(0, Tema.GRANDE));
         conteudo.setBackground(Tema.FUNDO);
         conteudo.setBorder(new EmptyBorder(Tema.MARGEM_TELA, Tema.MARGEM_TELA, Tema.MARGEM_TELA, Tema.MARGEM_TELA));
@@ -77,14 +77,6 @@ public class TelaPrincipal extends JFrame {
             menu.add(Box.createVerticalStrut(Tema.PEQUENO));
         }
         return menu;
-    }
-
-    private JPanel painelEmBreve(String nome) {
-        JPanel cartao = Componentes.painelCartao(nome);
-        JLabel mensagem = Componentes.rotulo("Tela em desenvolvimento.");
-        mensagem.setForeground(Tema.TEXTO_SECUNDARIO);
-        cartao.add(mensagem, BorderLayout.CENTER);
-        return cartao;
     }
 
     /** Troca de tela na hora; os dados dela chegam em segundo plano, sem travar a janela. */
