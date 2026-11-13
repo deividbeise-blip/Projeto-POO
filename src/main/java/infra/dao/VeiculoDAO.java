@@ -9,8 +9,14 @@ import dominio.modelo.StatusVeiculo;
 import dominio.modelo.Veiculo;
 import dominio.repositorio.VeiculoRepository;
 import infra.conexao.ConnectionFactory;
+import infra.excecao.PersistenciaException;
 
 public class VeiculoDAO implements VeiculoRepository {
+
+    static final String MENSAGEM_VEICULO_COM_VENDAS = "Este veículo possui vendas e não pode ser excluído.";
+
+    /** Código de erro do MySQL: "Cannot delete or update a parent row: a foreign key constraint fails". */
+    private static final int MYSQL_ERRO_CHAVE_ESTRANGEIRA = 1451;
 
     // Uma consulta só: o JOIN traz a concessionária junto, sem consulta extra por linha.
     private static final String SELECT_COM_CONCESSIONARIA = """
@@ -88,6 +94,63 @@ public class VeiculoDAO implements VeiculoRepository {
                 SELECT_COM_CONCESSIONARIA,
                 VeiculoDAO::mapear,
                 "Erro ao listar veículos.");
+    }
+
+    /**
+     * Apaga o veículo. Se o banco recusar por chave estrangeira (há venda ligada a ele),
+     * lança {@link IllegalStateException} com uma mensagem que o usuário entende.
+     */
+    @Override
+    public void excluir(Long id) {
+        try {
+            executor.atualizar(
+                    "DELETE FROM veiculo WHERE id_veiculo = ?",
+                    comando -> comando.setLong(1, id),
+                    "Erro ao excluir veículo no banco.");
+        } catch (PersistenciaException e) {
+            if (violaChaveEstrangeira(e)) {
+                throw new IllegalStateException(MENSAGEM_VEICULO_COM_VENDAS, e);
+            }
+            throw e;
+        }
+    }
+
+    /** UPDATE de todos os dados do veículo, pelo ID. */
+    @Override
+    public void atualizar(Veiculo veiculo) {
+        executor.atualizar(
+                """
+                UPDATE veiculo
+                SET marca_veiculo = ?, modelo_veiculo = ?, ano_veiculo = ?, placa_veiculo = ?,
+                    preco_veiculo = ?, status_veiculo = ?, moto = ?, concessionario_veiculo = ?
+                WHERE id_veiculo = ?
+                """,
+                comando -> {
+                    comando.setString(1, veiculo.getMarca());
+                    comando.setString(2, veiculo.getModelo());
+                    comando.setInt(3, veiculo.getAno());
+                    comando.setString(4, veiculo.getPlaca());
+                    comando.setDouble(5, veiculo.getPreco());
+                    comando.setString(6, paraColunaEnum(veiculo.getStatus()));
+                    comando.setBoolean(7, veiculo.isMoto());
+                    comando.setLong(8, veiculo.getConcessionaria().getIdConcessionaria());
+                    comando.setLong(9, veiculo.getIdVeiculo());
+                },
+                "Erro ao atualizar veículo no banco.");
+    }
+
+    /** Procura, na cadeia de causas, um SQLException de violação de integridade (SQLState 23xxx). */
+    private static boolean violaChaveEstrangeira(Throwable erro) {
+        for (Throwable causa = erro; causa != null; causa = causa.getCause()) {
+            if (causa instanceof SQLException sql) {
+                String estado = sql.getSQLState();
+                if (sql.getErrorCode() == MYSQL_ERRO_CHAVE_ESTRANGEIRA
+                        || (estado != null && estado.startsWith("23"))) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static Veiculo mapear(ResultSet resultado) throws SQLException {

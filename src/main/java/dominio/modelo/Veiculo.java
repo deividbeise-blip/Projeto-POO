@@ -20,15 +20,9 @@ public class Veiculo {
     // Construtor de CADASTRO: só cria objetos válidos. Quem grava no banco é o DAO/serviço.
     public Veiculo(String marca, String modelo, Integer ano, String placa, Double preco,
                    StatusVeiculo status, Concessionaria concessionaria, Boolean moto) {
-        if (marca == null || marca.isBlank()) {
-            throw new IllegalArgumentException("Marca é obrigatória.");
-        }
-        if (modelo == null || modelo.isBlank()) {
-            throw new IllegalArgumentException("Modelo é obrigatório.");
-        }
-        if (ano == null || ano < ANO_MINIMO || ano > LocalDate.now().getYear() + 1) {
-            throw new IllegalArgumentException("Ano inválido.");
-        }
+        validarMarca(marca);
+        validarModelo(modelo);
+        validarAno(ano);
         validarPlaca(placa);
         validarPreco(preco);
         if (status == null) {
@@ -58,13 +52,62 @@ public class Veiculo {
         this.idVeiculo = idVeiculo;
     }
 
-    private static void validarPlaca(String placa) {
+    /**
+     * Regra da marca. Pública para a tela validar o campo antes de enviar.
+     *
+     * @param marca a marca digitada
+     * @throws IllegalArgumentException se estiver vazia
+     */
+    public static void validarMarca(String marca) {
+        if (marca == null || marca.isBlank()) {
+            throw new IllegalArgumentException("Marca é obrigatória.");
+        }
+    }
+
+    /**
+     * Regra do modelo.
+     *
+     * @param modelo o modelo digitado
+     * @throws IllegalArgumentException se estiver vazio
+     */
+    public static void validarModelo(String modelo) {
+        if (modelo == null || modelo.isBlank()) {
+            throw new IllegalArgumentException("Modelo é obrigatório.");
+        }
+    }
+
+    /**
+     * Regra do ano: de {@link #ANO_MINIMO} até o ano que vem (carros do próximo ano-modelo).
+     *
+     * @param ano o ano informado
+     * @throws IllegalArgumentException se estiver fora desse intervalo
+     */
+    public static void validarAno(Integer ano) {
+        int maximo = LocalDate.now().getYear() + 1;
+        if (ano == null || ano < ANO_MINIMO || ano > maximo) {
+            throw new IllegalArgumentException("Ano deve estar entre " + ANO_MINIMO + " e " + maximo + ".");
+        }
+    }
+
+    /**
+     * Regra da placa.
+     *
+     * @param placa a placa digitada
+     * @throws IllegalArgumentException se estiver vazia
+     */
+    public static void validarPlaca(String placa) {
         if (placa == null || placa.isBlank()) {
             throw new IllegalArgumentException("Placa é obrigatória.");
         }
     }
 
-    private static void validarPreco(Double preco) {
+    /**
+     * Regra do preço.
+     *
+     * @param preco o preço informado
+     * @throws IllegalArgumentException se for nulo, zero ou negativo
+     */
+    public static void validarPreco(Double preco) {
         if (preco == null || preco <= 0) {
             throw new IllegalArgumentException("Preço deve ser maior que zero.");
         }
