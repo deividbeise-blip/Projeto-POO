@@ -1,21 +1,23 @@
 package aplicacao.servico;
 
 import java.util.List;
+import java.awt.Color;
 
+import apresentacao.estilo.Tema;
 import dominio.excecao.VeiculoIndisponivelException;
 import dominio.modelo.Concessionaria;
 import dominio.modelo.StatusVeiculo;
 import dominio.modelo.Veiculo;
 import dominio.repositorio.ConcessionariaRepository;
-import dominio.repositorio.VeiculoRepository;
+import dominio.repositorio.VeiculoServiceRepository;
 
 public class VeiculoService {
-    private final VeiculoRepository veiculoRepository;
+    private final VeiculoServiceRepository VeiculoServiceRepository;
     private final ConcessionariaRepository concessionariaRepository;
 
-    public VeiculoService(VeiculoRepository veiculoRepository,
+    public VeiculoService(VeiculoServiceRepository VeiculoServiceRepository,
                           ConcessionariaRepository concessionariaRepository) {
-        this.veiculoRepository = veiculoRepository;
+        this.VeiculoServiceRepository = VeiculoServiceRepository;
         this.concessionariaRepository = concessionariaRepository;
     }
 
@@ -28,7 +30,7 @@ public class VeiculoService {
                              Double preco, boolean moto, Concessionaria concessionaria) {
         Veiculo veiculo = new Veiculo(marca, modelo, ano, placa, preco,
                 StatusVeiculo.DISPONIVEL, concessionaria, moto);
-        veiculoRepository.salvar(veiculo);
+        VeiculoServiceRepository.salvar(veiculo);
         return veiculo;
     }
 
@@ -40,15 +42,15 @@ public class VeiculoService {
             case VENDIDO -> throw new VeiculoIndisponivelException(
                     "Um veículo só pode ser marcado como vendido pela tela de vendas.");
         }
-        veiculoRepository.atualizarStatus(veiculo);
+        VeiculoServiceRepository.atualizarStatus(veiculo);
     }
 
     public List<Veiculo> listarTodos() {
-        return veiculoRepository.listarTodos();
+        return VeiculoServiceRepository.listarTodos();
     }
 
     public List<Veiculo> listarDisponiveis() {
-        return veiculoRepository.listarDisponiveis();
+        return VeiculoServiceRepository.listarDisponiveis();
     }
 
     public List<Concessionaria> listarConcessionarias() {
@@ -62,13 +64,29 @@ public class VeiculoService {
         Veiculo veiculo = new Veiculo(marca, modelo, ano, placa, preco,
                 StatusVeiculo.DISPONIVEL, concessionaria, moto);
         veiculo.setIdVeiculo(id);
-        veiculoRepository.salvar(veiculo);  
+        VeiculoServiceRepository.salvar(veiculo);  
         return veiculo;
     }
     public void excluir(Long id) {
         if (id == null) {
             throw new IllegalArgumentException("Selecione um veículo para excluir.");
         }
-        veiculoRepository.excluir(id);
+        VeiculoServiceRepository.excluir(id);
+    }
+
+    public static Color cor(StatusVeiculo status) {
+        return switch (status) {
+            case DISPONIVEL    -> Tema.SUCESSO;   // verde
+            case EM_MANUTENCAO -> Tema.ALERTA;    // amarelo
+            case VENDIDO       -> Tema.NEUTRO;    // cinza
+        };
+    }
+
+    public static String rotulo(StatusVeiculo status) {
+        return switch (status) {
+            case DISPONIVEL    -> "Disponível";
+            case EM_MANUTENCAO -> "Em manutenção";
+            case VENDIDO       -> "Vendido";
+        };
     }
 }
