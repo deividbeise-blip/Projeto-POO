@@ -22,4 +22,26 @@ public class ClienteService {
     public List<Cliente> listar() {
         return clienteRepository.listar();
     }
+
+    /** Valida e atualiza o cliente de ID informado. Lança IllegalArgumentException se inválido. */
+    public Cliente atualizar(Long id, String nome, String cpf, String email, String telefone) {
+        if (id == null) {
+            throw new IllegalArgumentException("Selecione um cliente para editar.");
+        }
+        Cliente cliente = new Cliente(nome, cpf, email, telefone);
+        cliente.setId_cliente(id);
+        clienteRepository.atualizar(cliente);
+        return cliente;
+    }
+
+    /**
+     * Exclui o cliente. Lança IllegalStateException com a mensagem
+     * "Este cliente possui vendas e não pode ser excluído."
+     */
+    public void excluir(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Selecione um cliente para excluir.");
+        }
+        clienteRepository.excluir(id);
+    }
 }
