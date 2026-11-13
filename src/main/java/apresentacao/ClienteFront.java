@@ -3,133 +3,262 @@ package apresentacao;
 import aplicacao.servico.ClienteService;
 import apresentacao.comum.Feedback;
 import apresentacao.comum.TarefaEmSegundoPlano;
-import apresentacao.comum.TelaComBotaoPrincipal;
 import apresentacao.comum.Validacao;
 import apresentacao.estilo.Componentes;
 import apresentacao.estilo.Tema;
 import dominio.modelo.Cliente;
 
-import javax.swing.*;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+import javax.swing.RowFilter;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.table.TableRowSorter;
 
 /**
- * Cadastro de clientes. Serve de exemplo de uso de {@link TarefaEmSegundoPlano},
- * {@link Feedback} e {@link Validacao} para as outras telas.
+ * Cadastro de clientes: lista com busca à esquerda, formulário à direita.
+ * Clicar numa linha carrega o cliente no formulário (modo edição); "Novo" volta ao modo cadastro.
  */
-public class ClienteFront extends JPanel implements TelaComBotaoPrincipal {
+public class ClienteFront extends JPanel {
 
     private final ClienteService clienteService;
+    private final ClienteTableModel modeloTabela = new ClienteTableModel();
+    private final TableRowSorter<ClienteTableModel> ordenador = new TableRowSorter<>(modeloTabela);
 
+    private JTable tabela;
+    private JTextField campoBusca;
     private JTextField campoNome;
     private JTextField campoCpf;
     private JTextField campoEmail;
     private JTextField campoTelefone;
-    private JButton botaoCadastrar;
+    private JButton botaoNovo;
+    private JButton botaoSalvar;
+    private JButton botaoExcluir;
 
-    /**
-     * Cria a tela de cadastro de clientes.
-     *
-     * @param clienteService serviço usado para gravar o cliente
-     */
+    /** null = modo cadastro; preenchido = modo edição do cliente com esse ID. */
+    private Long idEmEdicao;
+
     public ClienteFront(ClienteService clienteService) {
         this.clienteService = clienteService;
-        setLayout(new BorderLayout(Tema.GRANDE, Tema.GRANDE));
-        setBackground(Tema.FUNDO);
 
-        add(criarFormulario(), BorderLayout.CENTER);
-        add(criarPainelBotao(), BorderLayout.SOUTH);
+        setLayout(new GridBagLayout());
+        setBorder(BorderFactory.createEmptyBorder(
+                Tema.MARGEM_TELA, Tema.MARGEM_TELA, Tema.MARGEM_TELA, Tema.MARGEM_TELA));
+
+        GridBagConstraints c = new GridBagConstraints();
+        c.fill = GridBagConstraints.BOTH;
+        c.weighty = 1;
+        c.gridy = 0;
+
+        c.gridx = 0;
+        c.weightx = 0.6;
+        c.insets = new Insets(0, 0, 0, Tema.MEDIO);
+        add(criarPainelLista(), c);
+
+        c.gridx = 1;
+        c.weightx = 0.4;
+        c.insets = new Insets(0, 0, 0, 0);
+        add(criarPainelFormulario(), c);
+
+        novo();
+        recarregar();
     }
 
-    private JPanel criarFormulario() {
-        JPanel cartao = Componentes.painelCartao("Cadastro de cliente");
-        JPanel formulario = Componentes.painelFormulario();
+    // ---------------------------------------------------------------- montagem da tela
+
+    private JPanel criarPainelLista() {
+        JPanel cartao = Componentes.painelCartao("Clientes");
+
+        campoBusca = Componentes.campoTexto();
+        campoBusca.putClientProperty("JTextField.placeholderText", "Buscar por nome ou CPF");
+        campoBusca.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { aplicarFiltro(); }
+            @Override public void removeUpdate(DocumentEvent e) { aplicarFiltro(); }
+            @Override public void changedUpdate(DocumentEvent e) { aplicarFiltro(); }
+        });
+
+        tabela = new JTable(modeloTabela);
+        tabela.setRowSorter(ordenador);
+        tabela.setFont(Tema.TEXTO_FONTE);
+        tabela.setRowHeight(28);
+        tabela.setGridColor(Tema.BORDA);
+        tabela.setFillsViewportHeight(true);
+        tabela.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tabela.getTableHeader().setFont(Tema.BOTAO);
+        tabela.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                carregarSelecionado();
+            }
+        });
+
+        JPanel conteudo = new JPanel(new BorderLayout(0, Tema.PEQUENO));
+        conteudo.setOpaque(false);
+        conteudo.add(campoBusca, BorderLayout.NORTH);
+        conteudo.add(new JScrollPane(tabela), BorderLayout.CENTER);
+        cartao.add(conteudo, BorderLayout.CENTER);
+        return cartao;
+    }
+
+    private JPanel criarPainelFormulario() {
+        JPanel cartao = Componentes.painelCartao("Dados do cliente");
+
         campoNome = Componentes.campoTexto();
         campoCpf = Componentes.campoTexto();
         campoEmail = Componentes.campoTexto();
         campoTelefone = Componentes.campoTexto();
-        Componentes.adicionarCampo(formulario, 0, "Nome", campoNome);
-        Componentes.adicionarCampo(formulario, 1, "CPF", campoCpf);
-        Componentes.adicionarCampo(formulario, 2, "E-mail", campoEmail);
-        Componentes.adicionarCampo(formulario, 3, "Telefone", campoTelefone);
-        JPanel alinhamento = new JPanel(new BorderLayout());
-        alinhamento.setOpaque(false);
-        alinhamento.add(formulario, BorderLayout.NORTH);
-        cartao.add(alinhamento, BorderLayout.CENTER);
+
+        JPanel formulario = Componentes.painelFormulario();
+        Componentes.adicionarCampo(formulario, 0, "Nome:", campoNome);
+        Componentes.adicionarCampo(formulario, 1, "CPF:", campoCpf);
+        Componentes.adicionarCampo(formulario, 2, "E-mail:", campoEmail);
+        Componentes.adicionarCampo(formulario, 3, "Telefone:", campoTelefone);
+
+        botaoNovo = Componentes.botaoSecundario("Novo");
+        botaoExcluir = Componentes.botaoPerigo("Excluir");
+        botaoSalvar = Componentes.botaoPrimario("Salvar");
+        botaoNovo.addActionListener(e -> novo());
+        botaoExcluir.addActionListener(e -> excluir());
+        botaoSalvar.addActionListener(e -> salvar());
+
+        JPanel botoes = new JPanel(new FlowLayout(FlowLayout.RIGHT, Tema.PEQUENO, 0));
+        botoes.setOpaque(false);
+        botoes.add(botaoNovo);
+        botoes.add(botaoExcluir);
+        botoes.add(botaoSalvar);
+
+        JPanel conteudo = new JPanel(new BorderLayout(0, Tema.MEDIO));
+        conteudo.setOpaque(false);
+        conteudo.add(formulario, BorderLayout.NORTH);
+        conteudo.add(botoes, BorderLayout.SOUTH);
+        cartao.add(conteudo, BorderLayout.CENTER);
         return cartao;
     }
 
-    private JPanel criarPainelBotao() {
-        JPanel painel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        painel.setOpaque(false);
-        botaoCadastrar = Componentes.botaoPrimario("Cadastrar cliente");
-        botaoCadastrar.setMnemonic('A'); // Alt+C é do item "Clientes" do menu
-        botaoCadastrar.addActionListener(e -> cadastrarCliente());
-        painel.add(botaoCadastrar);
-        return painel;
-    }
+    // ---------------------------------------------------------------- busca
 
-    /**
-     * O Enter nesta tela cadastra o cliente.
-     *
-     * @return o botão "Cadastrar cliente"
-     */
-    @Override
-    public JButton botaoPrincipal() {
-        return botaoCadastrar;
-    }
-
-    private void cadastrarCliente() {
-        if (!validarFormulario()) {
+    /** Filtra a lista por nome ou CPF enquanto o usuário digita (o CPF aceita pontos e traço). */
+    private void aplicarFiltro() {
+        String texto = campoBusca.getText().trim().toLowerCase();
+        if (texto.isEmpty()) {
+            ordenador.setRowFilter(null);
             return;
         }
-        // Lê os campos aqui, na thread da tela; o lambda abaixo roda em outra thread.
+        String digitos = texto.replaceAll("\\D", "");
+        ordenador.setRowFilter(new RowFilter<ClienteTableModel, Integer>() {
+            @Override
+            public boolean include(Entry<? extends ClienteTableModel, ? extends Integer> entrada) {
+                Cliente cliente = entrada.getModel().getCliente(entrada.getIdentifier());
+                return cliente.getName_cliente().toLowerCase().contains(texto)
+                        || (!digitos.isEmpty() && cliente.getCpf_cliente().contains(digitos));
+            }
+        });
+    }
+
+    // ---------------------------------------------------------------- fluxo da tela
+
+    /** Limpa o formulário e volta ao modo cadastro. */
+    private void novo() {
+        idEmEdicao = null;
+        tabela.clearSelection();
+        campoNome.setText("");
+        campoCpf.setText("");
+        campoEmail.setText("");
+        campoTelefone.setText("");
+        limparErros();
+        botaoExcluir.setEnabled(false);
+        campoNome.requestFocusInWindow();
+    }
+
+    /** Clique numa linha: carrega o cliente no formulário e entra em modo edição. */
+    private void carregarSelecionado() {
+        int linha = tabela.getSelectedRow();
+        if (linha < 0) {
+            return;
+        }
+        Cliente cliente = modeloTabela.getCliente(tabela.convertRowIndexToModel(linha));
+        idEmEdicao = cliente.getId_cliente();
+        limparErros();
+        campoNome.setText(cliente.getName_cliente());
+        campoCpf.setText(ClienteTableModel.formatarCpf(cliente.getCpf_cliente()));
+        campoEmail.setText(cliente.getEmail_cliente());
+        campoTelefone.setText(ClienteTableModel.formatarTelefone(cliente.getPhone_cliente()));
+        botaoExcluir.setEnabled(true);
+    }
+
+    private void salvar() {
+        boolean valido = Validacao.verificar(campoNome, () -> Cliente.validarNome(campoNome.getText()));
+        valido &= Validacao.verificar(campoCpf, () -> Cliente.validarCpf(campoCpf.getText()));
+        valido &= Validacao.verificar(campoEmail, () -> Cliente.validarEmail(campoEmail.getText()));
+        valido &= Validacao.verificar(campoTelefone, () -> Cliente.validarTelefone(campoTelefone.getText()));
+        if (!valido) {
+            return;
+        }
+
+        // Lê os campos aqui, na thread da tela: o trabalho em segundo plano não pode mexer em componentes.
+        Long id = idEmEdicao;
         String nome = campoNome.getText();
         String cpf = campoCpf.getText();
         String email = campoEmail.getText();
         String telefone = campoTelefone.getText();
 
-        TarefaEmSegundoPlano.executar(botaoCadastrar,
-                () -> clienteService.cadastrar(nome, cpf, email, telefone),
+        TarefaEmSegundoPlano.executar(botaoSalvar,
+                () -> id == null
+                        ? clienteService.cadastrar(nome, cpf, email, telefone)
+                        : clienteService.atualizar(id, nome, cpf, email, telefone),
                 cliente -> {
-                    Feedback.sucesso(this, "Cliente " + cliente.getNome() + " cadastrado com sucesso.");
-                    limparFormulario();
+                    Feedback.sucesso(this, id == null
+                            ? "Cliente cadastrado com sucesso."
+                            : "Cliente atualizado com sucesso.");
+                    novo();
+                    recarregar();
                 },
                 erro -> Feedback.erro(this, erro));
     }
 
-    /**
-     * Confere todos os campos com as regras do próprio {@link Cliente} e marca os inválidos de
-     * uma vez só. O foco vai para o primeiro campo com erro.
-     */
-    private boolean validarFormulario() {
-        JComponent primeiroInvalido = null;
-        if (!Validacao.verificar(campoNome, () -> Cliente.validarNome(campoNome.getText()))) {
-            primeiroInvalido = campoNome;
+    private void excluir() {
+        Long id = idEmEdicao;
+        if (id == null) {
+            return;
         }
-        if (!Validacao.verificar(campoCpf, () -> Cliente.validarCpf(campoCpf.getText()))
-                && primeiroInvalido == null) {
-            primeiroInvalido = campoCpf;
+        if (!Feedback.confirmar(this, "Excluir o cliente " + campoNome.getText().trim() + "?")) {
+            return;
         }
-        if (!Validacao.verificar(campoEmail, () -> Cliente.validarEmail(campoEmail.getText()))
-                && primeiroInvalido == null) {
-            primeiroInvalido = campoEmail;
-        }
-        if (!Validacao.verificar(campoTelefone, () -> Cliente.validarTelefone(campoTelefone.getText()))
-                && primeiroInvalido == null) {
-            primeiroInvalido = campoTelefone;
-        }
-        if (primeiroInvalido != null) {
-            primeiroInvalido.requestFocusInWindow();
-            return false;
-        }
-        return true;
+
+        TarefaEmSegundoPlano.executar(botaoExcluir,
+                () -> {
+                    clienteService.excluir(id);
+                    return id;
+                },
+                excluido -> {
+                    Feedback.sucesso(this, "Cliente excluído com sucesso.");
+                    novo();
+                    recarregar();
+                },
+                erro -> Feedback.erro(this, erro));
     }
 
-    private void limparFormulario() {
-        campoNome.setText("");
-        campoCpf.setText("");
-        campoEmail.setText("");
-        campoTelefone.setText("");
-        campoNome.requestFocusInWindow();
+    /** Recarrega a lista do banco em segundo plano. */
+    private void recarregar() {
+        TarefaEmSegundoPlano.executar(
+                clienteService::listar,
+                modeloTabela::setClientes,
+                erro -> Feedback.erro(this, erro));
+    }
+
+    private void limparErros() {
+        Validacao.limpar(campoNome);
+        Validacao.limpar(campoCpf);
+        Validacao.limpar(campoEmail);
+        Validacao.limpar(campoTelefone);
     }
 }
