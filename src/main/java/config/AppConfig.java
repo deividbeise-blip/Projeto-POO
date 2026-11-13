@@ -7,8 +7,10 @@ import aplicacao.pagamento.FormaPagamento;
 import aplicacao.pagamento.FormaPagamentoCartao;
 import aplicacao.pagamento.FormaPagamentoPix;
 import aplicacao.servico.ClienteService;
+import aplicacao.servico.ConcessionariaService;
 import aplicacao.servico.VeiculoService;
 import aplicacao.servico.VendaService;
+import aplicacao.servico.VendedorService;
 import dominio.repositorio.ClienteRepository;
 import dominio.repositorio.ConcessionariaRepository;
 import dominio.repositorio.PagamentoRepository;
@@ -50,6 +52,8 @@ public class AppConfig {
             DadosCartao.class, new FormaPagamentoCartao(new PagamentoCartaoDAO(transacao)));
 
     private final ClienteService clienteService = new ClienteService(clienteRepository);
+    private final ConcessionariaService concessionariaService = new ConcessionariaService(concessionariaRepository);
+    private final VendedorService vendedorService = new VendedorService(vendedorRepository, concessionariaRepository);
     private final VeiculoService veiculoService = new VeiculoService(veiculoRepository, concessionariaRepository);
     private final VendaService vendaService = new VendaService(
             clienteRepository,
@@ -60,7 +64,14 @@ public class AppConfig {
             formasPagamento,
             transacao);
 
+    /** @return casos de uso de clientes */
     public ClienteService clienteService() { return clienteService; }
+    /** @return casos de uso de concessionárias */
+    public ConcessionariaService concessionariaService() { return concessionariaService; }
+    /** @return casos de uso de vendedores */
+    public VendedorService vendedorService() { return vendedorService; }
+    /** @return casos de uso de veículos */
     public VeiculoService veiculoService() { return veiculoService; }
+    /** @return casos de uso de vendas */
     public VendaService vendaService() { return vendaService; }
 }

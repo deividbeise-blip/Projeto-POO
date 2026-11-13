@@ -14,9 +14,6 @@ public class ClienteDAO implements ClienteRepository {
     static final String MENSAGEM_CLIENTE_COM_VENDAS = "Este cliente possui vendas e não pode ser excluído.";
     private static final String MENSAGEM_NAO_ENCONTRADO = "Cliente não encontrado. Atualize a lista e tente de novo.";
 
-    /** Código de erro do MySQL: "Cannot delete or update a parent row: a foreign key constraint fails". */
-    private static final int MYSQL_ERRO_CHAVE_ESTRANGEIRA = 1451;
-
     private static final String COLUNAS = "id_cliente, name_cliente, cpf, email, phone";
 
     private final ExecutorSql executor;
@@ -83,7 +80,7 @@ public class ClienteDAO implements ClienteRepository {
                     comando -> comando.setLong(1, id),
                     "Erro ao excluir cliente no banco.");
         } catch (PersistenciaException e) {
-            if (violaChaveEstrangeira(e)) {
+            if (ErrosSql.violaChaveEstrangeira(e)) {
                 throw new IllegalStateException(MENSAGEM_CLIENTE_COM_VENDAS, e);
             }
             throw e;
@@ -91,20 +88,6 @@ public class ClienteDAO implements ClienteRepository {
         if (linhas == 0) {
             throw new IllegalStateException(MENSAGEM_NAO_ENCONTRADO);
         }
-    }
-
-    /** Procura, na cadeia de causas, um SQLException de violação de integridade (SQLState 23xxx). */
-    private static boolean violaChaveEstrangeira(Throwable erro) {
-        for (Throwable causa = erro; causa != null; causa = causa.getCause()) {
-            if (causa instanceof SQLException sql) {
-                String estado = sql.getSQLState();
-                if (sql.getErrorCode() == MYSQL_ERRO_CHAVE_ESTRANGEIRA
-                        || (estado != null && estado.startsWith("23"))) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     private static Cliente mapear(ResultSet resultado) throws SQLException {
