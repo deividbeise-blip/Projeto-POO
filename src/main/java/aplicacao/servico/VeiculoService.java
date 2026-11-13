@@ -9,15 +9,15 @@ import dominio.modelo.Concessionaria;
 import dominio.modelo.StatusVeiculo;
 import dominio.modelo.Veiculo;
 import dominio.repositorio.ConcessionariaRepository;
-import dominio.repositorio.VeiculoServiceRepository;
+import dominio.repositorio.VeiculoRepository;
 
 public class VeiculoService {
-    private final VeiculoServiceRepository VeiculoServiceRepository;
+    private final VeiculoRepository VeiculoRepository;
     private final ConcessionariaRepository concessionariaRepository;
 
-    public VeiculoService(VeiculoServiceRepository VeiculoServiceRepository,
+    public VeiculoService(VeiculoRepository VeiculoRepository,
                           ConcessionariaRepository concessionariaRepository) {
-        this.VeiculoServiceRepository = VeiculoServiceRepository;
+        this.VeiculoRepository = VeiculoRepository;
         this.concessionariaRepository = concessionariaRepository;
     }
 
@@ -30,7 +30,7 @@ public class VeiculoService {
                              Double preco, boolean moto, Concessionaria concessionaria) {
         Veiculo veiculo = new Veiculo(marca, modelo, ano, placa, preco,
                 StatusVeiculo.DISPONIVEL, concessionaria, moto);
-        VeiculoServiceRepository.salvar(veiculo);
+        VeiculoRepository.salvar(veiculo);
         return veiculo;
     }
 
@@ -42,15 +42,15 @@ public class VeiculoService {
             case VENDIDO -> throw new VeiculoIndisponivelException(
                     "Um veículo só pode ser marcado como vendido pela tela de vendas.");
         }
-        VeiculoServiceRepository.atualizarStatus(veiculo);
+        VeiculoRepository.atualizarStatus(veiculo);
     }
 
     public List<Veiculo> listarTodos() {
-        return VeiculoServiceRepository.listarTodos();
+        return VeiculoRepository.listarTodos();
     }
 
     public List<Veiculo> listarDisponiveis() {
-        return VeiculoServiceRepository.listarDisponiveis();
+        return VeiculoRepository.listarDisponiveis();
     }
 
     public List<Concessionaria> listarConcessionarias() {
@@ -64,14 +64,14 @@ public class VeiculoService {
         Veiculo veiculo = new Veiculo(marca, modelo, ano, placa, preco,
                 StatusVeiculo.DISPONIVEL, concessionaria, moto);
         veiculo.setIdVeiculo(id);
-        VeiculoServiceRepository.salvar(veiculo);  
+        VeiculoRepository.salvar(veiculo);  
         return veiculo;
     }
     public void excluir(Long id) {
         if (id == null) {
             throw new IllegalArgumentException("Selecione um veículo para excluir.");
         }
-        VeiculoServiceRepository.excluir(id);
+        VeiculoRepository.excluir(id);
     }
 
     public static Color cor(StatusVeiculo status) {
