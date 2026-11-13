@@ -1,9 +1,7 @@
 package aplicacao.servico;
 
 import java.util.List;
-import java.awt.Color;
 
-import apresentacao.estilo.Tema;
 import dominio.excecao.VeiculoIndisponivelException;
 import dominio.modelo.Concessionaria;
 import dominio.modelo.StatusVeiculo;
@@ -74,13 +72,13 @@ public class VeiculoService {
         veiculoRepository.excluir(id);
     }
 
-    public static Color cor(StatusVeiculo status) {
-        return switch (status) {
-            case DISPONIVEL    -> Tema.SUCESSO;   // verde
-            case EM_MANUTENCAO -> Tema.ALERTA;    // amarelo
-            case VENDIDO       -> Tema.NEUTRO;    // cinza
-        };
-    }
+    public static String cor(StatusVeiculo status) {
+    return switch (status) {
+        case DISPONIVEL    -> "046,160,067";  // verde
+        case EM_MANUTENCAO -> "245,158,011";  // amarelo
+        case VENDIDO       -> "107,114,128";  // cinza
+    };
+}
 
     public static String rotulo(StatusVeiculo status) {
         return switch (status) {

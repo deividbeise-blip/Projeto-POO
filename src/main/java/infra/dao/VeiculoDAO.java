@@ -168,4 +168,32 @@ public class VeiculoDAO implements VeiculoRepository {
             default -> throw new IllegalStateException("Status desconhecido no banco: " + valorColuna);
         };
     }
+    private static void filtroStatus(StatusVeiculo status, StringBuilder sql, List<Object> parametros) {
+        if (status != null) {
+            sql.append(" AND v.status_veiculo = ?");
+            parametros.add(paraColunaEnum(status));
+        }
+    }
+    private static void filtroTipo(boolean moto, StringBuilder sql, List<Object> parametros) {
+        sql.append(" AND v.moto = ?");
+        parametros.add(moto);
+    }
+    private void filtroMarca(String marca, StringBuilder sql, List<Object> parametros) {
+        if (marca != null && !marca.isBlank()) {
+            sql.append(" AND v.marca_veiculo LIKE ?");
+            parametros.add("%" + marca + "%");
+        }
+    }
+    private void filtroModelo(String modelo, StringBuilder sql, List<Object> parametros) {
+        if (modelo != null && !modelo.isBlank()) {
+            sql.append(" AND v.modelo_veiculo LIKE ?");
+            parametros.add("%" + modelo + "%");
+        }
+    }
+    private void filtroPlaca(String placa, StringBuilder sql, List<Object> parametros) {
+        if (placa != null && !placa.isBlank()) {
+            sql.append(" AND v.placa_veiculo LIKE ?");
+            parametros.add("%" + placa + "%");
+        }
+    }
 }
