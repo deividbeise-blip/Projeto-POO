@@ -9,8 +9,14 @@ import dominio.modelo.StatusVeiculo;
 import dominio.modelo.Veiculo;
 import dominio.repositorio.VeiculoRepository;
 import infra.conexao.ConnectionFactory;
+import infra.excecao.PersistenciaException;
 
 public class VeiculoDAO implements VeiculoRepository {
+
+    static final String MENSAGEM_VEICULO_COM_VENDAS = "Este veículo possui vendas e não pode ser excluído.";
+
+    /** Código de erro do MySQL: "Cannot delete or update a parent row: a foreign key constraint fails". */
+    private static final int MYSQL_ERRO_CHAVE_ESTRANGEIRA = 1451;
 
     // Uma consulta só: o JOIN traz a concessionária junto, sem consulta extra por linha.
     private static final String SELECT_COM_CONCESSIONARIA = """
@@ -90,25 +96,28 @@ public class VeiculoDAO implements VeiculoRepository {
                 "Erro ao listar veículos.");
     }
 
+    /**
+     * Apaga o veículo. Se o banco recusar por chave estrangeira (há venda ligada a ele),
+     * lança {@link IllegalStateException} com uma mensagem que o usuário entende.
+     */
     @Override
     public void excluir(Long id) {
-        Veiculo veiculo = buscarPorId(id);
-        if (veiculo == null || veiculo.getStatus() != StatusVeiculo.DISPONIVEL) {
-            throw new IllegalStateException("Não é possível excluir um veículo que não está disponível.");
+        try {
+            executor.atualizar(
+                    "DELETE FROM veiculo WHERE id_veiculo = ?",
+                    comando -> comando.setLong(1, id),
+                    "Erro ao excluir veículo no banco.");
+        } catch (PersistenciaException e) {
+            if (violaChaveEstrangeira(e)) {
+                throw new IllegalStateException(MENSAGEM_VEICULO_COM_VENDAS, e);
+            }
+            throw e;
         }
-
-        executor.atualizar(
-                "DELETE FROM veiculo WHERE id_veiculo = ?",
-                comando -> comando.setLong(1, id),
-                "Erro ao excluir veículo no banco.");
     }
 
+    /** UPDATE de todos os dados do veículo, pelo ID. */
     @Override
     public void atualizar(Veiculo veiculo) {
-        if (veiculo.getStatus() != StatusVeiculo.DISPONIVEL) {
-            throw new IllegalStateException("Não é possível atualizar um veículo que não está disponível.");
-        }
-        
         executor.atualizar(
                 """
                 UPDATE veiculo
@@ -128,6 +137,20 @@ public class VeiculoDAO implements VeiculoRepository {
                     comando.setLong(9, veiculo.getIdVeiculo());
                 },
                 "Erro ao atualizar veículo no banco.");
+    }
+
+    /** Procura, na cadeia de causas, um SQLException de violação de integridade (SQLState 23xxx). */
+    private static boolean violaChaveEstrangeira(Throwable erro) {
+        for (Throwable causa = erro; causa != null; causa = causa.getCause()) {
+            if (causa instanceof SQLException sql) {
+                String estado = sql.getSQLState();
+                if (sql.getErrorCode() == MYSQL_ERRO_CHAVE_ESTRANGEIRA
+                        || (estado != null && estado.startsWith("23"))) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static Veiculo mapear(ResultSet resultado) throws SQLException {
@@ -167,33 +190,5 @@ public class VeiculoDAO implements VeiculoRepository {
             case "Em_Manutencao" -> StatusVeiculo.EM_MANUTENCAO;
             default -> throw new IllegalStateException("Status desconhecido no banco: " + valorColuna);
         };
-    }
-    private static void filtroStatus(StatusVeiculo status, StringBuilder sql, List<Object> parametros) {
-        if (status != null) {
-            sql.append(" AND v.status_veiculo = ?");
-            parametros.add(paraColunaEnum(status));
-        }
-    }
-    private static void filtroTipo(boolean moto, StringBuilder sql, List<Object> parametros) {
-        sql.append(" AND v.moto = ?");
-        parametros.add(moto);
-    }
-    private void filtroMarca(String marca, StringBuilder sql, List<Object> parametros) {
-        if (marca != null && !marca.isBlank()) {
-            sql.append(" AND v.marca_veiculo LIKE ?");
-            parametros.add("%" + marca + "%");
-        }
-    }
-    private void filtroModelo(String modelo, StringBuilder sql, List<Object> parametros) {
-        if (modelo != null && !modelo.isBlank()) {
-            sql.append(" AND v.modelo_veiculo LIKE ?");
-            parametros.add("%" + modelo + "%");
-        }
-    }
-    private void filtroPlaca(String placa, StringBuilder sql, List<Object> parametros) {
-        if (placa != null && !placa.isBlank()) {
-            sql.append(" AND v.placa_veiculo LIKE ?");
-            parametros.add("%" + placa + "%");
-        }
     }
 }

@@ -15,7 +15,6 @@ public final class Tema {
     public static final Color SUCESSO = new Color(30, 122, 84);
     public static final Color ERRO = new Color(181, 48, 53);
     public static final Color AVISO = new Color(160, 103, 20);
-    public static final Color ALERTA = AVISO;
     public static final Color NEUTRO = new Color(108, 117, 125);
     /** Contorno de cartões e divisórias (ex.: barra de status). */
     public static final Color BORDA = new Color(221, 228, 237);
