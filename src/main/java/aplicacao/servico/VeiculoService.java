@@ -12,12 +12,12 @@ import dominio.repositorio.ConcessionariaRepository;
 import dominio.repositorio.VeiculoRepository;
 
 public class VeiculoService {
-    private final VeiculoRepository VeiculoRepository;
+    private final VeiculoRepository veiculoRepository;
     private final ConcessionariaRepository concessionariaRepository;
 
-    public VeiculoService(VeiculoRepository VeiculoRepository,
+    public VeiculoService(VeiculoRepository veiculoRepository,
                           ConcessionariaRepository concessionariaRepository) {
-        this.VeiculoRepository = VeiculoRepository;
+        this.veiculoRepository = veiculoRepository;
         this.concessionariaRepository = concessionariaRepository;
     }
 
@@ -30,7 +30,7 @@ public class VeiculoService {
                              Double preco, boolean moto, Concessionaria concessionaria) {
         Veiculo veiculo = new Veiculo(marca, modelo, ano, placa, preco,
                 StatusVeiculo.DISPONIVEL, concessionaria, moto);
-        VeiculoRepository.salvar(veiculo);
+        veiculoRepository.salvar(veiculo);
         return veiculo;
     }
 
@@ -42,15 +42,15 @@ public class VeiculoService {
             case VENDIDO -> throw new VeiculoIndisponivelException(
                     "Um veículo só pode ser marcado como vendido pela tela de vendas.");
         }
-        VeiculoRepository.atualizarStatus(veiculo);
+        veiculoRepository.atualizarStatus(veiculo);
     }
 
     public List<Veiculo> listarTodos() {
-        return VeiculoRepository.listarTodos();
+        return veiculoRepository.listarTodos();
     }
 
     public List<Veiculo> listarDisponiveis() {
-        return VeiculoRepository.listarDisponiveis();
+        return veiculoRepository.listarDisponiveis();
     }
 
     public List<Concessionaria> listarConcessionarias() {
@@ -64,14 +64,14 @@ public class VeiculoService {
         Veiculo veiculo = new Veiculo(marca, modelo, ano, placa, preco,
                 StatusVeiculo.DISPONIVEL, concessionaria, moto);
         veiculo.setIdVeiculo(id);
-        VeiculoRepository.salvar(veiculo);  
+        veiculoRepository.salvar(veiculo);  
         return veiculo;
     }
     public void excluir(Long id) {
         if (id == null) {
             throw new IllegalArgumentException("Selecione um veículo para excluir.");
         }
-        VeiculoRepository.excluir(id);
+        veiculoRepository.excluir(id);
     }
 
     public static Color cor(StatusVeiculo status) {
