@@ -13,7 +13,12 @@ public class ClienteTableModel extends AbstractTableModel {
 
     private List<Cliente> clientes = new ArrayList<>();
 
-    /** Substitui a lista inteira (chamar na thread da tela). */
+    /**
+     * Substitui a lista inteira (chamar na thread da tela).
+     * Guarda uma cópia, então mudar a lista original depois não afeta a tabela.
+     *
+     * @param novos clientes a exibir
+     */
     public void setClientes(List<Cliente> novos) {
         this.clientes = new ArrayList<>(novos);
         fireTableDataChanged();
@@ -24,26 +29,40 @@ public class ClienteTableModel extends AbstractTableModel {
      *
      * @param linha índice da linha no modelo (use {@code convertRowIndexToModel} se houver ordenação/filtro)
      * @return o cliente daquela linha
+     * @throws IndexOutOfBoundsException se a linha não existir no modelo
      */
     public Cliente getCliente(int linha) {
         return clientes.get(linha);
     }
 
+    /** @return quantos clientes estão carregados no modelo (antes de qualquer filtro) */
     @Override
     public int getRowCount() {
         return clientes.size();
     }
 
+    /** @return sempre 4: nome, CPF, e-mail e telefone */
     @Override
     public int getColumnCount() {
         return COLUNAS.length;
     }
 
+    /**
+     * @param coluna índice da coluna (0 a 3)
+     * @return o título exibido no cabeçalho
+     */
     @Override
     public String getColumnName(int coluna) {
         return COLUNAS[coluna];
     }
 
+    /**
+     * Valor exibido na célula. CPF e telefone saem com máscara; o modelo guarda só os dígitos.
+     *
+     * @param linha índice da linha no modelo
+     * @param coluna índice da coluna (0 a 3)
+     * @return o texto da célula, ou null para coluna desconhecida
+     */
     @Override
     public Object getValueAt(int linha, int coluna) {
         Cliente cliente = clientes.get(linha);
@@ -56,7 +75,12 @@ public class ClienteTableModel extends AbstractTableModel {
         };
     }
 
-    /** 12345678901 -> 123.456.789-01 (se não tiver 11 dígitos, devolve como está). */
+    /**
+     * 12345678901 -> 123.456.789-01 (se não tiver 11 dígitos, devolve como está).
+     *
+     * @param cpf CPF só com dígitos
+     * @return o CPF com máscara, ou o próprio valor (inclusive null) se não tiver 11 caracteres
+     */
     public static String formatarCpf(String cpf) {
         if (cpf == null || cpf.length() != 11) {
             return cpf;
@@ -64,7 +88,12 @@ public class ClienteTableModel extends AbstractTableModel {
         return cpf.substring(0, 3) + "." + cpf.substring(3, 6) + "." + cpf.substring(6, 9) + "-" + cpf.substring(9);
     }
 
-    /** 11999998888 -> (11) 99999-8888; 1133334444 -> (11) 3333-4444. */
+    /**
+     * 11999998888 -> (11) 99999-8888; 1133334444 -> (11) 3333-4444.
+     *
+     * @param telefone telefone só com dígitos (DDD + número)
+     * @return o telefone com máscara, ou o próprio valor (inclusive null) se não tiver 10 ou 11 caracteres
+     */
     public static String formatarTelefone(String telefone) {
         if (telefone == null) {
             return null;

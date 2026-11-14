@@ -29,6 +29,9 @@ import javax.swing.table.TableRowSorter;
 /**
  * Cadastro de clientes: lista com busca à esquerda, formulário à direita.
  * Clicar numa linha carrega o cliente no formulário (modo edição); "Novo" volta ao modo cadastro.
+ * Os campos são validados na tela antes de chamar o {@link ClienteService}, e todo acesso ao banco
+ * roda em segundo plano; erros (inclusive cliente com vendas) aparecem como mensagem ao usuário.
+ * Atalhos: Enter salva, Alt+N novo, Alt+S salvar, Alt+X excluir.
  */
 public class ClienteFront extends JPanel implements TelaComBotaoPrincipal {
 
