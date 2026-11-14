@@ -36,7 +36,7 @@ public class TelaPrincipal extends JFrame {
         adicionarTela("Clientes", clientes);
         adicionarTela("Veículos", veiculos);
         adicionarTela("Vendas", vendas);
-        adicionarTela("Concessionárias", new ConcessionariaCadastroFront(config.concessionariaService()));
+        adicionarTela("Concessionárias", new ConcessionariaFront(config.concessionariaService()));
         adicionarTela("Vendedores", new VendedorFront(config.vendedorService()));
         JPanel conteudo = new JPanel(new BorderLayout(0, Tema.GRANDE));
         conteudo.setBackground(Tema.FUNDO);

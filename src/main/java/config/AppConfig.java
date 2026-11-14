@@ -11,6 +11,8 @@ import aplicacao.servico.ConcessionariaService;
 import aplicacao.servico.VeiculoService;
 import aplicacao.servico.VendaService;
 import aplicacao.servico.VendedorService;
+import dominio.politica.DescontoPix;
+import dominio.politica.SemDesconto;
 import dominio.repositorio.ClienteRepository;
 import dominio.repositorio.ConcessionariaRepository;
 import dominio.repositorio.PagamentoRepository;
@@ -48,8 +50,8 @@ public class AppConfig {
 
     // Formas de pagamento aceitas: para uma nova, basta registrar mais uma linha aqui.
     private final Map<Class<? extends DadosPagamento>, FormaPagamento<?, ?>> formasPagamento = Map.of(
-            DadosPix.class, new FormaPagamentoPix(new PagamentoPixDAO(transacao)),
-            DadosCartao.class, new FormaPagamentoCartao(new PagamentoCartaoDAO(transacao)));
+            DadosPix.class, new FormaPagamentoPix(new PagamentoPixDAO(transacao), new DescontoPix()),
+            DadosCartao.class, new FormaPagamentoCartao(new PagamentoCartaoDAO(transacao), new SemDesconto()));
 
     private final ClienteService clienteService = new ClienteService(clienteRepository);
     private final ConcessionariaService concessionariaService = new ConcessionariaService(concessionariaRepository);

@@ -67,8 +67,21 @@ public class VendaDAO implements VendaRepository {
                         resultado.getString("name_cliente"),
                         resultado.getString("marca_veiculo") + " " + resultado.getString("modelo_veiculo"),
                         resultado.getString("name_vendedor"),
-                        resultado.getString("forma_pagamento"),
+                        paraNomeExibicao(resultado.getString("forma_pagamento")),
                         resultado.getBigDecimal("valor_pagamento")),
                 "Erro ao listar histórico de vendas.");
+    }
+
+    /**
+     * A coluna forma_pagamento é ENUM('Dinheiro','Cartao','Pix'); o domínio e a tela usam
+     * "PIX", "Cartão" e "Dinheiro". Faz o caminho inverso do PagamentoDAO.
+     */
+    private static String paraNomeExibicao(String valorColuna) {
+        return switch (valorColuna) {
+            case "Pix" -> "PIX";
+            case "Cartao" -> "Cartão";
+            case "Dinheiro" -> "Dinheiro";
+            default -> valorColuna;
+        };
     }
 }

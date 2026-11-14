@@ -34,7 +34,7 @@ import dominio.modelo.Concessionaria;
  * (A tela de vendas se chama {@code VendaFront}; esta é a de cadastro das lojas.)
  * Clicar numa linha carrega a concessionária no formulário (modo edição); "Novo" volta ao modo cadastro.
  */
-public class ConcessionariaCadastroFront extends JPanel
+public class ConcessionariaFront extends JPanel
         implements TelaComDados<List<Concessionaria>>, TelaComBotaoPrincipal {
 
     private final ConcessionariaService concessionariaService;
@@ -58,7 +58,7 @@ public class ConcessionariaCadastroFront extends JPanel
      *
      * @param concessionariaService serviço usado para listar, cadastrar, atualizar e excluir
      */
-    public ConcessionariaCadastroFront(ConcessionariaService concessionariaService) {
+    public ConcessionariaFront(ConcessionariaService concessionariaService) {
         this.concessionariaService = concessionariaService;
 
         setLayout(new GridBagLayout());

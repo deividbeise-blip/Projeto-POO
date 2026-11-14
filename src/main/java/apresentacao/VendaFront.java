@@ -187,13 +187,8 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
         historico.setRowCount(0);
         DateTimeFormatter data = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         for (ResumoVenda venda : dados.vendas()) {
-            String forma = switch (venda.formaPagamento()) {
-                case "Pix" -> "PIX";
-                case "Cartao" -> "Cartão";
-                default -> venda.formaPagamento();
-            };
             historico.addRow(new Object[]{data.format(venda.data()), venda.cliente(), venda.veiculo(),
-                    venda.vendedor(), forma, moeda.format(venda.valor())});
+                    venda.vendedor(), venda.formaPagamento(), moeda.format(venda.valor())});
         }
         atualizarResumo();
     }
