@@ -11,6 +11,7 @@ import dominio.modelo.Pagamento;
 import dominio.modelo.Veiculo;
 import dominio.modelo.Venda;
 import dominio.modelo.Vendedor;
+import dominio.modelo.ResumoVenda;
 import dominio.repositorio.ClienteRepository;
 import dominio.repositorio.PagamentoRepository;
 import dominio.repositorio.VeiculoRepository;
@@ -48,6 +49,11 @@ public class VendaService {
 
     public List<Vendedor> listarVendedores() {
         return vendedorRepository.listar();
+    }
+
+    /** Retorna as vendas concluídas para o histórico da interface. */
+    public List<ResumoVenda> listarVendas() {
+        return vendaRepository.listarHistorico();
     }
 
     /**
