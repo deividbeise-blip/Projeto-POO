@@ -4,7 +4,13 @@ import java.time.LocalDate;
 
 import dominio.excecao.VeiculoIndisponivelException;
 
+/**
+ * Veículo (carro ou moto) do estoque de uma concessionária.
+ * Os dados nascem validados; o status só muda pelos métodos de transição
+ * ({@link #vender()}, {@link #colocarEmManutencao()}, {@link #tornarDisponivel()}).
+ */
 public class Veiculo {
+    /** Ano mais antigo aceito no cadastro. */
     public static final int ANO_MINIMO = 1900;
 
     private Long idVeiculo; // AUTO_INCREMENT
@@ -17,7 +23,19 @@ public class Veiculo {
     private final Concessionaria concessionaria;
     private final Boolean moto;   // true = moto, false = carro
 
-    // Construtor de CADASTRO: só cria objetos válidos. Quem grava no banco é o DAO/serviço.
+    /**
+     * Construtor de cadastro: só cria objetos válidos; quem grava no banco é o DAO/serviço.
+     *
+     * @param marca marca do veículo
+     * @param modelo modelo do veículo
+     * @param ano ano de fabricação, de {@link #ANO_MINIMO} até o ano que vem
+     * @param placa placa do veículo
+     * @param preco preço de venda, em reais, maior que zero
+     * @param status situação inicial (normalmente DISPONIVEL)
+     * @param concessionaria loja dona do veículo
+     * @param moto true para moto, false para carro (define a regra de comissão)
+     * @throws IllegalArgumentException se algum dado for inválido ou nulo
+     */
     public Veiculo(String marca, String modelo, Integer ano, String placa, Double preco,
                    StatusVeiculo status, Concessionaria concessionaria, Boolean moto) {
         validarMarca(marca);
@@ -45,7 +63,20 @@ public class Veiculo {
         this.moto = moto;
     }
 
-    // Construtor DE CARGA: usado pelo VeiculoDAO ao ler um registro existente.
+    /**
+     * Construtor de carga: usado pelo VeiculoDAO ao ler um registro existente. Aplica as mesmas validações.
+     *
+     * @param idVeiculo ID vindo do banco
+     * @param marca marca do veículo
+     * @param modelo modelo do veículo
+     * @param ano ano de fabricação
+     * @param placa placa do veículo
+     * @param preco preço de venda, em reais
+     * @param status situação gravada no banco
+     * @param concessionaria loja dona do veículo
+     * @param moto true para moto, false para carro
+     * @throws IllegalArgumentException se algum dado for inválido ou nulo
+     */
     public Veiculo(Long idVeiculo, String marca, String modelo, Integer ano, String placa, Double preco,
                    StatusVeiculo status, Concessionaria concessionaria, Boolean moto) {
         this(marca, modelo, ano, placa, preco, status, concessionaria, moto);
@@ -113,10 +144,17 @@ public class Veiculo {
         }
     }
 
+    /** @return ID gerado pelo banco, ou null se ainda não foi gravado */
     public Long getIdVeiculo() {
         return idVeiculo;
     }
 
+    /**
+     * Define o ID gerado pelo banco; só pode ser chamado uma vez (pelo DAO após o INSERT).
+     *
+     * @param id o ID gerado
+     * @throws IllegalStateException se o ID já tiver sido definido
+     */
     public void setIdVeiculo(Long id) {
         if (this.idVeiculo != null) {
             throw new IllegalStateException("O ID do veículo já foi definido.");
@@ -124,21 +162,35 @@ public class Veiculo {
         this.idVeiculo = id;
     }
 
+    /** @return a marca, sem espaços nas pontas */
     public String getMarca() { return marca; }
+    /** @return o modelo, sem espaços nas pontas */
     public String getModelo() { return modelo; }
+    /** @return o ano de fabricação */
     public Integer getAno() { return ano; }
+    /** @return a placa, sem espaços nas pontas */
     public String getPlaca() { return placa; }
+    /** @return o preço de venda, em reais, sem desconto */
     public Double getPreco() { return preco; }
+    /** @return a situação atual; nunca null */
     public StatusVeiculo getStatus() { return status; }
+    /** @return a loja dona do veículo; nunca null */
     public Concessionaria getConcessionaria() { return concessionaria; }
+    /** @return true se for moto, false se for carro */
     public Boolean isMoto() { return moto; }
 
     // ---- Transições de status controladas (não existe setStatus público) ----
 
+    /** @return true se o veículo pode ser vendido agora (status DISPONIVEL) */
     public boolean verificarDisponibilidade() {
         return status == StatusVeiculo.DISPONIVEL;
     }
 
+    /**
+     * Marca o veículo como VENDIDO.
+     *
+     * @throws VeiculoIndisponivelException se ele já foi vendido ou está em manutenção
+     */
     public void vender() throws VeiculoIndisponivelException {
         if (status == StatusVeiculo.VENDIDO) {
             throw new VeiculoIndisponivelException("Veículo já foi vendido e não pode ser vendido novamente.");
@@ -156,6 +208,11 @@ public class Veiculo {
         }
     }
 
+    /**
+     * Tira o veículo de venda, colocando-o EM_MANUTENCAO.
+     *
+     * @throws VeiculoIndisponivelException se ele já foi vendido
+     */
     public void colocarEmManutencao() throws VeiculoIndisponivelException {
         if (status == StatusVeiculo.VENDIDO) {
             throw new VeiculoIndisponivelException("Veículo vendido não pode ir para manutenção.");
@@ -163,6 +220,11 @@ public class Veiculo {
         this.status = StatusVeiculo.EM_MANUTENCAO;
     }
 
+    /**
+     * Devolve o veículo à venda (status DISPONIVEL).
+     *
+     * @throws VeiculoIndisponivelException se ele já foi vendido
+     */
     public void tornarDisponivel() throws VeiculoIndisponivelException {
         if (status == StatusVeiculo.VENDIDO) {
             throw new VeiculoIndisponivelException("Veículo vendido não pode voltar a ficar disponível.");
@@ -170,6 +232,7 @@ public class Veiculo {
         this.status = StatusVeiculo.DISPONIVEL;
     }
 
+    /** @return "marca modelo (ano) - Placa X - R$ preço", usado nos combos das telas */
     @Override
     public String toString() {
         return String.format("%s %s (%d) - Placa %s - R$ %.2f", marca, modelo, ano, placa, preco);

@@ -1,16 +1,20 @@
 package config;
 
 import aplicacao.dto.DadosCartao;
+import aplicacao.dto.DadosDinheiro;
 import aplicacao.dto.DadosPagamento;
 import aplicacao.dto.DadosPix;
 import aplicacao.pagamento.FormaPagamento;
 import aplicacao.pagamento.FormaPagamentoCartao;
+import aplicacao.pagamento.FormaPagamentoDinheiro;
 import aplicacao.pagamento.FormaPagamentoPix;
 import aplicacao.servico.ClienteService;
 import aplicacao.servico.ConcessionariaService;
 import aplicacao.servico.VeiculoService;
 import aplicacao.servico.VendaService;
 import aplicacao.servico.VendedorService;
+import dominio.politica.DescontoPix;
+import dominio.politica.SemDesconto;
 import dominio.repositorio.ClienteRepository;
 import dominio.repositorio.ConcessionariaRepository;
 import dominio.repositorio.PagamentoRepository;
@@ -33,6 +37,8 @@ import java.util.Map;
 /**
  * Único lugar do sistema que conhece as implementações concretas (DAOs).
  * Monta os services com as dependências certas e entrega tudo pronto para as telas.
+ * Criar um AppConfig já lê as credenciais do banco: lança {@code IllegalStateException}
+ * se DB_URL, DB_USER ou DB_PASSWORD não estiverem definidas.
  */
 public class AppConfig {
 
@@ -48,8 +54,9 @@ public class AppConfig {
 
     // Formas de pagamento aceitas: para uma nova, basta registrar mais uma linha aqui.
     private final Map<Class<? extends DadosPagamento>, FormaPagamento<?, ?>> formasPagamento = Map.of(
-            DadosPix.class, new FormaPagamentoPix(new PagamentoPixDAO(transacao)),
-            DadosCartao.class, new FormaPagamentoCartao(new PagamentoCartaoDAO(transacao)));
+            DadosPix.class, new FormaPagamentoPix(new PagamentoPixDAO(transacao), new DescontoPix()),
+            DadosCartao.class, new FormaPagamentoCartao(new PagamentoCartaoDAO(transacao), new SemDesconto()),
+            DadosDinheiro.class, new FormaPagamentoDinheiro(new SemDesconto()));
 
     private final ClienteService clienteService = new ClienteService(clienteRepository);
     private final ConcessionariaService concessionariaService = new ConcessionariaService(concessionariaRepository);

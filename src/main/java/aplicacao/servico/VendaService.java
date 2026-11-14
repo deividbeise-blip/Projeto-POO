@@ -22,6 +22,12 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Caso de uso de venda: monta a venda a partir de IDs, aplica as regras do domínio e grava
+ * venda, pagamento, detalhe do pagamento e status do veículo numa única transação.
+ * Não conhece nenhuma forma de pagamento concreta: recebe o mapa de formas pronto do AppConfig,
+ * por isso uma forma nova (ex.: dinheiro) entra sem alterar esta classe.
+ */
 public class VendaService {
     private final ClienteRepository clienteRepository;
     private final VendedorRepository vendedorRepository;
@@ -31,6 +37,16 @@ public class VendaService {
     private final Map<Class<? extends DadosPagamento>, FormaPagamento<?, ?>> formasPagamento;
     private final Transacao transacao;
 
+    /**
+     * @param clienteRepository busca o cliente da venda
+     * @param vendedorRepository busca o vendedor e lista os vendedores para a tela
+     * @param veiculoRepository busca o veículo e grava o novo status (vendido)
+     * @param vendaRepository grava a venda e consulta o histórico
+     * @param pagamentoRepository grava a parte comum do pagamento
+     * @param formasPagamento liga cada tipo de DTO ({@code DadosPix}, {@code DadosCartao}...) à sua forma;
+     *                        é copiado, então mudanças posteriores no mapa original não afetam o serviço
+     * @param transacao garante que tudo seja gravado junto ou nada seja gravado
+     */
     public VendaService(ClienteRepository clienteRepository,
                         VendedorRepository vendedorRepository,
                         VeiculoRepository veiculoRepository,
@@ -47,11 +63,20 @@ public class VendaService {
         this.transacao = transacao;
     }
 
+    /**
+     * Vendedores que podem ser escolhidos na tela de venda.
+     *
+     * @return todos os vendedores cadastrados; vazia se não houver nenhum
+     */
     public List<Vendedor> listarVendedores() {
         return vendedorRepository.listar();
     }
 
-    /** Retorna as vendas concluídas para o histórico da interface. */
+    /**
+     * Retorna as vendas concluídas para o histórico da interface.
+     *
+     * @return vendas da mais recente para a mais antiga, já com a forma de pagamento no formato de exibição
+     */
     public List<ResumoVenda> listarVendas() {
         return vendaRepository.listarHistorico();
     }
@@ -59,6 +84,13 @@ public class VendaService {
     /**
      * Realiza uma venda com qualquer forma de pagamento registrada no AppConfig.
      * A forma é escolhida pelo tipo do DTO de pagamento (DadosPix, DadosCartao...).
+     *
+     * @param dados IDs de cliente, vendedor e veículo, mais os dados do pagamento escolhido
+     * @return o pagamento gravado, ligado à venda (use {@code getVenda().obterRecibo()} para o recibo)
+     * @throws IllegalArgumentException se faltar dado, a forma não for suportada, alguma entidade não existir
+     *                                  ou o dado do pagamento for inválido
+     * @throws VeiculoIndisponivelException se o veículo já foi vendido ou está em manutenção
+     * @throws VendaInvalidaException se a venda não passar nas regras do domínio
      */
     public Pagamento vender(DadosVenda dados) throws VeiculoIndisponivelException, VendaInvalidaException {
         if (dados == null || dados.pagamento() == null) {

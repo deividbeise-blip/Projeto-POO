@@ -1,6 +1,7 @@
 package apresentacao;
 
 import aplicacao.dto.DadosCartao;
+import aplicacao.dto.DadosDinheiro;
 import aplicacao.dto.DadosPagamento;
 import aplicacao.dto.DadosPix;
 import aplicacao.dto.DadosVenda;
@@ -11,11 +12,13 @@ import apresentacao.comum.Feedback;
 import apresentacao.comum.TarefaEmSegundoPlano;
 import apresentacao.comum.TelaComBotaoPrincipal;
 import apresentacao.comum.TelaComDados;
+import apresentacao.comum.Validacao;
 import apresentacao.estilo.Componentes;
 import apresentacao.estilo.Tema;
 import dominio.modelo.Cliente;
 import dominio.modelo.Pagamento;
 import dominio.modelo.PagamentoCartao;
+import dominio.modelo.PagamentoPix;
 import dominio.modelo.ResumoVenda;
 import dominio.modelo.Veiculo;
 import dominio.modelo.Vendedor;
@@ -34,15 +37,28 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 
-/** Registro e consulta de vendas da concessionária. */
+/**
+ * Registro e consulta de vendas. A aba "Nova venda" guia o usuário em quatro passos (cliente,
+ * veículo disponível, vendedor e pagamento por PIX, cartão ou dinheiro) e mostra o resumo com
+ * desconto e parcelas antes de finalizar; a aba "Histórico" lista as vendas concluídas.
+ * A venda roda em segundo plano e, ao concluir, o recibo aparece num diálogo. Enter ou Alt+F finaliza.
+ */
 public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>, TelaComBotaoPrincipal {
     private enum Forma {
-        PIX("PIX"), CARTAO("Cartão");
+        PIX("PIX"), CARTAO("Cartão"), DINHEIRO("Dinheiro");
         private final String nome;
         Forma(String nome) { this.nome = nome; }
         @Override public String toString() { return nome; }
     }
 
+    /**
+     * Tudo o que a tela carrega de uma vez em segundo plano.
+     *
+     * @param clientes clientes para o combo (filtrados pela busca)
+     * @param vendedores vendedores cadastrados
+     * @param veiculos só os veículos disponíveis para venda
+     * @param vendas histórico de vendas concluídas
+     */
     record Dados(List<Cliente> clientes, List<Vendedor> vendedores,
                  List<Veiculo> veiculos, List<ResumoVenda> vendas) { }
 
@@ -71,6 +87,14 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
     };
     private List<Cliente> todosClientes = List.of();
 
+    /**
+     * Monta as abas e liga os eventos. Os dados chegam depois, quando a {@code TelaPrincipal}
+     * chama {@link #carregarDados()} em segundo plano.
+     *
+     * @param vendaService realiza a venda e fornece vendedores e histórico
+     * @param clienteService fornece a lista de clientes
+     * @param veiculoService fornece os veículos disponíveis
+     */
     public VendaFront(VendaService vendaService, ClienteService clienteService, VeiculoService veiculoService) {
         this.vendaService = vendaService;
         this.clienteService = clienteService;
@@ -79,6 +103,9 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
         JTabbedPane abas = new JTabbedPane();
         abas.addTab("Nova venda", criarVenda());
         abas.addTab("Histórico", criarHistorico());
+        // Alt+N / Alt+H trocam de aba; C, V, E, O e D são do menu lateral e F é o "Finalizar venda".
+        abas.setMnemonicAt(0, KeyEvent.VK_N);
+        abas.setMnemonicAt(1, KeyEvent.VK_H);
         add(abas, BorderLayout.CENTER);
         finalizar.setMnemonic(KeyEvent.VK_F);
         finalizar.addActionListener(e -> finalizarVenda());
@@ -132,6 +159,10 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
         camposPagamento.setOpaque(false);
         camposPagamento.add(pix, Forma.PIX.name());
         camposPagamento.add(cartao, Forma.CARTAO.name());
+        JPanel dinheiro = new JPanel(new BorderLayout());
+        dinheiro.setOpaque(false);
+        dinheiro.add(Componentes.rotulo("Pagamento à vista, sem desconto. Não há dados a preencher."), BorderLayout.NORTH);
+        camposPagamento.add(dinheiro, Forma.DINHEIRO.name());
         JPanel pagamento = new JPanel(new BorderLayout(0, Tema.PEQUENO));
         pagamento.setOpaque(false);
         JPanel escolha = Componentes.painelFormulario();
@@ -165,20 +196,38 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
     private JPanel criarHistorico() {
         JPanel cartao = Componentes.painelCartao("Vendas realizadas");
         JTable tabela = new JTable(historico);
+        tabela.getAccessibleContext().setAccessibleName("Histórico de vendas");
+        tabela.setFont(Tema.TEXTO_FONTE);
+        tabela.getTableHeader().setFont(Tema.BOTAO);
         tabela.setFillsViewportHeight(true);
-        tabela.setRowHeight(28);
+        tabela.setRowHeight(Tema.ALTURA_LINHA_TABELA);
         tabela.setAutoCreateRowSorter(true);
         cartao.add(new JScrollPane(tabela), BorderLayout.CENTER);
         return cartao;
     }
 
+    /**
+     * O Enter nesta tela finaliza a venda.
+     *
+     * @return o botão "Finalizar venda"
+     */
     @Override public JButton botaoPrincipal() { return finalizar; }
 
+    /**
+     * Busca clientes, vendedores, veículos disponíveis e histórico. Roda fora da thread da tela.
+     *
+     * @return os dados da tela
+     */
     @Override public Dados carregarDados() {
         return new Dados(clienteService.listar(), vendaService.listarVendedores(),
                 veiculoService.listarDisponiveis(), vendaService.listarVendas());
     }
 
+    /**
+     * Preenche os combos e o histórico e recalcula o resumo. Roda na thread da tela.
+     *
+     * @param dados o que {@link #carregarDados()} devolveu
+     */
     @Override public void exibirDados(Dados dados) {
         todosClientes = List.copyOf(dados.clientes());
         filtrarClientes();
@@ -187,13 +236,8 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
         historico.setRowCount(0);
         DateTimeFormatter data = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         for (ResumoVenda venda : dados.vendas()) {
-            String forma = switch (venda.formaPagamento()) {
-                case "Pix" -> "PIX";
-                case "Cartao" -> "Cartão";
-                default -> venda.formaPagamento();
-            };
             historico.addRow(new Object[]{data.format(venda.data()), venda.cliente(), venda.veiculo(),
-                    venda.vendedor(), forma, moeda.format(venda.valor())});
+                    venda.vendedor(), venda.formaPagamento(), moeda.format(venda.valor())});
         }
         atualizarResumo();
     }
@@ -215,33 +259,61 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
             return;
         }
         BigDecimal preco = BigDecimal.valueOf(veiculo.getPreco());
-        boolean pix = formas.getSelectedItem() == Forma.PIX;
+        Forma forma = (Forma) formas.getSelectedItem();
+        boolean pix = forma == Forma.PIX;
         BigDecimal desconto = pix ? preco.multiply(BigDecimal.valueOf(DescontoPix.PERCENTUAL))
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
         BigDecimal total = preco.subtract(desconto);
         int quantidade = (Integer) parcelas.getValue();
-        String detalhe = pix ? "" : "  |  " + quantidade + "x de "
+        String detalhe = forma != Forma.CARTAO ? "" : "  |  " + quantidade + "x de "
                 + moeda.format(total.divide(BigDecimal.valueOf(quantidade), 2, RoundingMode.HALF_UP));
         resumo.setText("<html>Preço: " + moeda.format(preco) + " &nbsp; | &nbsp; Desconto: "
                 + moeda.format(desconto) + " &nbsp; | &nbsp; Total: " + moeda.format(total) + detalhe + "</html>");
     }
 
     private void finalizarVenda() {
+        if (!validarCampos()) {
+            return;
+        }
         Cliente cliente = (Cliente) clientes.getSelectedItem();
         Veiculo veiculo = (Veiculo) veiculos.getSelectedItem();
         Vendedor vendedor = (Vendedor) vendedores.getSelectedItem();
-        if (cliente == null || veiculo == null || vendedor == null) {
-            Feedback.erro(this, new IllegalArgumentException("Selecione cliente, veículo e vendedor."));
-            return;
-        }
-        DadosPagamento pagamento = formas.getSelectedItem() == Forma.PIX
-                ? new DadosPix(chavePix.getText(), (String) tipoChave.getSelectedItem())
-                : new DadosCartao(numero.getText(), titular.getText(), validade.getText(),
-                        new String(cvv.getPassword()), (Integer) parcelas.getValue());
+        DadosPagamento pagamento = switch ((Forma) formas.getSelectedItem()) {
+            case PIX -> new DadosPix(chavePix.getText(), (String) tipoChave.getSelectedItem());
+            case CARTAO -> new DadosCartao(numero.getText(), titular.getText(), validade.getText(),
+                    new String(cvv.getPassword()), (Integer) parcelas.getValue());
+            case DINHEIRO -> new DadosDinheiro();
+        };
         DadosVenda dados = new DadosVenda(cliente.getIdCliente(), vendedor.getIdVendedor(),
                 veiculo.getIdVeiculo(), pagamento);
         TarefaEmSegundoPlano.executar(finalizar, () -> vendaService.vender(dados), this::vendaConcluida,
                 erro -> Feedback.erro(this, erro));
+    }
+
+    /**
+     * Valida na tela, com as mesmas regras do domínio, e mostra cada erro embaixo do campo.
+     * Só os campos da forma de pagamento escolhida são conferidos.
+     */
+    private boolean validarCampos() {
+        boolean valido = Validacao.verificar(clientes, () -> exigirSelecao(clientes, "Selecione um cliente."));
+        valido &= Validacao.verificar(veiculos, () -> exigirSelecao(veiculos, "Selecione um veículo."));
+        valido &= Validacao.verificar(vendedores, () -> exigirSelecao(vendedores, "Selecione um vendedor."));
+        Forma forma = (Forma) formas.getSelectedItem();
+        if (forma == Forma.PIX) {
+            valido &= Validacao.verificar(chavePix, () -> PagamentoPix.validarChavePix(chavePix.getText()));
+        } else if (forma == Forma.CARTAO) {
+            valido &= Validacao.verificar(numero, () -> PagamentoCartao.validarNumeroCartao(numero.getText()));
+            valido &= Validacao.verificar(titular, () -> PagamentoCartao.validarTitular(titular.getText()));
+            valido &= Validacao.verificar(validade, () -> PagamentoCartao.validarValidade(validade.getText()));
+            valido &= Validacao.verificar(cvv, () -> PagamentoCartao.validarCvv(new String(cvv.getPassword())));
+        }
+        return valido;
+    }
+
+    private static void exigirSelecao(JComboBox<?> combo, String mensagem) {
+        if (combo.getSelectedItem() == null) {
+            throw new IllegalArgumentException(mensagem);
+        }
     }
 
     private void vendaConcluida(Pagamento pagamento) {
@@ -263,7 +335,7 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
         conteudo.add(new JScrollPane(recibo), BorderLayout.CENTER);
         JButton fechar = Componentes.botaoPrimario("Fechar");
         fechar.addActionListener(e -> dialogo.dispose());
-        JPanel rodape = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel rodape = new JPanel(new FlowLayout(FlowLayout.RIGHT, Tema.PEQUENO, 0));
         rodape.setOpaque(false);
         rodape.add(fechar);
         conteudo.add(rodape, BorderLayout.SOUTH);
@@ -271,7 +343,7 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
         dialogo.getRootPane().setDefaultButton(fechar);
         dialogo.getRootPane().registerKeyboardAction(e -> dialogo.dispose(),
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_IN_FOCUSED_WINDOW);
-        dialogo.setSize(480, 420);
+        dialogo.setSize(Tema.LARGURA_RECIBO, Tema.ALTURA_RECIBO);
         dialogo.setLocationRelativeTo(this);
         dialogo.setVisible(true);
         dialogo.dispose();

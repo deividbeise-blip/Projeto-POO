@@ -19,11 +19,13 @@ import java.util.Objects;
  */
 final class ExecutorSql {
 
+    /** Preenche os parâmetros (?) do PreparedStatement. */
     @FunctionalInterface
     interface Preenchedor {
         void preencher(PreparedStatement comando) throws SQLException;
     }
 
+    /** Transforma a linha atual do ResultSet em um objeto. */
     @FunctionalInterface
     interface Mapeador<T> {
         T mapear(ResultSet resultado) throws SQLException;
@@ -70,6 +72,7 @@ final class ExecutorSql {
         }
     }
 
+    /** SELECT com parâmetros; devolve todas as linhas mapeadas (lista vazia se não houver). */
     <T> List<T> consultar(String sql, Preenchedor preenchedor, Mapeador<T> mapeador, String mensagemErro) {
         try (Connection conexao = connectionFactory.getConnection();
              PreparedStatement comando = conexao.prepareStatement(sql)) {
@@ -89,6 +92,7 @@ final class ExecutorSql {
         }
     }
 
+    /** SELECT sem parâmetros. */
     <T> List<T> consultar(String sql, Mapeador<T> mapeador, String mensagemErro) {
         return consultar(sql, SEM_PARAMETROS, mapeador, mensagemErro);
     }

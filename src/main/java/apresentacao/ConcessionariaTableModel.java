@@ -33,21 +33,32 @@ public class ConcessionariaTableModel extends AbstractTableModel {
         return concessionarias.get(linha);
     }
 
+    /** @return quantos concessionárias estão carregados no modelo (antes de qualquer filtro) */
     @Override
     public int getRowCount() {
         return concessionarias.size();
     }
 
+    /** @return número de colunas da tabela */
     @Override
     public int getColumnCount() {
         return COLUNAS.length;
     }
 
+    /**
+     * @param coluna índice da coluna no modelo
+     * @return o título exibido no cabeçalho
+     */
     @Override
     public String getColumnName(int coluna) {
         return COLUNAS[coluna];
     }
 
+    /**
+     * @param linha índice da linha no modelo
+     * @param coluna 0 = nome, 1 = endereço
+     * @return o texto da célula, ou null para coluna desconhecida
+     */
     @Override
     public Object getValueAt(int linha, int coluna) {
         Concessionaria concessionaria = concessionarias.get(linha);

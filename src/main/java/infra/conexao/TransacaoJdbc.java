@@ -23,10 +23,21 @@ public class TransacaoJdbc implements Transacao, ConnectionFactory {
     private final ConnectionFactory origem;
     private final ThreadLocal<Connection> atual = new ThreadLocal<>();
 
+    /**
+     * @param origem fábrica que abre as conexões reais
+     * @throws NullPointerException se a fábrica for nula
+     */
     public TransacaoJdbc(ConnectionFactory origem) {
         this.origem = Objects.requireNonNull(origem, "ConnectionFactory é obrigatória.");
     }
 
+    /**
+     * Dentro de uma transação desta thread, devolve a conexão dela (com close() ignorado);
+     * fora, devolve uma conexão nova da origem.
+     *
+     * @return conexão para o DAO usar e fechar normalmente
+     * @throws SQLException se não for possível abrir a conexão
+     */
     @Override
     public Connection getConnection() throws SQLException {
         Connection emTransacao = atual.get();
@@ -36,6 +47,13 @@ public class TransacaoJdbc implements Transacao, ConnectionFactory {
         return semFechar(emTransacao);
     }
 
+    /**
+     * Roda a ação numa transação: commit se terminar bem, rollback e relançamento se falhar.
+     * Se já houver transação aberta nesta thread, a ação apenas participa dela.
+     *
+     * @param acao operações de gravação a executar juntas
+     * @throws PersistenciaException se o banco falhar ao abrir, confirmar ou controlar a transação
+     */
     @Override
     public void executar(Runnable acao) {
         if (atual.get() != null) {

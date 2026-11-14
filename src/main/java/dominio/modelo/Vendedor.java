@@ -13,7 +13,15 @@ public class Vendedor {
     private final Double comissaoPercentual;
     private final Concessionaria concessionaria;
 
-    // Construtor de CADASTRO (sem id): valida os dados. Quem grava no banco é o DAO/serviço.
+    /**
+     * Construtor de cadastro (sem ID): valida os dados; quem grava no banco é o DAO/serviço.
+     *
+     * @param nome nome do vendedor
+     * @param cpf CPF com ou sem máscara (guardado só com os dígitos)
+     * @param comissaoPercentual percentual de comissão, maior que 0 e até 100
+     * @param concessionaria loja onde trabalha
+     * @throws IllegalArgumentException se algum dado for inválido ou a concessionária for nula
+     */
     public Vendedor(String nome, String cpf, Double comissaoPercentual, Concessionaria concessionaria) {
         this.nome = validarNome(nome);
         this.cpf = validarCpf(cpf);
@@ -69,16 +77,32 @@ public class Vendedor {
         }
     }
 
-    // Construtor DE CARGA (com id, vindo do banco)
+    /**
+     * Construtor de carga: usado pelo DAO ao ler um registro existente. Aplica as mesmas validações.
+     *
+     * @param idVendedor ID vindo do banco
+     * @param nome nome do vendedor
+     * @param cpf CPF só com dígitos
+     * @param comissaoPercentual percentual de comissão
+     * @param concessionaria loja onde trabalha
+     * @throws IllegalArgumentException se algum dado for inválido
+     */
     public Vendedor(Long idVendedor, String nome, String cpf, Double comissaoPercentual, Concessionaria concessionaria) {
         this(nome, cpf, comissaoPercentual, concessionaria);
         this.idVendedor = idVendedor;
     }
 
+    /** @return ID gerado pelo banco, ou null se ainda não foi gravado */
     public Long getIdVendedor() {
         return idVendedor;
     }
 
+    /**
+     * Define o ID gerado pelo banco; só pode ser chamado uma vez (pelo DAO após o INSERT).
+     *
+     * @param id o ID gerado
+     * @throws IllegalStateException se o ID já tiver sido definido
+     */
     public void setIdVendedor(Long id) {
         if (this.idVendedor != null) {
             throw new IllegalStateException("O ID do vendedor já foi definido.");
@@ -86,20 +110,32 @@ public class Vendedor {
         this.idVendedor = id;
     }
 
+    /** @return o nome já validado, sem espaços nas pontas */
     public String getNome() { return nome; }
+    /** @return o CPF só com os 11 dígitos, sem máscara */
     public String getCpf() { return cpf; }
+    /** @return percentual de comissão (ex.: 5.0 para 5%) */
     public Double getComissaoPercentual() { return comissaoPercentual; }
+    /** @return loja onde o vendedor trabalha; nunca null */
     public Concessionaria getConcessionaria() { return concessionaria; }
 
-    /** A regra (carro, moto...) vem de fora: o Vendedor só fornece o seu percentual. */
+    /**
+     * A regra (carro, moto...) vem de fora: o Vendedor só fornece o seu percentual.
+     *
+     * @param valorVenda valor final da venda, em reais
+     * @param politica regra de comissão do tipo de veículo vendido
+     * @return valor da comissão, em reais
+     */
     public double calcularComissao(double valorVenda, PoliticaComissao politica) {
         return politica.calcular(valorVenda, comissaoPercentual);
     }
 
+    /** @return true se o vendedor pode receber comissão (percentual maior que zero) */
     public boolean validarVendedor() {
         return comissaoPercentual > 0;
     }
 
+    /** @return o nome, usado nos combos das telas */
     @Override
     public String toString() {
         return nome;

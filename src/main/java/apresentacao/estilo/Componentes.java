@@ -6,9 +6,11 @@ import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.LineBorder;
 
-/** Fábrica de componentes visuais usados pelas telas. */
+/**
+ * Fábrica dos componentes visuais usados pelas telas (botões, campos, rótulos, cartões e formulários).
+ * Centraliza fonte, cor e espaçamento vindos do {@link Tema}, para todas as telas terem a mesma aparência.
+ */
 public final class Componentes {
-    private static final int ALTURA_ITEM_MENU = 44;
 
     private Componentes() { }
 
@@ -17,14 +19,33 @@ public final class Componentes {
         botao.setFont(Tema.BOTAO);
         botao.setBackground(fundo);
         botao.setForeground(textoCor);
-        botao.setMargin(new Insets(10, 18, 10, 18));
+        botao.setMargin(new Insets(Tema.MARGEM_BOTAO_VERTICAL, Tema.MARGEM_BOTAO_HORIZONTAL,
+                Tema.MARGEM_BOTAO_VERTICAL, Tema.MARGEM_BOTAO_HORIZONTAL));
         botao.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return botao;
     }
 
-    public static JButton botaoPrimario(String texto) { return botao(texto, Tema.PRIMARIA, Color.WHITE); }
+    /**
+     * Botão da ação principal da tela (fundo na cor primária, texto branco).
+     *
+     * @param texto rótulo do botão
+     * @return o botão estilizado, ainda sem ação
+     */
+    public static JButton botaoPrimario(String texto) { return botao(texto, Tema.PRIMARIA, Tema.TEXTO_SOBRE_ESCURO); }
+    /**
+     * Botão de ação secundária, como "Novo" (fundo claro, texto na cor primária).
+     *
+     * @param texto rótulo do botão
+     * @return o botão estilizado, ainda sem ação
+     */
     public static JButton botaoSecundario(String texto) { return botao(texto, Tema.SUPERFICIE, Tema.PRIMARIA); }
-    public static JButton botaoPerigo(String texto) { return botao(texto, Tema.ERRO, Color.WHITE); }
+    /**
+     * Botão de ação destrutiva, como "Excluir" (fundo vermelho, texto branco).
+     *
+     * @param texto rótulo do botão
+     * @return o botão estilizado, ainda sem ação
+     */
+    public static JButton botaoPerigo(String texto) { return botao(texto, Tema.ERRO, Tema.TEXTO_SOBRE_ESCURO); }
 
     /**
      * Item do menu lateral (fundo escuro). O anel de foco é claro para aparecer sobre o fundo
@@ -38,18 +59,29 @@ public final class Componentes {
         JButton botao = botao(texto, Tema.PRIMARIA, Tema.SUPERFICIE);
         botao.setHorizontalAlignment(SwingConstants.LEFT);
         botao.setAlignmentX(Component.LEFT_ALIGNMENT);
-        botao.setMaximumSize(new Dimension(Integer.MAX_VALUE, ALTURA_ITEM_MENU));
+        botao.setMaximumSize(new Dimension(Integer.MAX_VALUE, Tema.ALTURA_ITEM_MENU));
         botao.setMnemonic(atalho);
         botao.putClientProperty("FlatLaf.style", Map.of("focusColor", Tema.SUPERFICIE));
         return botao;
     }
 
+    /**
+     * Campo de texto com a fonte padrão e largura inicial para cerca de 24 caracteres.
+     *
+     * @return o campo vazio
+     */
     public static JTextField campoTexto() {
         JTextField campo = new JTextField(24);
         campo.setFont(Tema.TEXTO_FONTE);
         return campo;
     }
 
+    /**
+     * Texto comum de formulário e legendas, na fonte e cor padrão.
+     *
+     * @param texto conteúdo do rótulo
+     * @return o rótulo
+     */
     public static JLabel rotulo(String texto) {
         JLabel rotulo = new JLabel(texto);
         rotulo.setFont(Tema.ROTULO);
@@ -57,6 +89,12 @@ public final class Componentes {
         return rotulo;
     }
 
+    /**
+     * Título grande, usado no cabeçalho de cada tela.
+     *
+     * @param texto conteúdo do título
+     * @return o rótulo de título
+     */
     public static JLabel titulo(String texto) {
         JLabel titulo = new JLabel(texto);
         titulo.setFont(Tema.TITULO);
@@ -64,12 +102,25 @@ public final class Componentes {
         return titulo;
     }
 
+    /**
+     * Lista suspensa com a fonte padrão. Para trocar os itens depois, use {@code setModel}.
+     *
+     * @param itens opções iniciais (pode ser um vetor vazio)
+     * @param <T> tipo dos itens; o texto exibido vem do {@code toString()} de cada um
+     * @return o combo
+     */
     public static <T> JComboBox<T> combo(T[] itens) {
         JComboBox<T> combo = new JComboBox<>(itens);
         combo.setFont(Tema.TEXTO_FONTE);
         return combo;
     }
 
+    /**
+     * Painel transparente em grade, pronto para receber linhas por
+     * {@link #adicionarCampo(JPanel, int, String, JComponent)}.
+     *
+     * @return o painel vazio
+     */
     public static JPanel painelFormulario() {
         JPanel painel = new JPanel(new GridBagLayout());
         painel.setOpaque(false);
@@ -143,6 +194,13 @@ public final class Componentes {
         return true;
     }
 
+    /**
+     * "Cartão" branco com borda arredondada e título no topo, usado para agrupar partes da tela.
+     * O conteúdo deve ir em {@code BorderLayout.CENTER} (o topo já tem o título).
+     *
+     * @param texto título do cartão
+     * @return o painel com {@code BorderLayout}
+     */
     public static JPanel painelCartao(String texto) {
         JPanel painel = new JPanel(new BorderLayout(0, Tema.MEDIO));
         painel.setBackground(Tema.SUPERFICIE);

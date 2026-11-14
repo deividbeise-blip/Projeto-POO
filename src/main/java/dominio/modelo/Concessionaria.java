@@ -11,7 +11,13 @@ public class Concessionaria {
     private final String nome;
     private final String endereco;
 
-    // Construtor de CADASTRO: valida os dados. Quem grava no banco é o DAO/serviço.
+    /**
+     * Construtor de cadastro: valida os dados; quem grava no banco é o DAO/serviço.
+     *
+     * @param nome nome da loja
+     * @param endereco endereço da loja
+     * @throws IllegalArgumentException se nome ou endereço forem inválidos
+     */
     public Concessionaria(String nome, String endereco) {
         this.nome = validarNome(nome);
         this.endereco = validarEndereco(endereco);
@@ -51,16 +57,30 @@ public class Concessionaria {
         return endereco.trim();
     }
 
-    // Construtor DE CARGA: usado pelo DAO ao ler um registro existente.
+    /**
+     * Construtor de carga: usado pelo DAO ao ler um registro existente. Aplica as mesmas validações.
+     *
+     * @param idConcessionaria ID vindo do banco
+     * @param nome nome da loja
+     * @param endereco endereço da loja
+     * @throws IllegalArgumentException se nome ou endereço forem inválidos
+     */
     public Concessionaria(Long idConcessionaria, String nome, String endereco) {
         this(nome, endereco);
         this.idConcessionaria = idConcessionaria;
     }
 
+    /** @return ID gerado pelo banco, ou null se ainda não foi gravada */
     public Long getIdConcessionaria() {
         return idConcessionaria;
     }
 
+    /**
+     * Define o ID gerado pelo banco; só pode ser chamado uma vez (pelo DAO após o INSERT).
+     *
+     * @param id o ID gerado
+     * @throws IllegalStateException se o ID já tiver sido definido
+     */
     public void setIdConcessionaria(Long id) {
         if (this.idConcessionaria != null) {
             throw new IllegalStateException("O ID da concessionária já foi definido.");
@@ -68,9 +88,12 @@ public class Concessionaria {
         this.idConcessionaria = id;
     }
 
+    /** @return o nome já validado, sem espaços nas pontas */
     public String getNome() { return nome; }
+    /** @return o endereço já validado, sem espaços nas pontas */
     public String getEndereco() { return endereco; }
 
+    /** @return "nome - endereço", usado nos combos das telas */
     @Override
     public String toString() {
         return nome + " - " + endereco;

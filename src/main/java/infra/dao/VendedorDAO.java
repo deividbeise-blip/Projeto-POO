@@ -31,6 +31,13 @@ public class VendedorDAO implements VendedorRepository {
         this.executor = new ExecutorSql(connectionFactory);
     }
 
+    /**
+     * Faz o INSERT e coloca no objeto o ID gerado.
+     *
+     * @param vendedor vendedor novo, ainda sem ID
+     * @throws IllegalStateException se já existir outro com o mesmo nome ou CPF
+     * @throws PersistenciaException se o banco falhar por outro motivo
+     */
     @Override
     public void salvar(Vendedor vendedor) {
         // A coluna no banco é "concessionario_vendedor" (sem "a"), não "concessionaria_vendedor".
@@ -55,6 +62,11 @@ public class VendedorDAO implements VendedorRepository {
         vendedor.setIdVendedor(id);
     }
 
+    /**
+     * @param id ID do vendedor
+     * @return o vendedor com sua concessionária, ou null se não existir
+     * @throws PersistenciaException se a consulta falhar
+     */
     @Override
     public Vendedor buscarPorId(Long id) {
         return executor.consultarUm(
@@ -64,6 +76,10 @@ public class VendedorDAO implements VendedorRepository {
                 "Erro ao buscar vendedor no banco.");
     }
 
+    /**
+     * @return todos os vendedores, em ordem de nome
+     * @throws PersistenciaException se a consulta falhar
+     */
     @Override
     public List<Vendedor> listar() {
         return executor.consultar(
@@ -72,6 +88,13 @@ public class VendedorDAO implements VendedorRepository {
                 "Erro ao listar vendedores.");
     }
 
+    /**
+     * Atualiza nome, CPF, comissão e concessionária pelo ID do objeto.
+     *
+     * @param vendedor vendedor com ID e dados novos
+     * @throws IllegalStateException se já existir outro com o mesmo nome ou CPF
+     * @throws PersistenciaException se o banco falhar por outro motivo
+     */
     @Override
     public void atualizar(Vendedor vendedor) {
         try {
@@ -94,6 +117,13 @@ public class VendedorDAO implements VendedorRepository {
         }
     }
 
+    /**
+     * Apaga o vendedor. Uma violação de chave estrangeira significa que há vendas dele.
+     *
+     * @param id ID do vendedor
+     * @throws IllegalStateException se o vendedor tiver vendas
+     * @throws PersistenciaException se o banco falhar por outro motivo
+     */
     @Override
     public void excluir(Long id) {
         try {
