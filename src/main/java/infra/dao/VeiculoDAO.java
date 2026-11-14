@@ -44,10 +44,10 @@ public class VeiculoDAO implements VeiculoRepository {
                     comando.setDouble(5, veiculo.getPreco());
                     comando.setString(6, paraColunaEnum(veiculo.getStatus()));
                     comando.setBoolean(7, veiculo.isMoto());
-                    comando.setLong(8, veiculo.getConcessionaria().getId_concessionaria());
+                    comando.setLong(8, veiculo.getConcessionaria().getIdConcessionaria());
                 },
                 "Erro ao salvar veículo no banco.");
-        veiculo.setId_veiculo(id);
+        veiculo.setIdVeiculo(id);
     }
 
     /**
@@ -60,9 +60,18 @@ public class VeiculoDAO implements VeiculoRepository {
                 "UPDATE veiculo SET status_veiculo = ? WHERE id_veiculo = ?",
                 comando -> {
                     comando.setString(1, paraColunaEnum(veiculo.getStatus()));
-                    comando.setLong(2, veiculo.getId_veiculo());
+                    comando.setLong(2, veiculo.getIdVeiculo());
                 },
                 "Erro ao atualizar status do veículo no banco.");
+    }
+
+    @Override
+    public Veiculo buscarPorId(Long id) {
+        return executor.consultarUm(
+                SELECT_COM_CONCESSIONARIA + " WHERE v.id_veiculo = ?",
+                comando -> comando.setLong(1, id),
+                VeiculoDAO::mapear,
+                "Erro ao buscar veículo no banco.");
     }
 
     @Override
@@ -87,8 +96,6 @@ public class VeiculoDAO implements VeiculoRepository {
                 resultado.getString("name_concessionaria"),
                 resultado.getString("address_concessionaria"));
 
-        // O último parâmetro "vendido" recebe null: o construtor de Veiculo já deriva
-        // esse valor a partir do status, então não precisamos de uma coluna própria.
         return new Veiculo(
                 resultado.getLong("id_veiculo"),
                 resultado.getString("marca_veiculo"),
@@ -98,8 +105,7 @@ public class VeiculoDAO implements VeiculoRepository {
                 resultado.getDouble("preco_veiculo"),
                 paraEnumJava(resultado.getString("status_veiculo")),
                 concessionaria,
-                resultado.getBoolean("moto"),
-                null);
+                resultado.getBoolean("moto"));
     }
 
     /**

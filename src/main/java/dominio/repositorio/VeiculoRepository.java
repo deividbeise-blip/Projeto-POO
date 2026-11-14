@@ -11,6 +11,9 @@ public interface VeiculoRepository {
 
     void atualizarStatus(Veiculo veiculo);
 
+    /** Devolve o veículo com esse ID, ou null se não existir. */
+    Veiculo buscarPorId(Long id);
+
     List<Veiculo> listarDisponiveis();
 
     List<Veiculo> listarTodos();

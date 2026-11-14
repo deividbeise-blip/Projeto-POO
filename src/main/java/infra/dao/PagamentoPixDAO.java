@@ -19,9 +19,9 @@ public class PagamentoPixDAO implements DetalhePagamentoRepository<PagamentoPix>
                 comando -> {
                     comando.setString(1, pagamentoPix.getChavePix());
                     comando.setString(2, pagamentoPix.getTipoChave());
-                    comando.setLong(3, pagamentoPix.getId_pagamento());
+                    comando.setLong(3, pagamentoPix.getIdPagamento());
                 },
                 "Erro ao salvar pagamento pix no banco.");
-        pagamentoPix.setId_pagamentoPix(id);
+        pagamentoPix.setIdPagamentoPix(id);
     }
 }

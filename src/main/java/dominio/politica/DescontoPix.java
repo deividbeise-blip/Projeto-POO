@@ -1,7 +1,7 @@
 package dominio.politica;
 
 public class DescontoPix implements PoliticaDesconto {
-    private static final double PERCENTUAL = 5.0;
+    public static final double PERCENTUAL = 5.0;
 
     @Override
     public double calcular(double valorBase) {

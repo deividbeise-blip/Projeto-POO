@@ -22,11 +22,11 @@ public class ConcessionariaDAO implements ConcessionariaRepository {
         long id = executor.inserir(
                 "INSERT INTO concessionaria (name_concessionaria, address_concessionaria) VALUES (?, ?)",
                 comando -> {
-                    comando.setString(1, concessionaria.getName_concessionaria());
-                    comando.setString(2, concessionaria.getAddress_concessionaria());
+                    comando.setString(1, concessionaria.getNome());
+                    comando.setString(2, concessionaria.getEndereco());
                 },
                 "Erro ao salvar concessionaria no banco.");
-        concessionaria.setId_concessionaria(id);
+        concessionaria.setIdConcessionaria(id);
     }
 
     @Override

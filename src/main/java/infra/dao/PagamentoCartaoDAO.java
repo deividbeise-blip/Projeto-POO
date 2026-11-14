@@ -2,17 +2,12 @@ package infra.dao;
 
 import java.sql.Date;
 import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
 
 import dominio.modelo.PagamentoCartao;
 import dominio.repositorio.DetalhePagamentoRepository;
 import infra.conexao.ConnectionFactory;
 
 public class PagamentoCartaoDAO implements DetalhePagamentoRepository<PagamentoCartao> {
-
-    // A validade chega como "MM/aa" (ex: "12/30"); a coluna validade_cartao no
-    // banco é do tipo DATE, então convertemos para o último dia daquele mês/ano.
-    private static final DateTimeFormatter FORMATO_VALIDADE = DateTimeFormatter.ofPattern("MM/yy");
 
     private final ExecutorSql executor;
 
@@ -22,8 +17,10 @@ public class PagamentoCartaoDAO implements DetalhePagamentoRepository<PagamentoC
 
     @Override
     public void salvar(PagamentoCartao pagamentoCartao) {
-        Date validade = Date.valueOf(
-                YearMonth.parse(pagamentoCartao.getValidade(), FORMATO_VALIDADE).atEndOfMonth());
+        // A validade chega como "MM/aa" (ex: "12/30"); a coluna validade_cartao no
+        // banco é do tipo DATE, então convertemos para o último dia daquele mês/ano.
+        Date validade = Date.valueOf(YearMonth.parse(
+                pagamentoCartao.getValidade(), PagamentoCartao.FORMATO_VALIDADE).atEndOfMonth());
 
         long id = executor.inserir(
                 """
@@ -38,9 +35,9 @@ public class PagamentoCartaoDAO implements DetalhePagamentoRepository<PagamentoC
                     comando.setString(4, pagamentoCartao.getCvv());
                     comando.setInt(5, pagamentoCartao.getNumeroParcelas());
                     comando.setDouble(6, pagamentoCartao.getValorParcela());
-                    comando.setLong(7, pagamentoCartao.getId_pagamento());
+                    comando.setLong(7, pagamentoCartao.getIdPagamento());
                 },
                 "Erro ao salvar pagamento no cartão no banco.");
-        pagamentoCartao.setId_PagamentoCartao(id);
+        pagamentoCartao.setIdPagamentoCartao(id);
     }
 }

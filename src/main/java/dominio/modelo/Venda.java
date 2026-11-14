@@ -2,11 +2,14 @@ package dominio.modelo;
 
 import dominio.excecao.VeiculoIndisponivelException;
 import dominio.excecao.VendaInvalidaException;
+import dominio.politica.ComissaoCarro;
+import dominio.politica.ComissaoMoto;
+import dominio.politica.PoliticaComissao;
 
 import java.time.LocalDate;
 
 public class Venda {
-    private Long id_venda;
+    private Long idVenda;
     private final Cliente cliente;
     private final Vendedor vendedor;
     private final Veiculo veiculo;
@@ -43,15 +46,15 @@ public class Venda {
         this.valorFinal = pagamento.getValorPago();
     }
 
-    public Long getId_venda() {
-        return id_venda;
+    public Long getIdVenda() {
+        return idVenda;
     }
 
-    public void setId_venda(Long id) {
-        if (this.id_venda != null) {
+    public void setIdVenda(Long id) {
+        if (this.idVenda != null) {
             throw new IllegalStateException("O ID da venda já foi definido.");
         }
-        this.id_venda = id;
+        this.idVenda = id;
     }
 
     public Pagamento getPagamento() { return pagamento; }
@@ -62,16 +65,29 @@ public class Venda {
     public double getValorFinal() { return valorFinal; }
 
     // comissão do vendedor de acordo com o valor final da venda
-    public double getcomissao() {
-        return vendedor.caucularcomissao(valorFinal, veiculo);
+    public double calcularComissao() {
+        return vendedor.calcularComissao(valorFinal, politicaComissao());
+    }
+
+    /** Recibo da venda: o recibo do pagamento + o vendedor e a sua comissão. */
+    public String obterRecibo() {
+        if (pagamento == null) {
+            throw new IllegalStateException("A venda ainda não tem pagamento registrado.");
+        }
+        return pagamento.obterReciboDetalhado() + "\n" +
+                "Vendedor: " + vendedor.getNome() + "\n" +
+                "Comissão do vendedor: R$ " + String.format("%.2f", calcularComissao());
+    }
+
+    /** Único ponto que escolhe a regra de comissão pelo tipo do veículo. */
+    private PoliticaComissao politicaComissao() {
+        return veiculo.isMoto() ? new ComissaoMoto() : new ComissaoCarro();
     }
 
     public boolean validarVenda() {
-        return cliente != null
-                && veiculo != null
-                && vendedor != null
-                && dataVenda != null
-                && pagamento != null
+        // cliente, vendedor, veículo e data já são garantidos pelo construtor;
+        // o pagamento não, porque é ligado depois por registrarPagamento().
+        return pagamento != null
                 && valorFinal > 0
                 && vendedor.validarVendedor()
                 && pagamento.validarPagamento();

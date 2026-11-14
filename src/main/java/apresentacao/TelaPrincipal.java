@@ -1,54 +1,136 @@
 package apresentacao;
 
+import apresentacao.comum.BarraStatus;
+import apresentacao.comum.Feedback;
+import apresentacao.comum.TarefaEmSegundoPlano;
+import apresentacao.comum.TelaComBotaoPrincipal;
+import apresentacao.comum.TelaComDados;
+import apresentacao.estilo.Componentes;
+import apresentacao.estilo.Tema;
+import com.formdev.flatlaf.FlatLightLaf;
 import config.AppConfig;
-
 import javax.swing.*;
-import java.awt.Component;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
+/** Janela principal e navegação entre as áreas da concessionária. */
 public class TelaPrincipal extends JFrame {
+    private final CardLayout layoutTelas = new CardLayout();
+    private final JPanel telas = new JPanel(layoutTelas);
+    private final JLabel titulo = Componentes.titulo("Clientes");
+    private final Map<String, JButton> botoesMenu = new LinkedHashMap<>();
+    private final Map<String, Component> telasPorNome = new LinkedHashMap<>();
 
     public TelaPrincipal(AppConfig config) {
-        setTitle("Concessionária Grupo 2");
-        setSize(800, 600);
+        setTitle("Concessionária");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setMinimumSize(new Dimension(1280, 720));
+        setSize(1280, 720);
         setLocationRelativeTo(null);
+        ClienteFront clientes = new ClienteFront(config.clienteService());
+        VeiculoFront veiculos = new VeiculoFront(config.veiculoService());
+        ConcessionariaFront vendas = new ConcessionariaFront(config.vendaService(), config.clienteService(), config.veiculoService());
+        telas.setOpaque(false);
+        adicionarTela("Clientes", clientes);
+        adicionarTela("Veículos", veiculos);
+        adicionarTela("Vendas", vendas);
+        adicionarTela("Concessionárias", painelEmBreve("Concessionárias"));
+        adicionarTela("Vendedores", painelEmBreve("Vendedores"));
+        JPanel conteudo = new JPanel(new BorderLayout(0, Tema.GRANDE));
+        conteudo.setBackground(Tema.FUNDO);
+        conteudo.setBorder(new EmptyBorder(Tema.MARGEM_TELA, Tema.MARGEM_TELA, Tema.MARGEM_TELA, Tema.MARGEM_TELA));
+        conteudo.add(titulo, BorderLayout.NORTH);
+        conteudo.add(telas, BorderLayout.CENTER);
+        add(criarMenu(), BorderLayout.WEST);
+        add(conteudo, BorderLayout.CENTER);
+        add(new BarraStatus(), BorderLayout.SOUTH);
+        mostrarTela("Clientes");
+    }
 
-        JTabbedPane abas = new JTabbedPane();
+    private JPanel criarMenu() {
+        JPanel menu = new JPanel();
+        menu.setBackground(Tema.PRIMARIA);
+        menu.setLayout(new BoxLayout(menu, BoxLayout.Y_AXIS));
+        menu.setBorder(new EmptyBorder(Tema.MARGEM_TELA, Tema.MEDIO, Tema.GRANDE, Tema.MEDIO));
+        menu.setPreferredSize(new Dimension(240, 0));
+        JLabel marca = new JLabel("CONCESSIONÁRIA");
+        marca.setForeground(Color.WHITE);
+        marca.setFont(Tema.SUBTITULO);
+        marca.setAlignmentX(Component.LEFT_ALIGNMENT);
+        menu.add(marca);
+        menu.add(Box.createVerticalStrut(Tema.MARGEM_TELA));
+        // Alt+letra: cada letra só pode aparecer uma vez (o "Cadastrar cliente" usa Alt+A).
+        Map<String, Character> atalhos = new LinkedHashMap<>();
+        atalhos.put("Clientes", 'C');
+        atalhos.put("Veículos", 'V');
+        atalhos.put("Vendas", 'N');
+        atalhos.put("Concessionárias", 'O');
+        atalhos.put("Vendedores", 'D');
+        for (Map.Entry<String, Character> item : atalhos.entrySet()) {
+            String nome = item.getKey();
+            JButton botao = Componentes.botaoMenu(nome, item.getValue());
+            botao.addActionListener(e -> navegar(nome));
+            botoesMenu.put(nome, botao);
+            menu.add(botao);
+            menu.add(Box.createVerticalStrut(Tema.PEQUENO));
+        }
+        return menu;
+    }
 
-        ClienteFront painelClientes = new ClienteFront(config.clienteService());
-        VeiculoFront painelVeiculos = new VeiculoFront(
-                config.veiculoService(),
-                config.veiculoRepository(),
-                config.concessionariaRepository());
-        ConcessionariaFront painelVendas = new ConcessionariaFront(
-                config.vendaService(),
-                config.clienteRepository(),
-                config.veiculoRepository(),
-                config.vendedorRepository());
+    private JPanel painelEmBreve(String nome) {
+        JPanel cartao = Componentes.painelCartao(nome);
+        JLabel mensagem = Componentes.rotulo("Tela em desenvolvimento.");
+        mensagem.setForeground(Tema.TEXTO_SECUNDARIO);
+        cartao.add(mensagem, BorderLayout.CENTER);
+        return cartao;
+    }
 
-        abas.addTab("Clientes", painelClientes);
-        abas.addTab("Veículos", painelVeiculos);
-        abas.addTab("Vendas", painelVendas);
+    /** Troca de tela na hora; os dados dela chegam em segundo plano, sem travar a janela. */
+    private void navegar(String nome) {
+        mostrarTela(nome);
+        if (telasPorNome.get(nome) instanceof TelaComDados<?> tela) {
+            carregar(tela);
+        }
+    }
 
-        // Sempre que o usuário troca de aba, recarrega os dados dela a partir
-        // do banco, para refletir cadastros e vendas feitos em outras abas
-        // (sem isso, cada combo só carregava uma vez, na abertura do programa).
-        abas.addChangeListener(e -> {
-            Component selecionado = abas.getSelectedComponent();
-            if (selecionado instanceof VeiculoFront veiculoFront) {
-                veiculoFront.atualizarDados();
-            } else if (selecionado instanceof ConcessionariaFront concessionariaFront) {
-                concessionariaFront.atualizarDados();
-            }
+    private <T> void carregar(TelaComDados<T> tela) {
+        TarefaEmSegundoPlano.executar(tela::carregarDados, tela::exibirDados, erro -> Feedback.erro(this, erro));
+    }
+
+    /** Troca a tela visível e faz o Enter acionar o botão principal dela (se tiver). */
+    private void mostrarTela(String nome) {
+        layoutTelas.show(telas, nome);
+        titulo.setText(nome);
+        atualizarSelecao(nome);
+        Component tela = telasPorNome.get(nome);
+        getRootPane().setDefaultButton(
+                tela instanceof TelaComBotaoPrincipal comBotao ? comBotao.botaoPrincipal() : null);
+    }
+
+    private void adicionarTela(String nome, Component tela) {
+        telas.add(tela, nome);
+        telasPorNome.put(nome, tela);
+    }
+
+    private void atualizarSelecao(String nome) {
+        botoesMenu.forEach((chave, botao) -> {
+            botao.setBackground(chave.equals(nome) ? Tema.SECUNDARIA : Tema.PRIMARIA);
+            botao.setForeground(Color.WHITE);
         });
-
-        add(abas);
     }
 
     public static void main(String[] args) {
+        FlatLightLaf.setup();
+        Tema.aplicar();
         SwingUtilities.invokeLater(() -> {
-            TelaPrincipal tela = new TelaPrincipal(new AppConfig());
-            tela.setVisible(true);
+            try {
+                new TelaPrincipal(new AppConfig()).setVisible(true);
+            } catch (RuntimeException ex) {
+                JOptionPane.showMessageDialog(null, "Não foi possível iniciar: " + ex.getMessage(),
+                        "Erro ao iniciar", JOptionPane.ERROR_MESSAGE);
+            }
         });
     }
 }

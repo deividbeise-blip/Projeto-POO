@@ -1,17 +1,18 @@
 package dominio.modelo;
 
 import dominio.politica.DescontoPix;
+import dominio.politica.PoliticaDesconto;
 
 import java.time.LocalDate;
 
 public class PagamentoPix extends Pagamento {
-    private Long id_pagamentoPix; // AUTO_INCREMENT
+    private Long idPagamentoPix; // AUTO_INCREMENT
     private final String chavePix;
     private final String tipoChave; // CPF, CNPJ, E-mail, Telefone ou Aleatória
 
     public PagamentoPix(Venda venda, double valorBase, LocalDate dataPagamento,
-                        String chavePix, String tipoChave) {
-        super(venda, "PIX", valorBase, dataPagamento, new DescontoPix());
+                        String chavePix, String tipoChave, PoliticaDesconto politicaDesconto) {
+        super(venda, "PIX", valorBase, dataPagamento, politicaDesconto);
         if (chavePix == null || chavePix.isBlank()) {
             throw new IllegalArgumentException("Informe a chave PIX.");
         }
@@ -25,22 +26,23 @@ public class PagamentoPix extends Pagamento {
     public String getChavePix() { return chavePix; }
     public String getTipoChave() { return tipoChave; }
 
-    public Long getId_pagamentoPix() {
-        return id_pagamentoPix;
+    public Long getIdPagamentoPix() {
+        return idPagamentoPix;
     }
 
-    public void setId_pagamentoPix(Long id) {
-        if (this.id_pagamentoPix != null) {
+    public void setIdPagamentoPix(Long id) {
+        if (this.idPagamentoPix != null) {
             throw new IllegalStateException("O ID do pagamento PIX já foi definido.");
         }
-        this.id_pagamentoPix = id;
+        this.idPagamentoPix = id;
     }
 
     @Override
     public String obterReciboDetalhado() {
         return "===== Recibo de Pagamento (PIX) =====\n" +
                 "Chave PIX: " + chavePix + " (" + tipoChave + ")\n" +
-                "Valor pago (com 5% de desconto PIX): " + getValorPago() + "\n" +
+                "Valor pago (com " + String.format("%.0f", DescontoPix.PERCENTUAL) + "% de desconto PIX): "
+                + getValorPago() + "\n" +
                 "Data do pagamento: " + getDataPagamento() + "\n" +
                 "======================================";
     }

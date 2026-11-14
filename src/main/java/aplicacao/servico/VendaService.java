@@ -1,79 +1,97 @@
 package aplicacao.servico;
 
 import aplicacao.Transacao;
+import aplicacao.dto.DadosPagamento;
+import aplicacao.dto.DadosVenda;
+import aplicacao.pagamento.FormaPagamento;
 import dominio.excecao.VeiculoIndisponivelException;
 import dominio.excecao.VendaInvalidaException;
-import dominio.modelo.*;
+import dominio.modelo.Cliente;
+import dominio.modelo.Pagamento;
+import dominio.modelo.Veiculo;
+import dominio.modelo.Venda;
+import dominio.modelo.Vendedor;
 import dominio.repositorio.ClienteRepository;
-import dominio.repositorio.DetalhePagamentoRepository;
 import dominio.repositorio.PagamentoRepository;
 import dominio.repositorio.VeiculoRepository;
 import dominio.repositorio.VendaRepository;
+import dominio.repositorio.VendedorRepository;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 
 public class VendaService {
     private final ClienteRepository clienteRepository;
+    private final VendedorRepository vendedorRepository;
+    private final VeiculoRepository veiculoRepository;
     private final VendaRepository vendaRepository;
     private final PagamentoRepository pagamentoRepository;
-    private final DetalhePagamentoRepository<PagamentoPix> pagamentoPixRepository;
-    private final DetalhePagamentoRepository<PagamentoCartao> pagamentoCartaoRepository;
-    private final VeiculoRepository veiculoRepository;
+    private final Map<Class<? extends DadosPagamento>, FormaPagamento<?, ?>> formasPagamento;
     private final Transacao transacao;
 
     public VendaService(ClienteRepository clienteRepository,
+                        VendedorRepository vendedorRepository,
+                        VeiculoRepository veiculoRepository,
                         VendaRepository vendaRepository,
                         PagamentoRepository pagamentoRepository,
-                        DetalhePagamentoRepository<PagamentoPix> pagamentoPixRepository,
-                        DetalhePagamentoRepository<PagamentoCartao> pagamentoCartaoRepository,
-                        VeiculoRepository veiculoRepository,
+                        Map<Class<? extends DadosPagamento>, FormaPagamento<?, ?>> formasPagamento,
                         Transacao transacao) {
         this.clienteRepository = clienteRepository;
+        this.vendedorRepository = vendedorRepository;
+        this.veiculoRepository = veiculoRepository;
         this.vendaRepository = vendaRepository;
         this.pagamentoRepository = pagamentoRepository;
-        this.pagamentoPixRepository = pagamentoPixRepository;
-        this.pagamentoCartaoRepository = pagamentoCartaoRepository;
-        this.veiculoRepository = veiculoRepository;
+        this.formasPagamento = Map.copyOf(formasPagamento);
         this.transacao = transacao;
     }
 
-    public Pagamento venderComPix(Cliente cliente, Vendedor vendedor, Veiculo veiculo,
-                                  String chavePix, String tipoChave)
-            throws VeiculoIndisponivelException, VendaInvalidaException {
-
-        Venda venda = new Venda(cliente, vendedor, veiculo, LocalDate.now());
-        PagamentoPix pagamento = new PagamentoPix(venda, veiculo.getPreco(), LocalDate.now(), chavePix, tipoChave);
-        return concluir(venda, pagamento, () -> pagamentoPixRepository.salvar(pagamento));
+    public List<Vendedor> listarVendedores() {
+        return vendedorRepository.listar();
     }
 
-    public Pagamento venderComCartao(Cliente cliente, Vendedor vendedor, Veiculo veiculo,
-                                     String numeroCartao, String titular, String validade,
-                                     String cvv, int parcelas)
-            throws VeiculoIndisponivelException, VendaInvalidaException {
+    /**
+     * Realiza uma venda com qualquer forma de pagamento registrada no AppConfig.
+     * A forma é escolhida pelo tipo do DTO de pagamento (DadosPix, DadosCartao...).
+     */
+    public Pagamento vender(DadosVenda dados) throws VeiculoIndisponivelException, VendaInvalidaException {
+        if (dados == null || dados.pagamento() == null) {
+            throw new IllegalArgumentException("Informe os dados da venda e do pagamento.");
+        }
+        FormaPagamento<?, ?> forma = formasPagamento.get(dados.pagamento().getClass());
+        if (forma == null) {
+            throw new IllegalArgumentException("Forma de pagamento não suportada");
+        }
+
+        Cliente cliente = buscarCliente(dados.idCliente());
+        Vendedor vendedor = buscarVendedor(dados.idVendedor());
+        Veiculo veiculo = buscarVeiculo(dados.idVeiculo());
 
         Venda venda = new Venda(cliente, vendedor, veiculo, LocalDate.now());
-        PagamentoCartao pagamento = new PagamentoCartao(venda, veiculo.getPreco(), LocalDate.now(),
-                numeroCartao, titular, validade, cvv, parcelas);
-        return concluir(venda, pagamento, () -> pagamentoCartaoRepository.salvar(pagamento));
+        return concluir(venda, forma, dados.pagamento());
     }
 
-    private Pagamento concluir(Venda venda, Pagamento pagamento, Runnable salvarDetalhePagamento)
+    /**
+     * O mapa liga cada classe de DTO à sua forma de pagamento (DadosPix -> FormaPagamentoPix),
+     * por isso o cast para D é seguro.
+     */
+    @SuppressWarnings("unchecked")
+    private <D extends DadosPagamento, P extends Pagamento> P concluir(
+            Venda venda, FormaPagamento<D, P> forma, DadosPagamento dadosPagamento)
             throws VeiculoIndisponivelException, VendaInvalidaException {
 
+        P pagamento = forma.criarPagamento(venda, (D) dadosPagamento);
         venda.registrarPagamento(pagamento);
 
         // 1) Regras de negócio primeiro: se falhar aqui, NADA foi gravado no banco.
         venda.finalizarVenda();
 
-        // 2) Só então persiste, tudo na mesma transação: se qualquer passo falhar, nada fica gravado.
+        // 2) Só então persiste, tudo na mesma transação, na ordem que as chaves estrangeiras exigem.
         try {
             transacao.executar(() -> {
-                if (venda.getCliente().getId_cliente() == null) {
-                    clienteRepository.salvar(venda.getCliente());
-                }
                 vendaRepository.salvar(venda);
                 pagamentoRepository.salvar(pagamento);
-                salvarDetalhePagamento.run();
+                forma.salvarDetalhe(pagamento);
                 vendaRepository.atualizarPagamento(venda);
                 veiculoRepository.atualizarStatus(venda.getVeiculo());
             });
@@ -82,5 +100,31 @@ public class VendaService {
             throw e;
         }
         return pagamento;
+    }
+
+    // ---- Busca das entidades a partir dos IDs recebidos no DTO ----
+
+    private Cliente buscarCliente(Long id) {
+        Cliente cliente = id == null ? null : clienteRepository.buscarPorId(id);
+        if (cliente == null) {
+            throw new IllegalArgumentException("Cliente não encontrado (id " + id + ").");
+        }
+        return cliente;
+    }
+
+    private Vendedor buscarVendedor(Long id) {
+        Vendedor vendedor = id == null ? null : vendedorRepository.buscarPorId(id);
+        if (vendedor == null) {
+            throw new IllegalArgumentException("Vendedor não encontrado (id " + id + ").");
+        }
+        return vendedor;
+    }
+
+    private Veiculo buscarVeiculo(Long id) {
+        Veiculo veiculo = id == null ? null : veiculoRepository.buscarPorId(id);
+        if (veiculo == null) {
+            throw new IllegalArgumentException("Veículo não encontrado (id " + id + ").");
+        }
+        return veiculo;
     }
 }
