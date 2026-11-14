@@ -26,13 +26,28 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.TableRowSorter;
 
 /**
- * Cadastro de clientes: lista com busca à esquerda, formulário à direita.
- * Clicar numa linha carrega o cliente no formulário (modo edição); "Novo" volta ao modo cadastro.
+ * Tela de cadastro de clientes (CRUD completo): lista com busca à esquerda e formulário à direita
+ * Funcionamento:
+ *   <li>a tabela mostra nome, CPF, e-mail e telefone; o campo de busca filtra por nome ou CPF
+ *       enquanto o usuário digita;</li>
+ *   <li>clicar numa linha carrega o cliente no formulário e entra em <b>modo edição</b>;</li>
+ *   <li><b>Novo</b> limpa o formulário e volta ao <b>modo cadastro</b>;</li>
+ *   <li><b>Salvar</b> cadastra ou atualiza, conforme o modo;</li>
+ *   <li><b>Excluir</b> (só em modo edição) pede confirmação antes de excluir;</li>
+ *   <li>depois de cada operação a lista é recarregada do banco.</li>
+ * </ul>
+ * As operações com o banco rodam fora da thread da tela, pela {@link TarefaEmSegundoPlano}; os
+ * avisos usam o {@link Feedback} e a marcação de campos inválidos usa a {@link Validacao}.
+ *
+ * @see ClienteService
+ * @see ClienteTableModel
  */
 public class ClienteFront extends JPanel {
 
     private final ClienteService clienteService;
+    /** Dados da tabela; atualizado a cada recarga da lista. */
     private final ClienteTableModel modeloTabela = new ClienteTableModel();
+    /** Cuida da ordenação por coluna e do filtro da busca, sem mexer nos dados do modelo. */
     private final TableRowSorter<ClienteTableModel> ordenador = new TableRowSorter<>(modeloTabela);
 
     private JTable tabela;
@@ -48,6 +63,11 @@ public class ClienteFront extends JPanel {
     /** null = modo cadastro; preenchido = modo edição do cliente com esse ID. */
     private Long idEmEdicao;
 
+    /**
+     * Monta a tela, deixa o formulário em modo cadastro e carrega a lista de clientes.
+     *
+     * @param clienteService serviço usado para listar, cadastrar, atualizar e excluir clientes
+     */
     public ClienteFront(ClienteService clienteService) {
         this.clienteService = clienteService;
 
@@ -76,6 +96,12 @@ public class ClienteFront extends JPanel {
 
     // ---------------------------------------------------------------- montagem da tela
 
+    /**
+     * Monta o lado esquerdo: campo de busca em cima e a tabela de clientes embaixo.
+     * Também liga o clique numa linha ao carregamento do cliente no formulário.
+     *
+     * @return o cartão com a busca e a tabela
+     */
     private JPanel criarPainelLista() {
         JPanel cartao = Componentes.painelCartao("Clientes");
 
@@ -109,6 +135,12 @@ public class ClienteFront extends JPanel {
         return cartao;
     }
 
+    /**
+     * Monta o lado direito: os quatro campos do cliente (com espaço para a mensagem de erro de
+     * cada um) e os botões Novo, Excluir e Salvar.
+     *
+     * @return o cartão com o formulário e os botões
+     */
     private JPanel criarPainelFormulario() {
         JPanel cartao = Componentes.painelCartao("Dados do cliente");
 
@@ -146,7 +178,11 @@ public class ClienteFront extends JPanel {
 
     // ---------------------------------------------------------------- busca
 
-    /** Filtra a lista por nome ou CPF enquanto o usuário digita (o CPF aceita pontos e traço). */
+    /**
+     * Filtra a lista por nome ou CPF enquanto o usuário digita (o CPF aceita pontos e traço).
+     * O nome é comparado sem diferenciar maiúsculas de minúsculas e o CPF só pelos dígitos
+     * digitados. Com o campo vazio, mostra todos os clientes.
+     */
     private void aplicarFiltro() {
         String texto = campoBusca.getText().trim().toLowerCase();
         if (texto.isEmpty()) {
@@ -166,7 +202,10 @@ public class ClienteFront extends JPanel {
 
     // ---------------------------------------------------------------- fluxo da tela
 
-    /** Limpa o formulário e volta ao modo cadastro. */
+    /**
+     * Limpa o formulário, tira a seleção da tabela e volta ao modo cadastro (o botão Excluir
+     * fica desabilitado, porque não há cliente selecionado).
+     */
     private void novo() {
         idEmEdicao = null;
         tabela.clearSelection();
@@ -179,7 +218,10 @@ public class ClienteFront extends JPanel {
         campoNome.requestFocusInWindow();
     }
 
-    /** Clique numa linha: carrega o cliente no formulário e entra em modo edição. */
+    /**
+     * Clique numa linha: carrega o cliente no formulário e entra em modo edição.
+     * Se não houver linha selecionada (por exemplo, depois de recarregar a lista), não faz nada.
+     */
     private void carregarSelecionado() {
         int linha = tabela.getSelectedRow();
         if (linha < 0) {
@@ -195,6 +237,12 @@ public class ClienteFront extends JPanel {
         botaoExcluir.setEnabled(true);
     }
 
+    /**
+     * Botão Salvar: valida os quatro campos (marcando o erro de cada um) e, se estiver tudo certo,
+     * cadastra (modo cadastro) ou atualiza (modo edição) em segundo plano. Em caso de sucesso,
+     * mostra o aviso, volta ao modo cadastro e recarrega a lista; em caso de erro, mostra o
+     * diálogo de erro e mantém o formulário como está.
+     */
     private void salvar() {
         boolean valido = Validacao.verificar(campoNome, () -> Cliente.validarNome(campoNome.getText()));
         valido &= Validacao.verificar(campoCpf, () -> Cliente.validarCpf(campoCpf.getText()));
@@ -225,6 +273,12 @@ public class ClienteFront extends JPanel {
                 erro -> Feedback.erro(this, erro));
     }
 
+    /**
+     * Botão Excluir: pede confirmação e, se o usuário confirmar, exclui o cliente em edição em
+     * segundo plano. Em caso de sucesso, mostra o aviso, volta ao modo cadastro e recarrega a
+     * lista. Se o cliente tiver vendas, o erro mostra a mensagem "Este cliente possui vendas e
+     * não pode ser excluído.". Sem cliente em edição, não faz nada.
+     */
     private void excluir() {
         Long id = idEmEdicao;
         if (id == null) {
@@ -247,7 +301,7 @@ public class ClienteFront extends JPanel {
                 erro -> Feedback.erro(this, erro));
     }
 
-    /** Recarrega a lista do banco em segundo plano. */
+    /** Recarrega a lista do banco em segundo plano e a mostra na tabela. */
     private void recarregar() {
         TarefaEmSegundoPlano.executar(
                 clienteService::listar,
@@ -255,6 +309,7 @@ public class ClienteFront extends JPanel {
                 erro -> Feedback.erro(this, erro));
     }
 
+    /** Remove a marcação de erro (contorno vermelho e mensagem) dos quatro campos. */
     private void limparErros() {
         Validacao.limpar(campoNome);
         Validacao.limpar(campoCpf);
