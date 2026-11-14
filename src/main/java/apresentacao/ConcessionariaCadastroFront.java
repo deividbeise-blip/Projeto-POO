@@ -31,7 +31,7 @@ import dominio.modelo.Concessionaria;
 
 /**
  * Cadastro de concessionárias: lista com busca à esquerda, formulário à direita.
- * (A tela de vendas se chama {@code ConcessionariaFront}; esta é a de cadastro das lojas.)
+ * (A tela de vendas se chama {@code VendaFront}; esta é a de cadastro das lojas.)
  * Clicar numa linha carrega a concessionária no formulário (modo edição); "Novo" volta ao modo cadastro.
  */
 public class ConcessionariaCadastroFront extends JPanel

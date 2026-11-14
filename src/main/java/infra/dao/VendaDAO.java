@@ -2,7 +2,9 @@ package infra.dao;
 
 import java.sql.Date;
 import java.sql.Types;
+import java.util.List;
 
+import dominio.modelo.ResumoVenda;
 import dominio.modelo.Venda;
 import dominio.repositorio.VendaRepository;
 import infra.conexao.ConnectionFactory;
@@ -45,5 +47,28 @@ public class VendaDAO implements VendaRepository {
                     comando.setLong(2, venda.getIdVenda());
                 },
                 "Erro ao atualizar pagamento da venda no banco.");
+    }
+
+    @Override
+    public List<ResumoVenda> listarHistorico() {
+        return executor.consultar(
+                """
+                SELECT v.data_venda, c.name_cliente, ve.marca_veiculo, ve.modelo_veiculo,
+                       vend.name_vendedor, p.forma_pagamento, p.valor_pagamento
+                FROM venda v
+                JOIN cliente c ON c.id_cliente = v.cliente_venda
+                JOIN veiculo ve ON ve.id_veiculo = v.veiculo_venda
+                JOIN vendedor vend ON vend.id_vendedor = v.vendedor_venda
+                JOIN pagamento p ON p.id_pagamento = v.pagamento_venda
+                ORDER BY v.data_venda DESC, v.id_venda DESC
+                """,
+                resultado -> new ResumoVenda(
+                        resultado.getDate("data_venda").toLocalDate(),
+                        resultado.getString("name_cliente"),
+                        resultado.getString("marca_veiculo") + " " + resultado.getString("modelo_veiculo"),
+                        resultado.getString("name_vendedor"),
+                        resultado.getString("forma_pagamento"),
+                        resultado.getBigDecimal("valor_pagamento")),
+                "Erro ao listar histórico de vendas.");
     }
 }
