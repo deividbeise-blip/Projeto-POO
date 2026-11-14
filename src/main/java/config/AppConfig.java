@@ -37,6 +37,8 @@ import java.util.Map;
 /**
  * Único lugar do sistema que conhece as implementações concretas (DAOs).
  * Monta os services com as dependências certas e entrega tudo pronto para as telas.
+ * Criar um AppConfig já lê as credenciais do banco: lança {@code IllegalStateException}
+ * se DB_URL, DB_USER ou DB_PASSWORD não estiverem definidas.
  */
 public class AppConfig {
 

@@ -44,26 +44,43 @@ public class VendedorTableModel extends AbstractTableModel {
         return vendedores.get(linha);
     }
 
+    /** @return quantos vendedores estão carregados no modelo (antes de qualquer filtro) */
     @Override
     public int getRowCount() {
         return vendedores.size();
     }
 
+    /** @return número de colunas da tabela */
     @Override
     public int getColumnCount() {
         return COLUNAS.length;
     }
 
+    /**
+     * @param coluna índice da coluna no modelo
+     * @return o título exibido no cabeçalho
+     */
     @Override
     public String getColumnName(int coluna) {
         return COLUNAS[coluna];
     }
 
+    /**
+     * @param coluna índice da coluna no modelo
+     * @return {@code Double} para a comissão (ordenação numérica) e {@code String} para as demais
+     */
     @Override
     public Class<?> getColumnClass(int coluna) {
         return coluna == COLUNA_COMISSAO ? Double.class : String.class;
     }
 
+    /**
+     * Valor da célula. O CPF sai com máscara; a comissão sai como número e a tela a formata.
+     *
+     * @param linha índice da linha no modelo
+     * @param coluna índice da coluna no modelo
+     * @return o valor da célula, ou null para coluna desconhecida
+     */
     @Override
     public Object getValueAt(int linha, int coluna) {
         Vendedor vendedor = vendedores.get(linha);

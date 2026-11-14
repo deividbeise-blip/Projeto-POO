@@ -25,6 +25,13 @@ public class ConcessionariaDAO implements ConcessionariaRepository {
         this.executor = new ExecutorSql(connectionFactory);
     }
 
+    /**
+     * Faz o INSERT e coloca no objeto o ID gerado.
+     *
+     * @param concessionaria concessionária nova, ainda sem ID
+     * @throws IllegalStateException se já existir outra com o mesmo nome ou endereço
+     * @throws PersistenciaException se o banco falhar por outro motivo
+     */
     @Override
     public void salvar(Concessionaria concessionaria) {
         long id;
@@ -42,6 +49,11 @@ public class ConcessionariaDAO implements ConcessionariaRepository {
         concessionaria.setIdConcessionaria(id);
     }
 
+    /**
+     * @param id ID da concessionária
+     * @return a concessionária encontrada, ou null se não existir
+     * @throws PersistenciaException se a consulta falhar
+     */
     @Override
     public Concessionaria buscarPorId(Long id) {
         return executor.consultarUm(
@@ -51,7 +63,12 @@ public class ConcessionariaDAO implements ConcessionariaRepository {
                 "Erro ao buscar concessionária no banco.");
     }
 
-    /** Usado pela tela de concessionárias e pelos combos das telas de veículos e vendedores. */
+    /**
+     * Usado pela tela de concessionárias e pelos combos das telas de veículos e vendedores.
+     *
+     * @return todas as concessionárias, em ordem de nome
+     * @throws PersistenciaException se a consulta falhar
+     */
     @Override
     public List<Concessionaria> listar() {
         return executor.consultar(
@@ -60,6 +77,13 @@ public class ConcessionariaDAO implements ConcessionariaRepository {
                 "Erro ao listar concessionárias.");
     }
 
+    /**
+     * Atualiza nome e endereço pelo ID do objeto.
+     *
+     * @param concessionaria concessionária com ID e dados novos
+     * @throws IllegalStateException se já existir outra com o mesmo nome ou endereço
+     * @throws PersistenciaException se o banco falhar por outro motivo
+     */
     @Override
     public void atualizar(Concessionaria concessionaria) {
         try {
@@ -77,6 +101,14 @@ public class ConcessionariaDAO implements ConcessionariaRepository {
         }
     }
 
+    /**
+     * Apaga a concessionária. Uma violação de chave estrangeira significa que ainda há
+     * veículos ou vendedores ligados a ela.
+     *
+     * @param id ID da concessionária
+     * @throws IllegalStateException se ela tiver veículos ou vendedores
+     * @throws PersistenciaException se o banco falhar por outro motivo
+     */
     @Override
     public void excluir(Long id) {
         try {

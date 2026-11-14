@@ -22,6 +22,7 @@ public class PagamentoDinheiro extends Pagamento {
         super(venda, "Dinheiro", valorBase, dataPagamento, politicaDesconto);
     }
 
+    /** @return recibo com o valor pago à vista e a data */
     @Override
     public String obterReciboDetalhado() {
         return "===== Recibo de Pagamento (Dinheiro) =====\n" +

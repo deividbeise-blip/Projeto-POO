@@ -17,6 +17,19 @@ import dominio.modelo.StatusVeiculo;
  */
 public class VeiculoCelulaRenderer extends DefaultTableCellRenderer {
 
+    /**
+     * Formata a célula conforme o tipo do valor: {@code Double} vira preço em reais alinhado à direita;
+     * {@code StatusVeiculo} vira texto em negrito com a cor do status (exceto na linha selecionada).
+     * Outros valores são desenhados normalmente.
+     *
+     * @param tabela a tabela que está sendo desenhada
+     * @param valor valor da célula, vindo do {@link VeiculoTableModel}
+     * @param selecionada se a linha está selecionada
+     * @param comFoco se a célula está com o foco
+     * @param linha índice da linha na visão
+     * @param coluna índice da coluna na visão
+     * @return o rótulo configurado para desenhar a célula
+     */
     @Override
     public Component getTableCellRendererComponent(JTable tabela, Object valor, boolean selecionada,
                                                    boolean comFoco, int linha, int coluna) {

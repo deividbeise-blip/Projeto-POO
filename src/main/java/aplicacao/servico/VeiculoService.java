@@ -32,6 +32,16 @@ public class VeiculoService {
      * Cadastra um veículo novo, sempre como DISPONIVEL.
      * A validação de dados (marca, modelo, placa, preço etc.) acontece no
      * construtor de Veiculo; aqui só orquestramos a gravação.
+     *
+     * @param marca          marca do veículo
+     * @param modelo         modelo do veículo
+     * @param ano            ano do veículo
+     * @param placa          placa do veículo
+     * @param preco          preço de venda
+     * @param moto           {@code true} se for moto, {@code false} se for carro
+     * @param concessionaria concessionária à qual o veículo pertence
+     * @return o veículo gravado, já com ID
+     * @throws IllegalArgumentException se algum dado for inválido
      */
     public Veiculo cadastrar(String marca, String modelo, Integer ano, String placa,
                              Double preco, boolean moto, Concessionaria concessionaria) {
@@ -41,7 +51,13 @@ public class VeiculoService {
         return veiculo;
     }
 
-    /** Altera o status respeitando as regras do domínio e persiste o resultado. */
+    /**
+     * Altera o status respeitando as regras do domínio e persiste o resultado.
+     *
+     * @param veiculo    veículo carregado do banco
+     * @param novoStatus DISPONIVEL ou EM_MANUTENCAO (VENDIDO só pela tela de vendas)
+     * @throws VeiculoIndisponivelException se a troca não for permitida (veículo já vendido ou status VENDIDO pedido)
+     */
     public void alterarStatus(Veiculo veiculo, StatusVeiculo novoStatus) throws VeiculoIndisponivelException {
         switch (novoStatus) {
             case DISPONIVEL -> veiculo.tornarDisponivel();

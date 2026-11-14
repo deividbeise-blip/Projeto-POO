@@ -6,5 +6,12 @@ package aplicacao;
  */
 public interface Transacao {
 
+    /**
+     * Roda a ação dentro de uma transação. Se ela terminar sem erro, tudo é confirmado;
+     * se lançar exceção, tudo é desfeito e a exceção chega a quem chamou.
+     * Chamadas aninhadas participam da transação já aberta.
+     *
+     * @param acao operações de gravação que precisam acontecer juntas
+     */
     void executar(Runnable acao);
 }

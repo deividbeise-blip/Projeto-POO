@@ -22,6 +22,13 @@ public class FormaPagamentoDinheiro implements FormaPagamento<DadosDinheiro, Pag
         this.politicaDesconto = politicaDesconto;
     }
 
+    /**
+     * Cria o pagamento em dinheiro usando o preço do veículo e a data de hoje.
+     *
+     * @param venda venda que está sendo paga
+     * @param dados sem conteúdo; só identifica a forma escolhida
+     * @return o pagamento com o valor final já calculado
+     */
     @Override
     public PagamentoDinheiro criarPagamento(Venda venda, DadosDinheiro dados) {
         return new PagamentoDinheiro(venda, venda.getVeiculo().getPreco(), LocalDate.now(), politicaDesconto);

@@ -15,7 +15,12 @@ import java.awt.*;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Janela principal e navegação entre as áreas da concessionária. */
+/**
+ * Janela principal: menu lateral com as cinco áreas (Clientes, Veículos, Vendas, Concessionárias,
+ * Vendedores), título da área atual e barra de status no rodapé.
+ * Atalhos do menu: Alt+C, Alt+V, Alt+E, Alt+O e Alt+D. Ao trocar de área, os dados dela são
+ * recarregados em segundo plano e o Enter passa a acionar o botão principal daquela tela.
+ */
 public class TelaPrincipal extends JFrame {
     private final CardLayout layoutTelas = new CardLayout();
     private final JPanel telas = new JPanel(layoutTelas);
@@ -23,6 +28,11 @@ public class TelaPrincipal extends JFrame {
     private final Map<String, JButton> botoesMenu = new LinkedHashMap<>();
     private final Map<String, Component> telasPorNome = new LinkedHashMap<>();
 
+    /**
+     * Monta a janela e todas as telas com os services do {@link AppConfig}. Chame na thread da tela.
+     *
+     * @param config fornece os casos de uso já montados com suas dependências
+     */
     public TelaPrincipal(AppConfig config) {
         setTitle("Concessionária");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -112,6 +122,13 @@ public class TelaPrincipal extends JFrame {
         });
     }
 
+    /**
+     * Ponto de entrada do sistema: aplica o FlatLaf e o {@link Tema}, monta o {@link AppConfig}
+     * e abre a janela. Se a montagem falhar (ex.: DB_URL, DB_USER ou DB_PASSWORD não definidas),
+     * mostra o motivo num diálogo em vez de fechar sem aviso.
+     *
+     * @param args não usados
+     */
     public static void main(String[] args) {
         FlatLightLaf.setup();
         Tema.aplicar();

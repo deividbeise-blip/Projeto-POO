@@ -35,7 +35,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 
-/** Registro e consulta de vendas da concessionária. */
+/**
+ * Registro e consulta de vendas. A aba "Nova venda" guia o usuário em quatro passos (cliente,
+ * veículo disponível, vendedor e pagamento por PIX, cartão ou dinheiro) e mostra o resumo com
+ * desconto e parcelas antes de finalizar; a aba "Histórico" lista as vendas concluídas.
+ * A venda roda em segundo plano e, ao concluir, o recibo aparece num diálogo. Enter ou Alt+F finaliza.
+ */
 public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>, TelaComBotaoPrincipal {
     private enum Forma {
         PIX("PIX"), CARTAO("Cartão"), DINHEIRO("Dinheiro");
@@ -44,6 +49,14 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
         @Override public String toString() { return nome; }
     }
 
+    /**
+     * Tudo o que a tela carrega de uma vez em segundo plano.
+     *
+     * @param clientes clientes para o combo (filtrados pela busca)
+     * @param vendedores vendedores cadastrados
+     * @param veiculos só os veículos disponíveis para venda
+     * @param vendas histórico de vendas concluídas
+     */
     record Dados(List<Cliente> clientes, List<Vendedor> vendedores,
                  List<Veiculo> veiculos, List<ResumoVenda> vendas) { }
 
@@ -72,6 +85,14 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
     };
     private List<Cliente> todosClientes = List.of();
 
+    /**
+     * Monta as abas e liga os eventos. Os dados chegam depois, quando a {@code TelaPrincipal}
+     * chama {@link #carregarDados()} em segundo plano.
+     *
+     * @param vendaService realiza a venda e fornece vendedores e histórico
+     * @param clienteService fornece a lista de clientes
+     * @param veiculoService fornece os veículos disponíveis
+     */
     public VendaFront(VendaService vendaService, ClienteService clienteService, VeiculoService veiculoService) {
         this.vendaService = vendaService;
         this.clienteService = clienteService;
@@ -177,13 +198,28 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
         return cartao;
     }
 
+    /**
+     * O Enter nesta tela finaliza a venda.
+     *
+     * @return o botão "Finalizar venda"
+     */
     @Override public JButton botaoPrincipal() { return finalizar; }
 
+    /**
+     * Busca clientes, vendedores, veículos disponíveis e histórico. Roda fora da thread da tela.
+     *
+     * @return os dados da tela
+     */
     @Override public Dados carregarDados() {
         return new Dados(clienteService.listar(), vendaService.listarVendedores(),
                 veiculoService.listarDisponiveis(), vendaService.listarVendas());
     }
 
+    /**
+     * Preenche os combos e o histórico e recalcula o resumo. Roda na thread da tela.
+     *
+     * @param dados o que {@link #carregarDados()} devolveu
+     */
     @Override public void exibirDados(Dados dados) {
         todosClientes = List.copyOf(dados.clientes());
         filtrarClientes();

@@ -1,0 +1,15 @@
+aplicacao
+aplicacao.dto
+aplicacao.pagamento
+aplicacao.servico
+apresentacao
+apresentacao.comum
+apresentacao.estilo
+config
+dominio.excecao
+dominio.modelo
+dominio.politica
+dominio.repositorio
+infra.conexao
+infra.dao
+infra.excecao

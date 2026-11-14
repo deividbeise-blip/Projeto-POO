@@ -67,6 +67,10 @@ public class BarraStatus extends JPanel {
         return raiz == null ? null : (BarraStatus) raiz.getClientProperty(CHAVE);
     }
 
+    /**
+     * Ao entrar numa janela, registra esta barra no {@link JRootPane} dela,
+     * para o {@link Feedback} encontrá-la por {@link #daJanelaDe(Component)}.
+     */
     @Override
     public void addNotify() {
         super.addNotify();
@@ -76,6 +80,9 @@ public class BarraStatus extends JPanel {
         }
     }
 
+    /**
+     * Ao sair da janela, desfaz o registro (se ainda for a barra registrada) e para o temporizador.
+     */
     @Override
     public void removeNotify() {
         JRootPane raiz = getRootPane();

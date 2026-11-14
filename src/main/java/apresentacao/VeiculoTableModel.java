@@ -66,21 +66,34 @@ public class VeiculoTableModel extends AbstractTableModel {
         return -1;
     }
 
+    /** @return quantos veículos estão carregados no modelo (antes de qualquer filtro) */
     @Override
     public int getRowCount() {
         return veiculos.size();
     }
 
+    /** @return número de colunas da tabela */
     @Override
     public int getColumnCount() {
         return COLUNAS.length;
     }
 
+    /**
+     * @param coluna índice da coluna no modelo
+     * @return o título exibido no cabeçalho
+     */
     @Override
     public String getColumnName(int coluna) {
         return COLUNAS[coluna];
     }
 
+    /**
+     * Tipo de cada coluna, para a tabela ordenar pelo valor real.
+     *
+     * @param coluna índice da coluna no modelo
+     * @return {@code Integer} para o ano, {@code Double} para o preço, {@code StatusVeiculo} para o status
+     *         e {@code String} para as demais
+     */
     @Override
     public Class<?> getColumnClass(int coluna) {
         return switch (coluna) {
@@ -91,6 +104,13 @@ public class VeiculoTableModel extends AbstractTableModel {
         };
     }
 
+    /**
+     * Valor bruto da célula. Preço e status saem sem formatação; o {@link VeiculoCelulaRenderer} os desenha.
+     *
+     * @param linha índice da linha no modelo
+     * @param coluna índice da coluna no modelo
+     * @return o valor da célula, ou null para coluna desconhecida
+     */
     @Override
     public Object getValueAt(int linha, int coluna) {
         Veiculo veiculo = veiculos.get(linha);
