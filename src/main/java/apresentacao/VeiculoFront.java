@@ -176,6 +176,7 @@ public class VeiculoFront extends JPanel
         JPanel cartao = Componentes.painelCartao("Veículos");
 
         campoBusca = Componentes.campoTexto();
+        campoBusca.getAccessibleContext().setAccessibleName("Buscar veículos");
         campoBusca.putClientProperty("JTextField.placeholderText", "Buscar por placa, marca ou modelo");
         campoBusca.getDocument().addDocumentListener(new DocumentListener() {
             @Override public void insertUpdate(DocumentEvent e) { aplicarFiltro(); }
@@ -208,11 +209,12 @@ public class VeiculoFront extends JPanel
 
         VeiculoCelulaRenderer renderer = new VeiculoCelulaRenderer();
         tabela = new JTable(modeloTabela);
+        tabela.getAccessibleContext().setAccessibleName("Lista de veículos");
         tabela.setRowSorter(ordenador);
         tabela.setDefaultRenderer(Double.class, renderer);
         tabela.setDefaultRenderer(StatusVeiculo.class, renderer);
         tabela.setFont(Tema.TEXTO_FONTE);
-        tabela.setRowHeight(28);
+        tabela.setRowHeight(Tema.ALTURA_LINHA_TABELA);
         tabela.setGridColor(Tema.BORDA);
         tabela.setFillsViewportHeight(true);
         tabela.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);

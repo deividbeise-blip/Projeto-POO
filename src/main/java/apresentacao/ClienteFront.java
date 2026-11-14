@@ -89,6 +89,7 @@ public class ClienteFront extends JPanel implements TelaComBotaoPrincipal {
         JPanel cartao = Componentes.painelCartao("Clientes");
 
         campoBusca = Componentes.campoTexto();
+        campoBusca.getAccessibleContext().setAccessibleName("Buscar clientes");
         campoBusca.putClientProperty("JTextField.placeholderText", "Buscar por nome ou CPF");
         campoBusca.getDocument().addDocumentListener(new DocumentListener() {
             @Override public void insertUpdate(DocumentEvent e) { aplicarFiltro(); }
@@ -97,9 +98,10 @@ public class ClienteFront extends JPanel implements TelaComBotaoPrincipal {
         });
 
         tabela = new JTable(modeloTabela);
+        tabela.getAccessibleContext().setAccessibleName("Lista de clientes");
         tabela.setRowSorter(ordenador);
         tabela.setFont(Tema.TEXTO_FONTE);
-        tabela.setRowHeight(28);
+        tabela.setRowHeight(Tema.ALTURA_LINHA_TABELA);
         tabela.setGridColor(Tema.BORDA);
         tabela.setFillsViewportHeight(true);
         tabela.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);

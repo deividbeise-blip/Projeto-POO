@@ -139,6 +139,7 @@ public class VendedorFront extends JPanel
         JPanel cartao = Componentes.painelCartao("Vendedores");
 
         campoBusca = Componentes.campoTexto();
+        campoBusca.getAccessibleContext().setAccessibleName("Buscar vendedores");
         campoBusca.putClientProperty("JTextField.placeholderText", "Buscar por nome ou CPF");
         campoBusca.getDocument().addDocumentListener(new DocumentListener() {
             @Override public void insertUpdate(DocumentEvent e) { aplicarFiltro(); }
@@ -147,6 +148,7 @@ public class VendedorFront extends JPanel
         });
 
         tabela = new JTable(modeloTabela);
+        tabela.getAccessibleContext().setAccessibleName("Lista de vendedores");
         tabela.setRowSorter(ordenador);
         tabela.setDefaultRenderer(Double.class, new DefaultTableCellRenderer() {
             {
@@ -159,7 +161,7 @@ public class VendedorFront extends JPanel
             }
         });
         tabela.setFont(Tema.TEXTO_FONTE);
-        tabela.setRowHeight(28);
+        tabela.setRowHeight(Tema.ALTURA_LINHA_TABELA);
         tabela.setGridColor(Tema.BORDA);
         tabela.setFillsViewportHeight(true);
         tabela.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);

@@ -36,8 +36,8 @@ public class TelaPrincipal extends JFrame {
     public TelaPrincipal(AppConfig config) {
         setTitle("Concessionária");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setMinimumSize(new Dimension(1280, 720));
-        setSize(1280, 720);
+        setMinimumSize(new Dimension(Tema.LARGURA_JANELA, Tema.ALTURA_JANELA));
+        setSize(Tema.LARGURA_JANELA, Tema.ALTURA_JANELA);
         setLocationRelativeTo(null);
         ClienteFront clientes = new ClienteFront(config.clienteService());
         VeiculoFront veiculos = new VeiculoFront(config.veiculoService());
@@ -64,9 +64,9 @@ public class TelaPrincipal extends JFrame {
         menu.setBackground(Tema.PRIMARIA);
         menu.setLayout(new BoxLayout(menu, BoxLayout.Y_AXIS));
         menu.setBorder(new EmptyBorder(Tema.MARGEM_TELA, Tema.MEDIO, Tema.GRANDE, Tema.MEDIO));
-        menu.setPreferredSize(new Dimension(240, 0));
+        menu.setPreferredSize(new Dimension(Tema.LARGURA_MENU, 0));
         JLabel marca = new JLabel("CONCESSIONÁRIA");
-        marca.setForeground(Color.WHITE);
+        marca.setForeground(Tema.TEXTO_SOBRE_ESCURO);
         marca.setFont(Tema.SUBTITULO);
         marca.setAlignmentX(Component.LEFT_ALIGNMENT);
         menu.add(marca);
@@ -118,7 +118,7 @@ public class TelaPrincipal extends JFrame {
     private void atualizarSelecao(String nome) {
         botoesMenu.forEach((chave, botao) -> {
             botao.setBackground(chave.equals(nome) ? Tema.SECUNDARIA : Tema.PRIMARIA);
-            botao.setForeground(Color.WHITE);
+            botao.setForeground(Tema.TEXTO_SOBRE_ESCURO);
         });
     }
 

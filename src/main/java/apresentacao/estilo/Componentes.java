@@ -11,7 +11,6 @@ import javax.swing.border.LineBorder;
  * Centraliza fonte, cor e espaçamento vindos do {@link Tema}, para todas as telas terem a mesma aparência.
  */
 public final class Componentes {
-    private static final int ALTURA_ITEM_MENU = 44;
 
     private Componentes() { }
 
@@ -20,7 +19,8 @@ public final class Componentes {
         botao.setFont(Tema.BOTAO);
         botao.setBackground(fundo);
         botao.setForeground(textoCor);
-        botao.setMargin(new Insets(10, 18, 10, 18));
+        botao.setMargin(new Insets(Tema.MARGEM_BOTAO_VERTICAL, Tema.MARGEM_BOTAO_HORIZONTAL,
+                Tema.MARGEM_BOTAO_VERTICAL, Tema.MARGEM_BOTAO_HORIZONTAL));
         botao.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return botao;
     }
@@ -31,7 +31,7 @@ public final class Componentes {
      * @param texto rótulo do botão
      * @return o botão estilizado, ainda sem ação
      */
-    public static JButton botaoPrimario(String texto) { return botao(texto, Tema.PRIMARIA, Color.WHITE); }
+    public static JButton botaoPrimario(String texto) { return botao(texto, Tema.PRIMARIA, Tema.TEXTO_SOBRE_ESCURO); }
     /**
      * Botão de ação secundária, como "Novo" (fundo claro, texto na cor primária).
      *
@@ -45,7 +45,7 @@ public final class Componentes {
      * @param texto rótulo do botão
      * @return o botão estilizado, ainda sem ação
      */
-    public static JButton botaoPerigo(String texto) { return botao(texto, Tema.ERRO, Color.WHITE); }
+    public static JButton botaoPerigo(String texto) { return botao(texto, Tema.ERRO, Tema.TEXTO_SOBRE_ESCURO); }
 
     /**
      * Item do menu lateral (fundo escuro). O anel de foco é claro para aparecer sobre o fundo
@@ -59,7 +59,7 @@ public final class Componentes {
         JButton botao = botao(texto, Tema.PRIMARIA, Tema.SUPERFICIE);
         botao.setHorizontalAlignment(SwingConstants.LEFT);
         botao.setAlignmentX(Component.LEFT_ALIGNMENT);
-        botao.setMaximumSize(new Dimension(Integer.MAX_VALUE, ALTURA_ITEM_MENU));
+        botao.setMaximumSize(new Dimension(Integer.MAX_VALUE, Tema.ALTURA_ITEM_MENU));
         botao.setMnemonic(atalho);
         botao.putClientProperty("FlatLaf.style", Map.of("focusColor", Tema.SUPERFICIE));
         return botao;

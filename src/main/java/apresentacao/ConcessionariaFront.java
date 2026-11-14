@@ -119,6 +119,7 @@ public class ConcessionariaFront extends JPanel
         JPanel cartao = Componentes.painelCartao("Concessionárias");
 
         campoBusca = Componentes.campoTexto();
+        campoBusca.getAccessibleContext().setAccessibleName("Buscar concessionárias");
         campoBusca.putClientProperty("JTextField.placeholderText", "Buscar por nome ou endereço");
         campoBusca.getDocument().addDocumentListener(new DocumentListener() {
             @Override public void insertUpdate(DocumentEvent e) { aplicarFiltro(); }
@@ -127,9 +128,10 @@ public class ConcessionariaFront extends JPanel
         });
 
         tabela = new JTable(modeloTabela);
+        tabela.getAccessibleContext().setAccessibleName("Lista de concessionárias");
         tabela.setRowSorter(ordenador);
         tabela.setFont(Tema.TEXTO_FONTE);
-        tabela.setRowHeight(28);
+        tabela.setRowHeight(Tema.ALTURA_LINHA_TABELA);
         tabela.setGridColor(Tema.BORDA);
         tabela.setFillsViewportHeight(true);
         tabela.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);

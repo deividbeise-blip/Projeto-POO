@@ -45,17 +45,10 @@ public class PagamentoCartao extends Pagamento {
                            String cvv, int numeroParcelas, PoliticaDesconto politicaDesconto) {
         super(venda, "Cartão", valorBase, dataPagamento, politicaDesconto);
 
-        if (numeroCartao == null || !numeroCartao.matches("\\d{" + DIGITOS_CARTAO + "}")) {
-            throw new IllegalArgumentException(
-                    "Número de cartão inválido. Deve conter " + DIGITOS_CARTAO + " dígitos.");
-        }
-        if (nomeTitular == null || nomeTitular.isBlank()) {
-            throw new IllegalArgumentException("Informe o nome do titular.");
-        }
+        validarNumeroCartao(numeroCartao);
+        validarTitular(nomeTitular);
         validarValidade(validade);
-        if (cvv == null || !cvv.matches("\\d{3,4}")) {
-            throw new IllegalArgumentException("CVV inválido. Deve conter 3 ou 4 dígitos.");
-        }
+        validarCvv(cvv);
         if (numeroParcelas < 1 || numeroParcelas > MAX_PARCELAS) {
             throw new IllegalArgumentException(
                     "Número de parcelas inválido. Deve ser entre 1 e " + MAX_PARCELAS + ".");
@@ -69,7 +62,50 @@ public class PagamentoCartao extends Pagamento {
         this.valorParcela = getValorPago() / numeroParcelas;
     }
 
-    private static void validarValidade(String validade) {
+    /**
+     * Regra do número do cartão. Pública para a tela validar o campo antes de enviar.
+     *
+     * @param numeroCartao o número digitado, só dígitos
+     * @throws IllegalArgumentException se não tiver exatamente {@link #DIGITOS_CARTAO} dígitos
+     */
+    public static void validarNumeroCartao(String numeroCartao) {
+        if (numeroCartao == null || !numeroCartao.matches("\\d{" + DIGITOS_CARTAO + "}")) {
+            throw new IllegalArgumentException(
+                    "Número de cartão inválido. Deve conter " + DIGITOS_CARTAO + " dígitos.");
+        }
+    }
+
+    /**
+     * Regra do nome do titular. Pública para a tela validar o campo antes de enviar.
+     *
+     * @param nomeTitular o nome impresso no cartão
+     * @throws IllegalArgumentException se estiver vazio
+     */
+    public static void validarTitular(String nomeTitular) {
+        if (nomeTitular == null || nomeTitular.isBlank()) {
+            throw new IllegalArgumentException("Informe o nome do titular.");
+        }
+    }
+
+    /**
+     * Regra do código de segurança. Pública para a tela validar o campo antes de enviar.
+     *
+     * @param cvv o código digitado
+     * @throws IllegalArgumentException se não tiver 3 ou 4 dígitos
+     */
+    public static void validarCvv(String cvv) {
+        if (cvv == null || !cvv.matches("\\d{3,4}")) {
+            throw new IllegalArgumentException("CVV inválido. Deve conter 3 ou 4 dígitos.");
+        }
+    }
+
+    /**
+     * Regra da validade. Pública para a tela validar o campo antes de enviar.
+     *
+     * @param validade validade no formato MM/AA
+     * @throws IllegalArgumentException se o formato for inválido ou o cartão estiver vencido
+     */
+    public static void validarValidade(String validade) {
         try {
             YearMonth vencimento = YearMonth.parse(validade == null ? "" : validade.trim(), FORMATO_VALIDADE);
             if (vencimento.isBefore(YearMonth.now())) {

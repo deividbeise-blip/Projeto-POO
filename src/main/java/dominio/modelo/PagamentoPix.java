@@ -23,9 +23,7 @@ public class PagamentoPix extends Pagamento {
     public PagamentoPix(Venda venda, double valorBase, LocalDate dataPagamento,
                         String chavePix, String tipoChave, PoliticaDesconto politicaDesconto) {
         super(venda, "PIX", valorBase, dataPagamento, politicaDesconto);
-        if (chavePix == null || chavePix.isBlank()) {
-            throw new IllegalArgumentException("Informe a chave PIX.");
-        }
+        validarChavePix(chavePix);
         if (tipoChave == null || tipoChave.isBlank()) {
             throw new IllegalArgumentException("Informe o tipo da chave PIX.");
         }
@@ -34,6 +32,18 @@ public class PagamentoPix extends Pagamento {
     }
 
     /** @return a chave PIX, sem espaços nas pontas */
+    /**
+     * Regra da chave PIX. Pública para a tela validar o campo antes de enviar.
+     *
+     * @param chavePix a chave digitada
+     * @throws IllegalArgumentException se a chave estiver vazia
+     */
+    public static void validarChavePix(String chavePix) {
+        if (chavePix == null || chavePix.isBlank()) {
+            throw new IllegalArgumentException("Informe a chave PIX.");
+        }
+    }
+
     public String getChavePix() { return chavePix; }
     /** @return o tipo da chave (CPF, CNPJ, Email ou Telefone) */
     public String getTipoChave() { return tipoChave; }
