@@ -31,7 +31,7 @@ public class TelaPrincipal extends JFrame {
         setLocationRelativeTo(null);
         ClienteFront clientes = new ClienteFront(config.clienteService());
         VeiculoFront veiculos = new VeiculoFront(config.veiculoService());
-        ConcessionariaFront vendas = new ConcessionariaFront(config.vendaService(), config.clienteService(), config.veiculoService());
+        VendaFront vendas = new VendaFront(config.vendaService(), config.clienteService(), config.veiculoService());
         telas.setOpaque(false);
         adicionarTela("Clientes", clientes);
         adicionarTela("Veículos", veiculos);
@@ -61,7 +61,6 @@ public class TelaPrincipal extends JFrame {
         marca.setAlignmentX(Component.LEFT_ALIGNMENT);
         menu.add(marca);
         menu.add(Box.createVerticalStrut(Tema.MARGEM_TELA));
-        // Alt+letra: cada letra só pode aparecer uma vez (a tela de clientes usa Alt+N, Alt+S e Alt+X).
         Map<String, Character> atalhos = new LinkedHashMap<>();
         atalhos.put("Clientes", 'C');
         atalhos.put("Veículos", 'V');
