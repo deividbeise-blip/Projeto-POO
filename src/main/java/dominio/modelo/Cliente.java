@@ -1,5 +1,10 @@
 package dominio.modelo;
 
+/**
+ * Cliente da concessionária, comprador nas vendas.
+ * Os dados são validados e normalizados na criação e não mudam depois;
+ * só o ID é definido mais tarde, quando o cliente é gravado no banco.
+ */
 public class Cliente {
     private Long idCliente;
     private final String nome;
@@ -7,6 +12,16 @@ public class Cliente {
     private final String email;
     private final String telefone;
 
+    /**
+     * Cria um cliente ainda sem ID, aplicando as regras de cada campo.
+     * CPF e telefone são guardados só com os dígitos; nome e e-mail, sem espaços nas pontas.
+     *
+     * @param nome nome do cliente
+     * @param cpf CPF com ou sem máscara
+     * @param email e-mail do cliente
+     * @param telefone telefone com DDD, com ou sem máscara
+     * @throws IllegalArgumentException se algum campo não passar na validação
+     */
     public Cliente(String nome, String cpf, String email, String telefone) {
         this.nome = validarNome(nome);
         this.cpf = validarCpf(cpf);
@@ -72,11 +87,21 @@ public class Cliente {
         return telefoneNormalizado;
     }
 
+    /**
+     * ID gerado pelo banco.
+     *
+     * @return o ID, ou null se o cliente ainda não foi gravado
+     */
     public Long getIdCliente() {
         return idCliente;
     }
 
-    /** O ID é gerado pelo banco e só pode ser definido uma vez (pelo DAO após o INSERT). */
+    /**
+     * O ID é gerado pelo banco e só pode ser definido uma vez (pelo DAO após o INSERT).
+     *
+     * @param id o ID gerado pelo banco
+     * @throws IllegalStateException se o ID já tiver sido definido
+     */
     public void setIdCliente(Long id) {
         if (this.idCliente != null) {
             throw new IllegalStateException("O ID do cliente já foi definido.");
@@ -84,11 +109,20 @@ public class Cliente {
         this.idCliente = id;
     }
 
+    /** @return o nome já validado, sem espaços nas pontas */
     public String getNome() { return nome; }
+    /** @return o CPF só com os 11 dígitos, sem máscara (use {@code ClienteTableModel.formatarCpf} para exibir) */
     public String getCpf() { return cpf; }
+    /** @return o e-mail já validado, sem espaços nas pontas */
     public String getEmail() { return email; }
+    /** @return o telefone só com os dígitos (DDD + número), sem máscara */
     public String getTelefone() { return telefone; }
 
+    /**
+     * Resumo do cliente para depuração e logs.
+     *
+     * @return nome, CPF, e-mail e telefone separados por " - ", sem máscara
+     */
     @Override
     public String toString() {
         return nome + " - " + cpf + " - " + email + " - " + telefone;
