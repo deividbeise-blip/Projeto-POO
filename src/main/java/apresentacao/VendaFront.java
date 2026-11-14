@@ -1,6 +1,7 @@
 package apresentacao;
 
 import aplicacao.dto.DadosCartao;
+import aplicacao.dto.DadosDinheiro;
 import aplicacao.dto.DadosPagamento;
 import aplicacao.dto.DadosPix;
 import aplicacao.dto.DadosVenda;
@@ -37,7 +38,7 @@ import java.util.Locale;
 /** Registro e consulta de vendas da concessionária. */
 public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>, TelaComBotaoPrincipal {
     private enum Forma {
-        PIX("PIX"), CARTAO("Cartão");
+        PIX("PIX"), CARTAO("Cartão"), DINHEIRO("Dinheiro");
         private final String nome;
         Forma(String nome) { this.nome = nome; }
         @Override public String toString() { return nome; }
@@ -132,6 +133,10 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
         camposPagamento.setOpaque(false);
         camposPagamento.add(pix, Forma.PIX.name());
         camposPagamento.add(cartao, Forma.CARTAO.name());
+        JPanel dinheiro = new JPanel(new BorderLayout());
+        dinheiro.setOpaque(false);
+        dinheiro.add(Componentes.rotulo("Pagamento à vista, sem desconto. Não há dados a preencher."), BorderLayout.NORTH);
+        camposPagamento.add(dinheiro, Forma.DINHEIRO.name());
         JPanel pagamento = new JPanel(new BorderLayout(0, Tema.PEQUENO));
         pagamento.setOpaque(false);
         JPanel escolha = Componentes.painelFormulario();
@@ -210,12 +215,13 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
             return;
         }
         BigDecimal preco = BigDecimal.valueOf(veiculo.getPreco());
-        boolean pix = formas.getSelectedItem() == Forma.PIX;
+        Forma forma = (Forma) formas.getSelectedItem();
+        boolean pix = forma == Forma.PIX;
         BigDecimal desconto = pix ? preco.multiply(BigDecimal.valueOf(DescontoPix.PERCENTUAL))
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
         BigDecimal total = preco.subtract(desconto);
         int quantidade = (Integer) parcelas.getValue();
-        String detalhe = pix ? "" : "  |  " + quantidade + "x de "
+        String detalhe = forma != Forma.CARTAO ? "" : "  |  " + quantidade + "x de "
                 + moeda.format(total.divide(BigDecimal.valueOf(quantidade), 2, RoundingMode.HALF_UP));
         resumo.setText("<html>Preço: " + moeda.format(preco) + " &nbsp; | &nbsp; Desconto: "
                 + moeda.format(desconto) + " &nbsp; | &nbsp; Total: " + moeda.format(total) + detalhe + "</html>");
@@ -229,10 +235,12 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
             Feedback.erro(this, new IllegalArgumentException("Selecione cliente, veículo e vendedor."));
             return;
         }
-        DadosPagamento pagamento = formas.getSelectedItem() == Forma.PIX
-                ? new DadosPix(chavePix.getText(), (String) tipoChave.getSelectedItem())
-                : new DadosCartao(numero.getText(), titular.getText(), validade.getText(),
-                        new String(cvv.getPassword()), (Integer) parcelas.getValue());
+        DadosPagamento pagamento = switch ((Forma) formas.getSelectedItem()) {
+            case PIX -> new DadosPix(chavePix.getText(), (String) tipoChave.getSelectedItem());
+            case CARTAO -> new DadosCartao(numero.getText(), titular.getText(), validade.getText(),
+                    new String(cvv.getPassword()), (Integer) parcelas.getValue());
+            case DINHEIRO -> new DadosDinheiro();
+        };
         DadosVenda dados = new DadosVenda(cliente.getIdCliente(), vendedor.getIdVendedor(),
                 veiculo.getIdVeiculo(), pagamento);
         TarefaEmSegundoPlano.executar(finalizar, () -> vendaService.vender(dados), this::vendaConcluida,
