@@ -7,7 +7,6 @@ import apresentacao.comum.TelaComBotaoPrincipal;
 import apresentacao.comum.TelaComDados;
 import apresentacao.estilo.Componentes;
 import apresentacao.estilo.Tema;
-import com.formdev.flatlaf.FlatLightLaf;
 import config.AppConfig;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -18,7 +17,8 @@ import java.util.Map;
 /**
  * Janela principal: menu lateral com as cinco áreas (Clientes, Veículos, Vendas, Concessionárias,
  * Vendedores), título da área atual e barra de status no rodapé.
- * Atalhos do menu: Alt+C, Alt+V, Alt+E, Alt+O e Alt+D. Ao trocar de área, os dados dela são
+ * Atalhos do menu: Alt+C, Alt+V, Alt+E, Alt+O e Alt+D; no rodapé do menu, Alt+R alterna entre o
+ * modo claro e o escuro. Ao trocar de área, os dados dela são
  * recarregados em segundo plano e o Enter passa a acionar o botão principal daquela tela.
  */
 public class TelaPrincipal extends JFrame {
@@ -27,6 +27,8 @@ public class TelaPrincipal extends JFrame {
     private final JLabel titulo = Componentes.titulo("Clientes");
     private final Map<String, JButton> botoesMenu = new LinkedHashMap<>();
     private final Map<String, Component> telasPorNome = new LinkedHashMap<>();
+    /** Tela visível; o item dela fica destacado no menu, inclusive depois de trocar de modo. */
+    private String telaAtual;
 
     /**
      * Monta a janela e todas as telas com os services do {@link AppConfig}. Chame na thread da tela.
@@ -49,7 +51,7 @@ public class TelaPrincipal extends JFrame {
         adicionarTela("Concessionárias", new ConcessionariaFront(config.concessionariaService()));
         adicionarTela("Vendedores", new VendedorFront(config.vendedorService()));
         JPanel conteudo = new JPanel(new BorderLayout(0, Tema.GRANDE));
-        conteudo.setBackground(Tema.FUNDO);
+        Tema.colorir(conteudo, c -> c.setBackground(Tema.fundo()));
         conteudo.setBorder(new EmptyBorder(Tema.MARGEM_TELA, Tema.MARGEM_TELA, Tema.MARGEM_TELA, Tema.MARGEM_TELA));
         conteudo.add(titulo, BorderLayout.NORTH);
         conteudo.add(telas, BorderLayout.CENTER);
@@ -61,12 +63,16 @@ public class TelaPrincipal extends JFrame {
 
     private JPanel criarMenu() {
         JPanel menu = new JPanel();
-        menu.setBackground(Tema.PRIMARIA);
+        // O menu repinta o fundo dele e o dos itens (que dependem da seleção) a cada troca de modo.
+        Tema.colorir(menu, m -> {
+            m.setBackground(Tema.primaria());
+            pintarItensMenu();
+        });
         menu.setLayout(new BoxLayout(menu, BoxLayout.Y_AXIS));
         menu.setBorder(new EmptyBorder(Tema.MARGEM_TELA, Tema.MEDIO, Tema.GRANDE, Tema.MEDIO));
         menu.setPreferredSize(new Dimension(Tema.LARGURA_MENU, 0));
         JLabel marca = new JLabel("CONCESSIONÁRIA");
-        marca.setForeground(Tema.TEXTO_SOBRE_ESCURO);
+        Tema.colorir(marca, m -> m.setForeground(Tema.textoSobreEscuro()));
         marca.setFont(Tema.SUBTITULO);
         marca.setAlignmentX(Component.LEFT_ALIGNMENT);
         menu.add(marca);
@@ -85,6 +91,10 @@ public class TelaPrincipal extends JFrame {
             menu.add(botao);
             menu.add(Box.createVerticalStrut(Tema.PEQUENO));
         }
+        // Rodapé do menu: R aparece em "Modo escuro" e "Modo claro" e não é usada pelo menu
+        // (C, V, E, O, D) nem pelos botões das telas (N, S, X, M, T, F, H).
+        menu.add(Box.createVerticalGlue());
+        menu.add(Componentes.botaoModo('R'));
         return menu;
     }
 
@@ -116,22 +126,28 @@ public class TelaPrincipal extends JFrame {
     }
 
     private void atualizarSelecao(String nome) {
+        telaAtual = nome;
+        pintarItensMenu();
+    }
+
+    /** Destaca o item da tela atual e pinta os demais com a cor do menu (paleta ativa). */
+    private void pintarItensMenu() {
         botoesMenu.forEach((chave, botao) -> {
-            botao.setBackground(chave.equals(nome) ? Tema.SECUNDARIA : Tema.PRIMARIA);
-            botao.setForeground(Tema.TEXTO_SOBRE_ESCURO);
+            botao.setBackground(chave.equals(telaAtual) ? Tema.secundaria() : Tema.primaria());
+            botao.setForeground(Tema.textoSobreEscuro());
         });
     }
 
     /**
-     * Ponto de entrada do sistema: aplica o FlatLaf e o {@link Tema}, monta o {@link AppConfig}
+     * Ponto de entrada do sistema: aplica o FlatLaf e o {@link Tema} no último modo usado
+     * ({@link Tema#modoSalvo()}, claro na primeira vez), monta o {@link AppConfig}
      * e abre a janela. Se a montagem falhar (ex.: DB_URL, DB_USER ou DB_PASSWORD não definidas),
      * mostra o motivo num diálogo em vez de fechar sem aviso.
      *
      * @param args não usados
      */
     public static void main(String[] args) {
-        FlatLightLaf.setup();
-        Tema.aplicar();
+        Tema.aplicar(Tema.modoSalvo());
         SwingUtilities.invokeLater(() -> {
             try {
                 new TelaPrincipal(new AppConfig()).setVisible(true);

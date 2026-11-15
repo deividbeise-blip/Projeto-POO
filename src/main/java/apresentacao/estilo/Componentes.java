@@ -2,6 +2,7 @@ package apresentacao.estilo;
 
 import java.awt.*;
 import java.util.Map;
+import java.util.function.Supplier;
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.LineBorder;
@@ -14,11 +15,13 @@ public final class Componentes {
 
     private Componentes() { }
 
-    private static JButton botao(String texto, Color fundo, Color textoCor) {
-        JButton botao = new JButton(texto);
+    /** As cores chegam como {@link Supplier} para serem lidas de novo da paleta ativa a cada troca de modo. */
+    private static JButton botao(String texto, Supplier<Color> fundo, Supplier<Color> textoCor) {
+        JButton botao = Tema.colorir(new JButton(texto), b -> {
+            b.setBackground(fundo.get());
+            b.setForeground(textoCor.get());
+        });
         botao.setFont(Tema.BOTAO);
-        botao.setBackground(fundo);
-        botao.setForeground(textoCor);
         botao.setMargin(new Insets(Tema.MARGEM_BOTAO_VERTICAL, Tema.MARGEM_BOTAO_HORIZONTAL,
                 Tema.MARGEM_BOTAO_VERTICAL, Tema.MARGEM_BOTAO_HORIZONTAL));
         botao.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -26,43 +29,77 @@ public final class Componentes {
     }
 
     /**
-     * Botão da ação principal da tela (fundo na cor primária, texto branco).
+     * Botão da ação principal da tela (fundo na cor primária, texto claro).
      *
      * @param texto rótulo do botão
      * @return o botão estilizado, ainda sem ação
      */
-    public static JButton botaoPrimario(String texto) { return botao(texto, Tema.PRIMARIA, Tema.TEXTO_SOBRE_ESCURO); }
+    public static JButton botaoPrimario(String texto) { return botao(texto, Tema::primaria, Tema::textoSobreEscuro); }
     /**
-     * Botão de ação secundária, como "Novo" (fundo claro, texto na cor primária).
+     * Botão de ação secundária, como "Novo" (fundo da superfície, texto na cor do texto principal).
+     * O texto usa a cor do texto, e não a primária, para continuar legível no modo escuro.
      *
      * @param texto rótulo do botão
      * @return o botão estilizado, ainda sem ação
      */
-    public static JButton botaoSecundario(String texto) { return botao(texto, Tema.SUPERFICIE, Tema.PRIMARIA); }
+    public static JButton botaoSecundario(String texto) { return botao(texto, Tema::superficie, Tema::texto); }
     /**
-     * Botão de ação destrutiva, como "Excluir" (fundo vermelho, texto branco).
+     * Botão de ação destrutiva, como "Excluir" (fundo vermelho, texto claro).
      *
      * @param texto rótulo do botão
      * @return o botão estilizado, ainda sem ação
      */
-    public static JButton botaoPerigo(String texto) { return botao(texto, Tema.ERRO, Tema.TEXTO_SOBRE_ESCURO); }
+    public static JButton botaoPerigo(String texto) { return botao(texto, Tema::erro, Tema::textoSobreEscuro); }
 
     /**
-     * Item do menu lateral (fundo escuro). O anel de foco é claro para aparecer sobre o fundo
-     * do menu; a cor de fundo de cada item é definida por quem marca o item selecionado.
+     * Item do menu lateral (fundo na cor primária). O texto e o anel de foco usam a cor de texto
+     * sobre escuro, para aparecerem sobre o fundo do menu nos dois modos. O fundo começa na cor
+     * primária, mas quem marca o item selecionado é quem o mantém (inclusive ao trocar de modo).
      *
      * @param texto  nome da tela
      * @param atalho letra do atalho Alt+letra; precisa existir no texto e não se repetir no menu
      * @return o botão do menu
      */
     public static JButton botaoMenu(String texto, char atalho) {
-        JButton botao = botao(texto, Tema.PRIMARIA, Tema.SUPERFICIE);
+        JButton botao = botao(texto, Tema::primaria, Tema::textoSobreEscuro);
+        // Substitui a pintura do botão: o fundo fica por conta de quem controla a seleção.
+        Tema.colorir(botao, b -> {
+            b.setForeground(Tema.textoSobreEscuro());
+            b.putClientProperty("FlatLaf.style", Map.of("focusColor", Tema.textoSobreEscuro()));
+        });
         botao.setHorizontalAlignment(SwingConstants.LEFT);
         botao.setAlignmentX(Component.LEFT_ALIGNMENT);
         botao.setMaximumSize(new Dimension(Integer.MAX_VALUE, Tema.ALTURA_ITEM_MENU));
         botao.setMnemonic(atalho);
-        botao.putClientProperty("FlatLaf.style", Map.of("focusColor", Tema.SUPERFICIE));
         return botao;
+    }
+
+    /**
+     * Botão do rodapé do menu lateral que alterna entre o modo claro e o escuro ({@link Tema#alternarModo()}).
+     * O texto indica o modo para o qual vai trocar ("Modo escuro" ou "Modo claro") e muda a cada clique.
+     * Tem o visual de um item do menu, sempre com o fundo do menu.
+     *
+     * @param atalho letra do atalho Alt+letra; precisa existir em "Modo escuro" e em "Modo claro"
+     *               e não se repetir no menu nem nos botões das telas
+     * @return o botão, já com a ação de alternar o modo
+     */
+    public static JButton botaoModo(char atalho) {
+        JButton botao = botaoMenu(textoBotaoModo(), atalho);
+        Tema.colorir(botao, b -> {
+            b.setBackground(Tema.primaria());
+            b.setForeground(Tema.textoSobreEscuro());
+            b.putClientProperty("FlatLaf.style", Map.of("focusColor", Tema.textoSobreEscuro()));
+        });
+        botao.addActionListener(e -> {
+            Tema.alternarModo();
+            botao.setText(textoBotaoModo());
+        });
+        return botao;
+    }
+
+    /** Nome do modo para o qual o botão de modo vai trocar. */
+    private static String textoBotaoModo() {
+        return Tema.modo() == Tema.Modo.ESCURO ? "Modo claro" : "Modo escuro";
     }
 
     /**
@@ -85,7 +122,7 @@ public final class Componentes {
     public static JLabel rotulo(String texto) {
         JLabel rotulo = new JLabel(texto);
         rotulo.setFont(Tema.ROTULO);
-        rotulo.setForeground(Tema.TEXTO);
+        Tema.colorir(rotulo, r -> r.setForeground(Tema.texto()));
         return rotulo;
     }
 
@@ -98,7 +135,7 @@ public final class Componentes {
     public static JLabel titulo(String texto) {
         JLabel titulo = new JLabel(texto);
         titulo.setFont(Tema.TITULO);
-        titulo.setForeground(Tema.TEXTO);
+        Tema.colorir(titulo, t -> t.setForeground(Tema.texto()));
         return titulo;
     }
 
@@ -159,7 +196,7 @@ public final class Componentes {
 
         JLabel mensagemErro = new JLabel(SEM_MENSAGEM);
         mensagemErro.setFont(Tema.LEGENDA);
-        mensagemErro.setForeground(Tema.ERRO);
+        Tema.colorir(mensagemErro, m -> m.setForeground(Tema.erro()));
         campo.putClientProperty(CHAVE_MENSAGEM_ERRO, mensagemErro);
         c.gridy = linha * 2 + 1;
         c.insets = new Insets(0, 0, 0, 0);
@@ -195,7 +232,7 @@ public final class Componentes {
     }
 
     /**
-     * "Cartão" branco com borda arredondada e título no topo, usado para agrupar partes da tela.
+     * "Cartão" na cor da superfície, com borda arredondada e título no topo, usado para agrupar partes da tela.
      * O conteúdo deve ir em {@code BorderLayout.CENTER} (o topo já tem o título).
      *
      * @param texto título do cartão
@@ -203,9 +240,11 @@ public final class Componentes {
      */
     public static JPanel painelCartao(String texto) {
         JPanel painel = new JPanel(new BorderLayout(0, Tema.MEDIO));
-        painel.setBackground(Tema.SUPERFICIE);
-        painel.setBorder(new CompoundBorder(new LineBorder(Tema.BORDA, 1, true),
-                BorderFactory.createEmptyBorder(Tema.GRANDE, Tema.GRANDE, Tema.GRANDE, Tema.GRANDE)));
+        Tema.colorir(painel, p -> {
+            p.setBackground(Tema.superficie());
+            p.setBorder(new CompoundBorder(new LineBorder(Tema.borda(), 1, true),
+                    BorderFactory.createEmptyBorder(Tema.GRANDE, Tema.GRANDE, Tema.GRANDE, Tema.GRANDE)));
+        });
         JLabel titulo = rotulo(texto);
         titulo.setFont(Tema.SUBTITULO);
         painel.add(titulo, BorderLayout.NORTH);

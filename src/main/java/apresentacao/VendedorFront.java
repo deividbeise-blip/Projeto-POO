@@ -162,7 +162,7 @@ public class VendedorFront extends JPanel
         });
         tabela.setFont(Tema.TEXTO_FONTE);
         tabela.setRowHeight(Tema.ALTURA_LINHA_TABELA);
-        tabela.setGridColor(Tema.BORDA);
+        Tema.colorir(tabela, t -> t.setGridColor(Tema.borda()));
         tabela.setFillsViewportHeight(true);
         tabela.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         tabela.getTableHeader().setFont(Tema.BOTAO);

@@ -331,7 +331,7 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
         recibo.setLineWrap(true);
         recibo.setWrapStyleWord(true);
         recibo.setFont(Tema.TEXTO_FONTE);
-        recibo.setBackground(Tema.SUPERFICIE);
+        Tema.colorir(recibo, r -> r.setBackground(Tema.superficie()));
         conteudo.add(new JScrollPane(recibo), BorderLayout.CENTER);
         JButton fechar = Componentes.botaoPrimario("Fechar");
         fechar.addActionListener(e -> dialogo.dispose());

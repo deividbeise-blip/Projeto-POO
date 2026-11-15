@@ -31,11 +31,14 @@ public class BarraStatus extends JPanel {
     public BarraStatus() {
         super(new BorderLayout());
         temporizador.setRepeats(false);
-        setBackground(Tema.SUPERFICIE);
-        setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, Tema.BORDA),
-                BorderFactory.createEmptyBorder(Tema.PEQUENO, Tema.MARGEM_TELA, Tema.PEQUENO, Tema.MARGEM_TELA)));
-        mensagem.setForeground(Tema.SUCESSO);
+        Tema.colorir(this, barra -> {
+            barra.setBackground(Tema.superficie());
+            barra.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(1, 0, 0, 0, Tema.borda()),
+                    BorderFactory.createEmptyBorder(Tema.PEQUENO, Tema.MARGEM_TELA, Tema.PEQUENO, Tema.MARGEM_TELA)));
+        });
+        // Substitui a cor de texto padrão do rótulo pela de sucesso, também ao trocar de modo.
+        Tema.colorir(mensagem, m -> m.setForeground(Tema.sucesso()));
         add(mensagem, BorderLayout.CENTER);
     }
 
