@@ -9,6 +9,7 @@ import java.awt.Container;
 import java.awt.Font;
 import java.awt.Window;
 import java.util.function.Consumer;
+import java.util.prefs.Preferences;
 import javax.swing.JComponent;
 import javax.swing.UIManager;
 import javax.swing.plaf.ColorUIResource;
@@ -92,6 +93,9 @@ public final class Tema {
 
     /** Client property em que {@link #colorir(JComponent, Consumer)} guarda como pintar o componente. */
     private static final String CHAVE_CORES = "Tema.cores";
+    /** Onde fica salvo o último modo escolhido (registro do usuário no Windows, arquivo no Linux/macOS). */
+    private static final Preferences PREFERENCIAS = Preferences.userNodeForPackage(Tema.class);
+    private static final String CHAVE_PREFERENCIA_MODO = "modo";
 
     /** Espaçamentos padrão, em pixels: use sempre estes em margens e distâncias entre componentes. */
     public static final int PEQUENO = 8, MEDIO = 16, GRANDE = 24, MARGEM_TELA = 32;
@@ -193,9 +197,30 @@ public final class Tema {
         }
     }
 
-    /** Alterna entre o modo claro e o escuro, sem reiniciar o aplicativo. Chame na thread da tela. */
+    /**
+     * Alterna entre o modo claro e o escuro, sem reiniciar o aplicativo, e salva a escolha
+     * para a próxima vez que o aplicativo abrir ({@link #modoSalvo()}). Chame na thread da tela.
+     */
     public static void alternarModo() {
         aplicar(modo == Modo.ESCURO ? Modo.CLARO : Modo.ESCURO);
+        try {
+            PREFERENCIAS.put(CHAVE_PREFERENCIA_MODO, modo.name());
+        } catch (SecurityException e) {
+            // Sem permissão para salvar: o modo vale só até fechar o aplicativo.
+        }
+    }
+
+    /**
+     * Último modo escolhido pelo usuário, salvo com {@link Preferences}.
+     *
+     * @return o modo salvo, ou {@link Modo#CLARO} se nada foi salvo (ou o valor salvo for inválido)
+     */
+    public static Modo modoSalvo() {
+        try {
+            return Modo.valueOf(PREFERENCIAS.get(CHAVE_PREFERENCIA_MODO, Modo.CLARO.name()));
+        } catch (IllegalArgumentException | SecurityException e) {
+            return Modo.CLARO;
+        }
     }
 
     /**

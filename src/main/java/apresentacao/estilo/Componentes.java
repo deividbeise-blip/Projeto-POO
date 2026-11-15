@@ -75,6 +75,34 @@ public final class Componentes {
     }
 
     /**
+     * Botão do rodapé do menu lateral que alterna entre o modo claro e o escuro ({@link Tema#alternarModo()}).
+     * O texto indica o modo para o qual vai trocar ("Modo escuro" ou "Modo claro") e muda a cada clique.
+     * Tem o visual de um item do menu, sempre com o fundo do menu.
+     *
+     * @param atalho letra do atalho Alt+letra; precisa existir em "Modo escuro" e em "Modo claro"
+     *               e não se repetir no menu nem nos botões das telas
+     * @return o botão, já com a ação de alternar o modo
+     */
+    public static JButton botaoModo(char atalho) {
+        JButton botao = botaoMenu(textoBotaoModo(), atalho);
+        Tema.colorir(botao, b -> {
+            b.setBackground(Tema.primaria());
+            b.setForeground(Tema.textoSobreEscuro());
+            b.putClientProperty("FlatLaf.style", Map.of("focusColor", Tema.textoSobreEscuro()));
+        });
+        botao.addActionListener(e -> {
+            Tema.alternarModo();
+            botao.setText(textoBotaoModo());
+        });
+        return botao;
+    }
+
+    /** Nome do modo para o qual o botão de modo vai trocar. */
+    private static String textoBotaoModo() {
+        return Tema.modo() == Tema.Modo.ESCURO ? "Modo claro" : "Modo escuro";
+    }
+
+    /**
      * Campo de texto com a fonte padrão e largura inicial para cerca de 24 caracteres.
      *
      * @return o campo vazio
