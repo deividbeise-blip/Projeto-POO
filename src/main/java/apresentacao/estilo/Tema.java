@@ -1,7 +1,15 @@
 package apresentacao.estilo;
 
+import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.FlatLaf;
+import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Font;
+import java.awt.Window;
+import java.util.function.Consumer;
+import javax.swing.JComponent;
 import javax.swing.UIManager;
 import javax.swing.plaf.ColorUIResource;
 
@@ -9,6 +17,11 @@ import javax.swing.plaf.ColorUIResource;
  * Identidade visual compartilhada pelas telas da aplicação: cores, fontes e espaçamentos.
  * As cores vêm de duas paletas (clara e escura) com os mesmos papéis; as telas leem a cor
  * pelos métodos ({@link #fundo()}, {@link #texto()}...) sem saber qual modo está ativo.
+ *
+ * <p>Troca de modo: {@link #aplicar(Modo)} troca o Look and Feel e a paleta e atualiza as janelas
+ * abertas. O Look and Feel repinta sozinho o que usa as cores padrão dele; um componente que recebe
+ * cor própria do tema deve recebê-la por {@link #colorir(JComponent, Consumer)}, que reaplica as
+ * cores a cada troca.
  */
 public final class Tema {
 
@@ -76,6 +89,9 @@ public final class Tema {
 
     private static Modo modo = Modo.CLARO;
     private static Paleta paleta = CLARA;
+
+    /** Client property em que {@link #colorir(JComponent, Consumer)} guarda como pintar o componente. */
+    private static final String CHAVE_CORES = "Tema.cores";
 
     /** Espaçamentos padrão, em pixels: use sempre estes em margens e distâncias entre componentes. */
     public static final int PEQUENO = 8, MEDIO = 16, GRANDE = 24, MARGEM_TELA = 32;
@@ -151,5 +167,64 @@ public final class Tema {
         UIManager.put("Button.arc", 12);
         UIManager.put("TextComponent.arc", 10);
         UIManager.put("Panel.background", new ColorUIResource(fundo()));
+    }
+
+    /**
+     * Ativa um modo: instala o Look and Feel correspondente ({@link FlatLightLaf} ou {@link FlatDarkLaf}),
+     * troca a paleta, reaplica os padrões de {@link #aplicar()} e atualiza todas as janelas abertas,
+     * repintando os componentes registrados em {@link #colorir(JComponent, Consumer)}.
+     * Pode ser chamado antes de abrir a primeira janela. Chame na thread da tela.
+     *
+     * @param novoModo o modo a ativar
+     */
+    public static void aplicar(Modo novoModo) {
+        modo = novoModo;
+        paleta = novoModo == Modo.ESCURO ? ESCURA : CLARA;
+        if (novoModo == Modo.ESCURO) {
+            FlatDarkLaf.setup();
+        } else {
+            FlatLightLaf.setup();
+        }
+        aplicar();
+        FlatLaf.updateUI(); // updateComponentTreeUI em todas as janelas
+        for (Window janela : Window.getWindows()) {
+            recolorir(janela);
+            janela.repaint();
+        }
+    }
+
+    /** Alterna entre o modo claro e o escuro, sem reiniciar o aplicativo. Chame na thread da tela. */
+    public static void alternarModo() {
+        aplicar(modo == Modo.ESCURO ? Modo.CLARO : Modo.ESCURO);
+    }
+
+    /**
+     * Pinta o componente com cores do tema agora e de novo a cada troca de modo.
+     * Use para toda cor definida à mão ({@code setBackground}, {@code setForeground}, bordas coloridas,
+     * cor da grade da tabela...). As cores devem ser lidas do {@code Tema} dentro de {@code cores},
+     * para virem da paleta ativa. Cada componente guarda uma só pintura: registrar de novo substitui
+     * a anterior (útil para trocar a cor padrão dada pelo {@link Componentes}).
+     *
+     * @param componente o componente a pintar
+     * @param cores      aplica as cores no componente (ex.: {@code c -> c.setBackground(Tema.fundo())})
+     * @param <T>        tipo do componente
+     * @return o próprio componente, para encadear na criação
+     */
+    public static <T extends JComponent> T colorir(T componente, Consumer<? super T> cores) {
+        cores.accept(componente);
+        componente.putClientProperty(CHAVE_CORES, (Runnable) () -> cores.accept(componente));
+        return componente;
+    }
+
+    /** Reaplica, de cima para baixo, as pinturas registradas por {@link #colorir} na árvore do componente. */
+    private static void recolorir(Component componente) {
+        if (componente instanceof JComponent jc && jc.getClientProperty(CHAVE_CORES) instanceof Runnable pintar) {
+            pintar.run();
+        }
+        if (componente instanceof Container container) {
+            for (Component filho : container.getComponents()) {
+                recolorir(filho);
+            }
+        }
     }
 }

@@ -33,6 +33,9 @@ public class VeiculoCelulaRenderer extends DefaultTableCellRenderer {
     @Override
     public Component getTableCellRendererComponent(JTable tabela, Object valor, boolean selecionada,
                                                    boolean comFoco, int linha, int coluna) {
+        // setForeground do DefaultTableCellRenderer fica guardado para as próximas células; zerar aqui
+        // faz cada célula partir da cor de texto da tabela (do modo ativo) e o status não "vazar" para o preço.
+        setForeground(null);
         JLabel celula = (JLabel) super.getTableCellRendererComponent(
                 tabela, valor, selecionada, comFoco, linha, coluna);
         celula.setHorizontalAlignment(SwingConstants.LEADING);

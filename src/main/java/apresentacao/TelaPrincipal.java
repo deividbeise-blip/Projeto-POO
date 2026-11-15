@@ -27,6 +27,8 @@ public class TelaPrincipal extends JFrame {
     private final JLabel titulo = Componentes.titulo("Clientes");
     private final Map<String, JButton> botoesMenu = new LinkedHashMap<>();
     private final Map<String, Component> telasPorNome = new LinkedHashMap<>();
+    /** Tela visível; o item dela fica destacado no menu, inclusive depois de trocar de modo. */
+    private String telaAtual;
 
     /**
      * Monta a janela e todas as telas com os services do {@link AppConfig}. Chame na thread da tela.
@@ -49,7 +51,7 @@ public class TelaPrincipal extends JFrame {
         adicionarTela("Concessionárias", new ConcessionariaFront(config.concessionariaService()));
         adicionarTela("Vendedores", new VendedorFront(config.vendedorService()));
         JPanel conteudo = new JPanel(new BorderLayout(0, Tema.GRANDE));
-        conteudo.setBackground(Tema.fundo());
+        Tema.colorir(conteudo, c -> c.setBackground(Tema.fundo()));
         conteudo.setBorder(new EmptyBorder(Tema.MARGEM_TELA, Tema.MARGEM_TELA, Tema.MARGEM_TELA, Tema.MARGEM_TELA));
         conteudo.add(titulo, BorderLayout.NORTH);
         conteudo.add(telas, BorderLayout.CENTER);
@@ -61,12 +63,16 @@ public class TelaPrincipal extends JFrame {
 
     private JPanel criarMenu() {
         JPanel menu = new JPanel();
-        menu.setBackground(Tema.primaria());
+        // O menu repinta o fundo dele e o dos itens (que dependem da seleção) a cada troca de modo.
+        Tema.colorir(menu, m -> {
+            m.setBackground(Tema.primaria());
+            pintarItensMenu();
+        });
         menu.setLayout(new BoxLayout(menu, BoxLayout.Y_AXIS));
         menu.setBorder(new EmptyBorder(Tema.MARGEM_TELA, Tema.MEDIO, Tema.GRANDE, Tema.MEDIO));
         menu.setPreferredSize(new Dimension(Tema.LARGURA_MENU, 0));
         JLabel marca = new JLabel("CONCESSIONÁRIA");
-        marca.setForeground(Tema.textoSobreEscuro());
+        Tema.colorir(marca, m -> m.setForeground(Tema.textoSobreEscuro()));
         marca.setFont(Tema.SUBTITULO);
         marca.setAlignmentX(Component.LEFT_ALIGNMENT);
         menu.add(marca);
@@ -116,8 +122,14 @@ public class TelaPrincipal extends JFrame {
     }
 
     private void atualizarSelecao(String nome) {
+        telaAtual = nome;
+        pintarItensMenu();
+    }
+
+    /** Destaca o item da tela atual e pinta os demais com a cor do menu (paleta ativa). */
+    private void pintarItensMenu() {
         botoesMenu.forEach((chave, botao) -> {
-            botao.setBackground(chave.equals(nome) ? Tema.secundaria() : Tema.primaria());
+            botao.setBackground(chave.equals(telaAtual) ? Tema.secundaria() : Tema.primaria());
             botao.setForeground(Tema.textoSobreEscuro());
         });
     }
