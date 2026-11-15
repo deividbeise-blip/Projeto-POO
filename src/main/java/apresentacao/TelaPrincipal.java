@@ -49,7 +49,7 @@ public class TelaPrincipal extends JFrame {
         adicionarTela("Concessionárias", new ConcessionariaFront(config.concessionariaService()));
         adicionarTela("Vendedores", new VendedorFront(config.vendedorService()));
         JPanel conteudo = new JPanel(new BorderLayout(0, Tema.GRANDE));
-        conteudo.setBackground(Tema.FUNDO);
+        conteudo.setBackground(Tema.fundo());
         conteudo.setBorder(new EmptyBorder(Tema.MARGEM_TELA, Tema.MARGEM_TELA, Tema.MARGEM_TELA, Tema.MARGEM_TELA));
         conteudo.add(titulo, BorderLayout.NORTH);
         conteudo.add(telas, BorderLayout.CENTER);
@@ -61,12 +61,12 @@ public class TelaPrincipal extends JFrame {
 
     private JPanel criarMenu() {
         JPanel menu = new JPanel();
-        menu.setBackground(Tema.PRIMARIA);
+        menu.setBackground(Tema.primaria());
         menu.setLayout(new BoxLayout(menu, BoxLayout.Y_AXIS));
         menu.setBorder(new EmptyBorder(Tema.MARGEM_TELA, Tema.MEDIO, Tema.GRANDE, Tema.MEDIO));
         menu.setPreferredSize(new Dimension(Tema.LARGURA_MENU, 0));
         JLabel marca = new JLabel("CONCESSIONÁRIA");
-        marca.setForeground(Tema.TEXTO_SOBRE_ESCURO);
+        marca.setForeground(Tema.textoSobreEscuro());
         marca.setFont(Tema.SUBTITULO);
         marca.setAlignmentX(Component.LEFT_ALIGNMENT);
         menu.add(marca);
@@ -117,8 +117,8 @@ public class TelaPrincipal extends JFrame {
 
     private void atualizarSelecao(String nome) {
         botoesMenu.forEach((chave, botao) -> {
-            botao.setBackground(chave.equals(nome) ? Tema.SECUNDARIA : Tema.PRIMARIA);
-            botao.setForeground(Tema.TEXTO_SOBRE_ESCURO);
+            botao.setBackground(chave.equals(nome) ? Tema.secundaria() : Tema.primaria());
+            botao.setForeground(Tema.textoSobreEscuro());
         });
     }
 

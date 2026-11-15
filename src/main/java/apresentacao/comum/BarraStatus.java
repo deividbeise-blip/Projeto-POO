@@ -31,11 +31,11 @@ public class BarraStatus extends JPanel {
     public BarraStatus() {
         super(new BorderLayout());
         temporizador.setRepeats(false);
-        setBackground(Tema.SUPERFICIE);
+        setBackground(Tema.superficie());
         setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, Tema.BORDA),
+                BorderFactory.createMatteBorder(1, 0, 0, 0, Tema.borda()),
                 BorderFactory.createEmptyBorder(Tema.PEQUENO, Tema.MARGEM_TELA, Tema.PEQUENO, Tema.MARGEM_TELA)));
-        mensagem.setForeground(Tema.SUCESSO);
+        mensagem.setForeground(Tema.sucesso());
         add(mensagem, BorderLayout.CENTER);
     }
 

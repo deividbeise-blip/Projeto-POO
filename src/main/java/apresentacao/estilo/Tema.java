@@ -3,33 +3,80 @@ package apresentacao.estilo;
 import java.awt.Color;
 import java.awt.Font;
 import javax.swing.UIManager;
+import javax.swing.plaf.ColorUIResource;
 
-/** Identidade visual compartilhada pelas telas da aplicação. */
+/**
+ * Identidade visual compartilhada pelas telas da aplicação: cores, fontes e espaçamentos.
+ * As cores vêm de duas paletas (clara e escura) com os mesmos papéis; as telas leem a cor
+ * pelos métodos ({@link #fundo()}, {@link #texto()}...) sem saber qual modo está ativo.
+ */
 public final class Tema {
-    /** Azul escuro da marca: menu lateral e botões principais. */
-    public static final Color PRIMARIA = new Color(35, 67, 109);
-    /** Azul médio: item de menu selecionado e anel de foco. */
-    public static final Color SECUNDARIA = new Color(68, 115, 158);
-    /** Fundo das telas, atrás dos cartões. */
-    public static final Color FUNDO = new Color(244, 247, 251);
-    /** Fundo dos cartões e da barra de status. */
-    public static final Color SUPERFICIE = Color.WHITE;
-    /** Cor do texto principal. */
-    public static final Color TEXTO = new Color(31, 44, 59);
-    /** Cor de textos de apoio, menos importantes. */
-    public static final Color TEXTO_SECUNDARIO = new Color(95, 110, 126);
-    /** Verde de sucesso (barra de status, veículo disponível). */
-    public static final Color SUCESSO = new Color(30, 122, 84);
-    /** Vermelho de erro (mensagens de validação, botão de exclusão). */
-    public static final Color ERRO = new Color(181, 48, 53);
-    /** Amarelo-escuro de aviso (veículo em manutenção). */
-    public static final Color AVISO = new Color(160, 103, 20);
-    /** Cinza neutro (veículo vendido). */
-    public static final Color NEUTRO = new Color(108, 117, 125);
-    /** Contorno de cartões e divisórias (ex.: barra de status). */
-    public static final Color BORDA = new Color(221, 228, 237);
-    /** Texto sobre fundo escuro: menu lateral e botões primário e de perigo. */
-    public static final Color TEXTO_SOBRE_ESCURO = Color.WHITE;
+
+    /** Modos visuais disponíveis. */
+    public enum Modo {
+        /** Fundo claro e texto escuro (padrão). */
+        CLARO,
+        /** Fundo escuro e texto claro. */
+        ESCURO
+    }
+
+    /**
+     * Conjunto de cores de um modo. Cada campo é um papel; as duas paletas têm os mesmos papéis.
+     *
+     * @param primaria         azul da marca: menu lateral e botões principais
+     * @param secundaria       item de menu selecionado e anel de foco
+     * @param fundo            fundo das telas, atrás dos cartões
+     * @param superficie       fundo dos cartões e da barra de status
+     * @param texto            texto principal
+     * @param textoSecundario  textos de apoio, menos importantes
+     * @param borda            contorno de cartões, divisórias e grade das tabelas
+     * @param sucesso          verde de sucesso (barra de status, veículo disponível)
+     * @param erro             vermelho de erro (mensagens de validação, botão de exclusão)
+     * @param aviso            amarelo de aviso (veículo em manutenção)
+     * @param neutro           cinza neutro (veículo vendido)
+     * @param textoSobreEscuro texto sobre a cor primária: menu lateral e botões primário e de perigo
+     */
+    private record Paleta(Color primaria, Color secundaria, Color fundo, Color superficie,
+                          Color texto, Color textoSecundario, Color borda, Color sucesso,
+                          Color erro, Color aviso, Color neutro, Color textoSobreEscuro) { }
+
+    private static final Paleta CLARA = new Paleta(
+            new Color(35, 67, 109),    // primária
+            new Color(68, 115, 158),   // secundária
+            new Color(244, 247, 251),  // fundo
+            Color.WHITE,               // superfície
+            new Color(31, 44, 59),     // texto
+            new Color(95, 110, 126),   // texto secundário
+            new Color(221, 228, 237),  // borda
+            new Color(30, 122, 84),    // sucesso
+            new Color(181, 48, 53),    // erro
+            new Color(160, 103, 20),   // aviso
+            new Color(108, 117, 125),  // neutro
+            Color.WHITE);              // texto sobre escuro
+
+    /*
+     * Paleta escura: fundo quase preto, superfícies um pouco mais claras que o fundo e texto claro
+     * (contraste do texto sobre a superfície ≈ 10:1). Primária e secundária continuam escuras o
+     * bastante para o texto branco (≥ 4,5:1); as cores de status são mais claras que no modo claro
+     * para ficarem legíveis sobre fundo escuro.
+     */
+    private static final Paleta ESCURA = new Paleta(
+            new Color(47, 86, 138),    // primária
+            new Color(66, 118, 182),   // secundária
+            new Color(35, 38, 43),     // fundo
+            new Color(47, 51, 58),     // superfície
+            new Color(226, 231, 238),  // texto
+            new Color(165, 174, 186),  // texto secundário
+            new Color(72, 78, 88),     // borda
+            new Color(110, 210, 155),  // sucesso
+            new Color(232, 108, 108),  // erro
+            new Color(235, 185, 90),   // aviso
+            new Color(185, 192, 200),  // neutro
+            new Color(245, 247, 250)); // texto sobre escuro
+
+    private static Modo modo = Modo.CLARO;
+    private static Paleta paleta = CLARA;
+
     /** Espaçamentos padrão, em pixels: use sempre estes em margens e distâncias entre componentes. */
     public static final int PEQUENO = 8, MEDIO = 16, GRANDE = 24, MARGEM_TELA = 32;
     /** Margem interna dos botões, em pixels (vertical e horizontal). */
@@ -54,20 +101,55 @@ public final class Tema {
     public static final Font BOTAO = new Font(Font.SANS_SERIF, Font.BOLD, 14);
     /** Texto pequeno de apoio, como a mensagem de erro abaixo de um campo. */
     public static final Font LEGENDA = new Font(Font.SANS_SERIF, Font.PLAIN, 12);
-    
 
     private Tema() { }
 
-    /** Configura os padrões do FlatLaf antes de criar os componentes. */
+    /**
+     * Modo visual ativo.
+     *
+     * @return {@link Modo#CLARO} ou {@link Modo#ESCURO}
+     */
+    public static Modo modo() { return modo; }
+
+    /** @return azul da marca, do modo ativo: menu lateral e botões principais */
+    public static Color primaria() { return paleta.primaria(); }
+    /** @return cor do item de menu selecionado e do anel de foco, no modo ativo */
+    public static Color secundaria() { return paleta.secundaria(); }
+    /** @return fundo das telas (atrás dos cartões), no modo ativo */
+    public static Color fundo() { return paleta.fundo(); }
+    /** @return fundo dos cartões e da barra de status, no modo ativo */
+    public static Color superficie() { return paleta.superficie(); }
+    /** @return cor do texto principal, no modo ativo */
+    public static Color texto() { return paleta.texto(); }
+    /** @return cor dos textos de apoio, no modo ativo */
+    public static Color textoSecundario() { return paleta.textoSecundario(); }
+    /** @return contorno de cartões, divisórias e grade das tabelas, no modo ativo */
+    public static Color borda() { return paleta.borda(); }
+    /** @return verde de sucesso (barra de status, veículo disponível), no modo ativo */
+    public static Color sucesso() { return paleta.sucesso(); }
+    /** @return vermelho de erro (mensagens de validação, botão de exclusão), no modo ativo */
+    public static Color erro() { return paleta.erro(); }
+    /** @return amarelo de aviso (veículo em manutenção), no modo ativo */
+    public static Color aviso() { return paleta.aviso(); }
+    /** @return cinza neutro (veículo vendido), no modo ativo */
+    public static Color neutro() { return paleta.neutro(); }
+    /** @return texto sobre a cor primária (menu lateral, botões primário e de perigo), no modo ativo */
+    public static Color textoSobreEscuro() { return paleta.textoSobreEscuro(); }
+
+    /**
+     * Configura os padrões do FlatLaf com as cores do modo ativo. Chame depois de instalar o
+     * Look and Feel e antes de criar os componentes.
+     */
     public static void aplicar() {
         UIManager.put("defaultFont", TEXTO_FONTE);
-        UIManager.put("Component.focusColor", SECUNDARIA);
+        // ColorUIResource: marca a cor como "vinda do tema", para o Look and Feel poder trocá-la depois.
+        UIManager.put("Component.focusColor", new ColorUIResource(secundaria()));
         // O padrão do FlatLaf Light (focusWidth 0) quase não mostra o foco em botões com fundo próprio;
         // um anel de 2px deixa visível quem está com o foco ao navegar pelo teclado.
         UIManager.put("Component.focusWidth", 2);
         UIManager.put("Component.arc", 12);
         UIManager.put("Button.arc", 12);
         UIManager.put("TextComponent.arc", 10);
-        UIManager.put("Panel.background", FUNDO);
+        UIManager.put("Panel.background", new ColorUIResource(fundo()));
     }
 }

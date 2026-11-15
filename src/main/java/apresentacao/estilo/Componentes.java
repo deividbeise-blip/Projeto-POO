@@ -31,21 +31,21 @@ public final class Componentes {
      * @param texto rótulo do botão
      * @return o botão estilizado, ainda sem ação
      */
-    public static JButton botaoPrimario(String texto) { return botao(texto, Tema.PRIMARIA, Tema.TEXTO_SOBRE_ESCURO); }
+    public static JButton botaoPrimario(String texto) { return botao(texto, Tema.primaria(), Tema.textoSobreEscuro()); }
     /**
      * Botão de ação secundária, como "Novo" (fundo claro, texto na cor primária).
      *
      * @param texto rótulo do botão
      * @return o botão estilizado, ainda sem ação
      */
-    public static JButton botaoSecundario(String texto) { return botao(texto, Tema.SUPERFICIE, Tema.PRIMARIA); }
+    public static JButton botaoSecundario(String texto) { return botao(texto, Tema.superficie(), Tema.primaria()); }
     /**
      * Botão de ação destrutiva, como "Excluir" (fundo vermelho, texto branco).
      *
      * @param texto rótulo do botão
      * @return o botão estilizado, ainda sem ação
      */
-    public static JButton botaoPerigo(String texto) { return botao(texto, Tema.ERRO, Tema.TEXTO_SOBRE_ESCURO); }
+    public static JButton botaoPerigo(String texto) { return botao(texto, Tema.erro(), Tema.textoSobreEscuro()); }
 
     /**
      * Item do menu lateral (fundo escuro). O anel de foco é claro para aparecer sobre o fundo
@@ -56,12 +56,12 @@ public final class Componentes {
      * @return o botão do menu
      */
     public static JButton botaoMenu(String texto, char atalho) {
-        JButton botao = botao(texto, Tema.PRIMARIA, Tema.SUPERFICIE);
+        JButton botao = botao(texto, Tema.primaria(), Tema.superficie());
         botao.setHorizontalAlignment(SwingConstants.LEFT);
         botao.setAlignmentX(Component.LEFT_ALIGNMENT);
         botao.setMaximumSize(new Dimension(Integer.MAX_VALUE, Tema.ALTURA_ITEM_MENU));
         botao.setMnemonic(atalho);
-        botao.putClientProperty("FlatLaf.style", Map.of("focusColor", Tema.SUPERFICIE));
+        botao.putClientProperty("FlatLaf.style", Map.of("focusColor", Tema.superficie()));
         return botao;
     }
 
@@ -85,7 +85,7 @@ public final class Componentes {
     public static JLabel rotulo(String texto) {
         JLabel rotulo = new JLabel(texto);
         rotulo.setFont(Tema.ROTULO);
-        rotulo.setForeground(Tema.TEXTO);
+        rotulo.setForeground(Tema.texto());
         return rotulo;
     }
 
@@ -98,7 +98,7 @@ public final class Componentes {
     public static JLabel titulo(String texto) {
         JLabel titulo = new JLabel(texto);
         titulo.setFont(Tema.TITULO);
-        titulo.setForeground(Tema.TEXTO);
+        titulo.setForeground(Tema.texto());
         return titulo;
     }
 
@@ -159,7 +159,7 @@ public final class Componentes {
 
         JLabel mensagemErro = new JLabel(SEM_MENSAGEM);
         mensagemErro.setFont(Tema.LEGENDA);
-        mensagemErro.setForeground(Tema.ERRO);
+        mensagemErro.setForeground(Tema.erro());
         campo.putClientProperty(CHAVE_MENSAGEM_ERRO, mensagemErro);
         c.gridy = linha * 2 + 1;
         c.insets = new Insets(0, 0, 0, 0);
@@ -203,8 +203,8 @@ public final class Componentes {
      */
     public static JPanel painelCartao(String texto) {
         JPanel painel = new JPanel(new BorderLayout(0, Tema.MEDIO));
-        painel.setBackground(Tema.SUPERFICIE);
-        painel.setBorder(new CompoundBorder(new LineBorder(Tema.BORDA, 1, true),
+        painel.setBackground(Tema.superficie());
+        painel.setBorder(new CompoundBorder(new LineBorder(Tema.borda(), 1, true),
                 BorderFactory.createEmptyBorder(Tema.GRANDE, Tema.GRANDE, Tema.GRANDE, Tema.GRANDE)));
         JLabel titulo = rotulo(texto);
         titulo.setFont(Tema.SUBTITULO);

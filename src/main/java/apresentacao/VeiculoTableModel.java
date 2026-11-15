@@ -179,13 +179,13 @@ public class VeiculoTableModel extends AbstractTableModel {
      * Cor do status na tabela.
      *
      * @param status o status do veículo
-     * @return {@code Tema.SUCESSO}, {@code Tema.AVISO} ou {@code Tema.NEUTRO}
+     * @return {@code Tema.sucesso()}, {@code Tema.aviso()} ou {@code Tema.neutro()}
      */
     public static Color corStatus(StatusVeiculo status) {
         return switch (status) {
-            case DISPONIVEL -> Tema.SUCESSO;
-            case EM_MANUTENCAO -> Tema.AVISO;
-            case VENDIDO -> Tema.NEUTRO;
+            case DISPONIVEL -> Tema.sucesso();
+            case EM_MANUTENCAO -> Tema.aviso();
+            case VENDIDO -> Tema.neutro();
         };
     }
 }
