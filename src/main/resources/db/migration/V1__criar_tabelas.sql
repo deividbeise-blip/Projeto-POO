@@ -1,20 +1,8 @@
--- Estrutura do banco do sistema da concessionária (MySQL 8).
--- Pode ser executado de novo a qualquer momento: apaga e recria todas as tabelas.
-
-CREATE DATABASE IF NOT EXISTS projeto_poo
-  DEFAULT CHARACTER SET utf8mb4
-  DEFAULT COLLATE utf8mb4_general_ci;
-USE projeto_poo;
-
--- Ordem inversa das chaves estrangeiras: quem referencia sai primeiro.
-DROP TABLE IF EXISTS venda;
-DROP TABLE IF EXISTS pagamentopix;
-DROP TABLE IF EXISTS pagamentocartao;
-DROP TABLE IF EXISTS pagamento;
-DROP TABLE IF EXISTS veiculo;
-DROP TABLE IF EXISTS vendedor;
-DROP TABLE IF EXISTS cliente;
-DROP TABLE IF EXISTS concessionaria;
+-- V1: estrutura inicial do banco do sistema da concessionária (MySQL 8).
+-- O Flyway roda dentro do banco indicado em DB_URL, por isso não há CREATE DATABASE nem USE aqui.
+-- Bancos que já tinham estas tabelas antes do Flyway (ex.: o do Aiven) recebem esta versão como
+-- baseline: ela é marcada como aplicada sem ser executada.
+-- Nunca edite este arquivo depois de aplicado: mudanças de estrutura vão numa migração nova (V3, V4...).
 
 CREATE TABLE concessionaria (
   id_concessionaria      INT          NOT NULL AUTO_INCREMENT,

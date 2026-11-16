@@ -1,6 +1,8 @@
--- Dados de exemplo para testar o sistema sem cadastrar nada.
--- Rode depois de schema.sql (que deixa as tabelas vazias e os IDs começando em 1).
-USE projeto_poo;
+-- Dados de exemplo para testar o sistema sem cadastrar nada. Script OPCIONAL.
+-- Rode depois de abrir o app pelo menos uma vez: é ele que cria as tabelas (migrações do Flyway).
+-- Use num banco recém-criado, com as tabelas vazias: os INSERTs usam IDs fixos começando em 1.
+-- Não rode no banco do Aiven, que já tem dados reais.
+-- Sem USE: selecione o banco antes (ex.: mysql -u root -p projeto_poo < db/dados.sql).
 
 INSERT INTO concessionaria (id_concessionaria, name_concessionaria, address_concessionaria) VALUES
   (1, 'Pampa Veículos',   'Av. Tiarajú, 810 - Alegrete/RS'),

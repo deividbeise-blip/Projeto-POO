@@ -35,23 +35,21 @@ como Trabalho 2 de Programação Orientada a Objetos.
 - **MySQL 8** (local, XAMPP ou Docker)
 
 ### 1. Criar o banco
-Os scripts ficam em [`db/`](db/). O `schema.sql` cria o banco `projeto_poo` (apaga e recria as tabelas) e o
-`dados.sql` coloca dados de exemplo: 2 concessionárias, 3 vendedores, 6 veículos (2 motos, 1 em manutenção,
-1 vendido), 4 clientes e 1 venda paga com PIX.
+A estrutura do banco fica nas migrações em
+[`src/main/resources/db/migration/`](src/main/resources/db/migration/). O
+[`db/dados.sql`](db/dados.sql) coloca dados de exemplo: 2 concessionárias, 3 vendedores, 6 veículos (2 motos,
+1 em manutenção, 1 vendido), 4 clientes e 1 venda paga com PIX. Rode-o num banco vazio, depois de as tabelas
+existirem:
 
 ```bash
-mysql -u root -p < db/schema.sql
-mysql -u root -p < db/dados.sql
+mysql -u root -p projeto_poo < db/dados.sql
 ```
-
-No phpMyAdmin/Workbench, basta abrir e executar os dois arquivos nessa ordem.
 
 Com Docker, se preferir:
 
 ```bash
 docker run -d --name mysql-poo -e MYSQL_ROOT_PASSWORD=senha -p 3306:3306 mysql:8.4
-docker exec -i mysql-poo mysql -uroot -psenha < db/schema.sql
-docker exec -i mysql-poo mysql -uroot -psenha < db/dados.sql
+docker exec -i mysql-poo mysql -uroot -psenha projeto_poo < db/dados.sql
 ```
 
 ### 2. Configurar as credenciais
@@ -202,7 +200,8 @@ concretas.
 - **Segurança:** todo SQL usa `PreparedStatement` com parâmetros, sem concatenar valores digitados.
 - **Transação:** [`TransacaoJdbc`](src/main/java/infra/conexao/TransacaoJdbc.java) faz a venda gravar venda,
   pagamento, detalhe do pagamento e status do veículo juntos, com rollback se algo falhar.
-- **Reproduzível:** [`db/schema.sql`](db/schema.sql) e [`db/dados.sql`](db/dados.sql) recriam o banco do zero.
+- **Reproduzível:** as migrações em [`db/migration`](src/main/resources/db/migration/) criam a estrutura do zero
+  e [`db/dados.sql`](db/dados.sql) coloca os dados de exemplo.
 
 ### JavaDoc
 - Toda classe, interface, record, enum, construtor e método público está documentado.
