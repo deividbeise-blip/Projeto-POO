@@ -13,6 +13,9 @@ public class Veiculo {
     /** Ano mais antigo aceito no cadastro. */
     public static final int ANO_MINIMO = 1900;
 
+    /** Placa brasileira: antiga (ABC1234) ou Mercosul (ABC1D23), já sem hífen e em maiúsculas. */
+    private static final String FORMATO_PLACA = "[A-Z]{3}[0-9][A-Z0-9][0-9]{2}";
+
     private Long idVeiculo; // AUTO_INCREMENT
     private final String marca;
     private final String modelo;
@@ -29,7 +32,7 @@ public class Veiculo {
      * @param marca marca do veículo
      * @param modelo modelo do veículo
      * @param ano ano de fabricação, de {@link #ANO_MINIMO} até o ano que vem
-     * @param placa placa do veículo
+     * @param placa placa no padrão brasileiro (ABC1234 ou ABC1D23), com ou sem hífen
      * @param preco preço de venda, em reais, maior que zero
      * @param status situação inicial (normalmente DISPONIVEL)
      * @param concessionaria loja dona do veículo
@@ -41,7 +44,7 @@ public class Veiculo {
         validarMarca(marca);
         validarModelo(modelo);
         validarAno(ano);
-        validarPlaca(placa);
+        String placaNormalizada = validarPlaca(placa);
         validarPreco(preco);
         if (status == null) {
             throw new IllegalArgumentException("Status é obrigatório.");
@@ -56,7 +59,7 @@ public class Veiculo {
         this.marca = marca.trim();
         this.modelo = modelo.trim();
         this.ano = ano;
-        this.placa = placa.trim();
+        this.placa = placaNormalizada;
         this.preco = preco;
         this.status = status;
         this.concessionaria = concessionaria;
@@ -121,15 +124,22 @@ public class Veiculo {
     }
 
     /**
-     * Regra da placa.
+     * Regra da placa: aceita o formato antigo (ABC1234) e o Mercosul (ABC1D23).
+     * Hífen e espaços são ignorados, e as letras viram maiúsculas.
      *
-     * @param placa a placa digitada
-     * @throws IllegalArgumentException se estiver vazia
+     * @param placa a placa digitada, com ou sem hífen
+     * @return a placa normalizada (ex.: "abc-1d23" vira "ABC1D23")
+     * @throws IllegalArgumentException se estiver vazia ou fora do formato
      */
-    public static void validarPlaca(String placa) {
+    public static String validarPlaca(String placa) {
         if (placa == null || placa.isBlank()) {
             throw new IllegalArgumentException("Placa é obrigatória.");
         }
+        String normalizada = placa.replaceAll("[\\s-]", "").toUpperCase();
+        if (!normalizada.matches(FORMATO_PLACA)) {
+            throw new IllegalArgumentException("Placa inválida. Use o formato ABC1234 ou ABC1D23.");
+        }
+        return normalizada;
     }
 
     /**
@@ -168,7 +178,7 @@ public class Veiculo {
     public String getModelo() { return modelo; }
     /** @return o ano de fabricação */
     public Integer getAno() { return ano; }
-    /** @return a placa, sem espaços nas pontas */
+    /** @return a placa normalizada, em maiúsculas e sem hífen (ex.: ABC1D23) */
     public String getPlaca() { return placa; }
     /** @return o preço de venda, em reais, sem desconto */
     public Double getPreco() { return preco; }
