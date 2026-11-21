@@ -27,8 +27,8 @@ public class PagamentoDinheiro extends Pagamento {
     public String obterReciboDetalhado() {
         return "===== Recibo de Pagamento (Dinheiro) =====\n" +
                 "Pagamento à vista em dinheiro\n" +
-                "Valor pago: " + String.format("%.2f", getValorPago()) + "\n" +
-                "Data do pagamento: " + getDataPagamento() + "\n" +
+                "Valor pago: " + Formatacao.moeda(getValorPago()) + "\n" +
+                "Data do pagamento: " + Formatacao.data(getDataPagamento()) + "\n" +
                 "===========================================";
     }
 }

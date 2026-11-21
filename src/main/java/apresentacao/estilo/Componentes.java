@@ -203,9 +203,32 @@ public final class Componentes {
         mensagemErro.setFont(Tema.LEGENDA);
         Tema.colorir(mensagemErro, m -> m.setForeground(Tema.erro()));
         campo.putClientProperty(CHAVE_MENSAGEM_ERRO, mensagemErro);
+        campo.putClientProperty(CHAVE_ROTULO, rotulo);
         c.gridy = linha * 2 + 1;
         c.insets = new Insets(0, 0, 0, 0);
         formulario.add(mensagemErro, c);
+    }
+
+    /** Chave (client property do campo) que guarda o rótulo criado ao lado dele. */
+    private static final String CHAVE_ROTULO = "Componentes.rotulo";
+
+    /**
+     * Mostra ou esconde a linha inteira de um campo adicionado por
+     * {@link #adicionarCampo(JPanel, int, String, JComponent)}: rótulo, campo e mensagem de erro.
+     * Linhas escondidas não ocupam espaço, então as seguintes sobem e ficam na mesma coluna.
+     *
+     * @param campo   o campo do formulário
+     * @param visivel {@code true} para mostrar, {@code false} para esconder
+     */
+    public static void mostrarCampo(JComponent campo, boolean visivel) {
+        campo.setVisible(visivel);
+        if (campo.getClientProperty(CHAVE_ROTULO) instanceof JLabel rotulo) {
+            rotulo.setVisible(visivel);
+        }
+        JLabel mensagemErro = mensagemErroDo(campo);
+        if (mensagemErro != null) {
+            mensagemErro.setVisible(visivel);
+        }
     }
 
     /**

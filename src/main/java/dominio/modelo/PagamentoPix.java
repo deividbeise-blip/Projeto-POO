@@ -72,8 +72,8 @@ public class PagamentoPix extends Pagamento {
         return "===== Recibo de Pagamento (PIX) =====\n" +
                 "Chave PIX: " + chavePix + " (" + tipoChave + ")\n" +
                 "Valor pago (com " + String.format("%.0f", DescontoPix.PERCENTUAL) + "% de desconto PIX): "
-                + getValorPago() + "\n" +
-                "Data do pagamento: " + getDataPagamento() + "\n" +
+                + Formatacao.moeda(getValorPago()) + "\n" +
+                "Data do pagamento: " + Formatacao.data(getDataPagamento()) + "\n" +
                 "======================================";
     }
 }
