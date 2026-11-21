@@ -34,25 +34,45 @@ como Trabalho 2 de Programação Orientada a Objetos.
 - **Maven 3.9+**
 - **MySQL 8** (local, XAMPP ou Docker)
 
-### 1. Criar o banco
-Os scripts ficam em [`db/`](db/). O `schema.sql` cria o banco `projeto_poo` (apaga e recria as tabelas) e o
-`dados.sql` coloca dados de exemplo: 2 concessionárias, 3 vendedores, 6 veículos (2 motos, 1 em manutenção,
-1 vendido), 4 clientes e 1 venda paga com PIX.
+### 1. Banco de dados (criado automaticamente)
+Não é preciso rodar SQL à mão: **ao abrir, o app cria ou atualiza as tabelas sozinho** com o
+[Flyway](https://documentation.red-gate.com/fd), usando as migrações em
+[`src/main/resources/db/migration/`](src/main/resources/db/migration/). Basta ter um MySQL 8 no ar e as
+credenciais configuradas (passo 2).
 
-```bash
-mysql -u root -p < db/schema.sql
-mysql -u root -p < db/dados.sql
-```
+- **Banco vazio:** o app aplica todas as migrações (V1 cria as tabelas, V2 normaliza as placas).
+- **Banco que já tinha as tabelas antes do Flyway** (ex.: o do Aiven): a V1 é marcada como já aplicada
+  (*baseline*) e só as seguintes rodam.
+- **Banco em dia:** nada acontece.
+- O histórico fica na tabela `flyway_schema_history`. Se uma migração falhar, o app mostra "Erro ao iniciar"
+  com o motivo.
+- No MySQL local, o `?createDatabaseIfNotExist=true` na `DB_URL` faz o próprio driver criar o banco
+  `projeto_poo` vazio se ele não existir.
 
-No phpMyAdmin/Workbench, basta abrir e executar os dois arquivos nessa ordem.
-
-Com Docker, se preferir:
+Com Docker, se não tiver MySQL instalado:
 
 ```bash
 docker run -d --name mysql-poo -e MYSQL_ROOT_PASSWORD=senha -p 3306:3306 mysql:8.4
-docker exec -i mysql-poo mysql -uroot -psenha < db/schema.sql
-docker exec -i mysql-poo mysql -uroot -psenha < db/dados.sql
 ```
+
+**Dados de exemplo (opcional):** [`db/dados.sql`](db/dados.sql) coloca 2 concessionárias, 3 vendedores,
+6 veículos (2 motos, 1 em manutenção, 1 vendido), 4 clientes e 1 venda paga com PIX. Rode-o **depois de abrir
+o app uma vez** (para as tabelas existirem) e só num banco vazio, nunca no do Aiven:
+
+```bash
+mysql -u root -p projeto_poo < db/dados.sql
+# ou, com Docker:
+docker exec -i mysql-poo mysql -uroot -psenha projeto_poo < db/dados.sql
+```
+
+**Criar uma migração nova** (ex.: nova coluna ou tabela):
+1. Crie em `src/main/resources/db/migration/` um arquivo com o próximo número:
+   `V3__descricao_curta.sql` (V maiúsculo, **dois** sublinhados, descrição com `_`).
+2. Escreva só o SQL da mudança (sem `CREATE DATABASE`/`USE`); o Flyway roda dentro do banco da `DB_URL`.
+3. Abra o app: a migração é aplicada em todos os bancos (grupo, Aiven, professor) na próxima vez que cada um
+   abrir o sistema.
+4. **Nunca edite nem renomeie uma migração já aplicada**: o Flyway confere o checksum e para com erro.
+   Para corrigir algo, crie outra migração (V4, V5...).
 
 ### 2. Configurar as credenciais
 O sistema lê a conexão de três variáveis de ambiente: `DB_URL`, `DB_USER` e `DB_PASSWORD`.
@@ -61,7 +81,7 @@ Nenhuma senha fica no código.
 **PowerShell** (vale para o terminal aberto):
 
 ```powershell
-$env:DB_URL = "jdbc:mysql://localhost:3306/projeto_poo"
+$env:DB_URL = "jdbc:mysql://localhost:3306/projeto_poo?createDatabaseIfNotExist=true"
 $env:DB_USER = "root"
 $env:DB_PASSWORD = "senha"
 ```
@@ -69,7 +89,7 @@ $env:DB_PASSWORD = "senha"
 **Arquivo `.env`** (copie o [`.env.example`](.env.example); o `.env` não é versionado):
 
 ```env
-DB_URL=jdbc:mysql://localhost:3306/projeto_poo
+DB_URL=jdbc:mysql://localhost:3306/projeto_poo?createDatabaseIfNotExist=true
 DB_USER=root
 DB_PASSWORD=senha
 ```
@@ -202,7 +222,11 @@ concretas.
 - **Segurança:** todo SQL usa `PreparedStatement` com parâmetros, sem concatenar valores digitados.
 - **Transação:** [`TransacaoJdbc`](src/main/java/infra/conexao/TransacaoJdbc.java) faz a venda gravar venda,
   pagamento, detalhe do pagamento e status do veículo juntos, com rollback se algo falhar.
-- **Reproduzível:** [`db/schema.sql`](db/schema.sql) e [`db/dados.sql`](db/dados.sql) recriam o banco do zero.
+- **Mecanismo automático de criação do banco:** [Flyway](https://documentation.red-gate.com/fd). Ao iniciar,
+  [`MigradorBanco`](src/main/java/infra/conexao/MigradorBanco.java) aplica as migrações versionadas de
+  [`db/migration`](src/main/resources/db/migration/), criando as tabelas num banco vazio ou atualizando um banco
+  existente; todos os bancos (grupo, Aiven, professor) ficam na mesma versão sem rodar SQL à mão.
+  [`db/dados.sql`](db/dados.sql) é opcional, só para dados de exemplo.
 
 ### JavaDoc
 - Toda classe, interface, record, enum, construtor e método público está documentado.

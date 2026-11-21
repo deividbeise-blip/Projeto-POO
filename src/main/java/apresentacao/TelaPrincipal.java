@@ -140,8 +140,9 @@ public class TelaPrincipal extends JFrame {
 
     /**
      * Ponto de entrada do sistema: aplica o FlatLaf e o {@link Tema} no último modo usado
-     * ({@link Tema#modoSalvo()}, claro na primeira vez), monta o {@link AppConfig}
-     * e abre a janela. Se a montagem falhar (ex.: DB_URL, DB_USER ou DB_PASSWORD não definidas),
+     * ({@link Tema#modoSalvo()}, claro na primeira vez), cria ou atualiza as tabelas do banco
+     * ({@link AppConfig#prepararBanco()}), monta o {@link AppConfig} e abre a janela. Se algo falhar
+     * (ex.: DB_URL, DB_USER ou DB_PASSWORD não definidas, banco fora do ar, migração com erro),
      * mostra o motivo num diálogo em vez de fechar sem aviso.
      *
      * @param args não usados
@@ -150,6 +151,7 @@ public class TelaPrincipal extends JFrame {
         Tema.aplicar(Tema.modoSalvo());
         SwingUtilities.invokeLater(() -> {
             try {
+                AppConfig.prepararBanco();
                 new TelaPrincipal(new AppConfig()).setVisible(true);
             } catch (RuntimeException ex) {
                 JOptionPane.showMessageDialog(null, "Não foi possível iniciar: " + ex.getMessage(),

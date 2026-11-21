@@ -22,6 +22,7 @@ import dominio.repositorio.VeiculoRepository;
 import dominio.repositorio.VendaRepository;
 import dominio.repositorio.VendedorRepository;
 import infra.conexao.ConexaoBanco;
+import infra.conexao.MigradorBanco;
 import infra.conexao.TransacaoJdbc;
 import infra.dao.ClienteDAO;
 import infra.dao.ConcessionariaDAO;
@@ -70,6 +71,17 @@ public class AppConfig {
             pagamentoRepository,
             formasPagamento,
             transacao);
+
+    /**
+     * Cria ou atualiza as tabelas do banco (migrações Flyway). Chame uma vez ao iniciar,
+     * antes de criar o {@code AppConfig}. Fica aqui para as telas não dependerem de {@code infra}.
+     *
+     * @throws IllegalStateException se DB_URL, DB_USER ou DB_PASSWORD não estiverem definidas
+     * @throws infra.excecao.PersistenciaException se não conseguir conectar ou alguma migração falhar
+     */
+    public static void prepararBanco() {
+        new MigradorBanco(new ConexaoBanco()).migrar();
+    }
 
     /** @return casos de uso de clientes */
     public ClienteService clienteService() { return clienteService; }

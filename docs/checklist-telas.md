@@ -1,6 +1,7 @@
 # Checklist das telas
 
-Conferir abrindo o sistema com os dados de exemplo (`db/schema.sql` + `db/dados.sql`).
+Conferir abrindo o sistema com os dados de exemplo: abra o app uma vez num banco vazio (ele cria as tabelas)
+e depois rode `db/dados.sql`.
 Passar por **cada tela duas vezes**: com a janela em **1280×720** (tamanho inicial) e **maximizada**.
 
 Marque `[x]` quando o item estiver ok nas duas situações. Se algo falhar, anote ao lado o que aconteceu.

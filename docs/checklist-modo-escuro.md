@@ -1,6 +1,7 @@
 # Checklist do modo escuro
 
-Conferir abrindo o sistema com os dados de exemplo (`db/schema.sql` + `db/dados.sql`).
+Conferir abrindo o sistema com os dados de exemplo: abra o app uma vez num banco vazio (ele cria as tabelas)
+e depois rode `db/dados.sql`.
 Passar por **cada item duas vezes**: no **modo claro** e no **modo escuro**. Troque de modo pelo botão
 no rodapé do menu lateral (**Alt+R**) **com a janela aberta**, sem reiniciar.
 

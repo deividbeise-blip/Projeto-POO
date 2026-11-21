@@ -45,6 +45,10 @@ public class ConexaoBanco implements ConnectionFactory {
         return DriverManager.getConnection(url, usuario, senha);
     }
 
+    // Acesso só dentro de infra.conexao: o MigradorBanco usa as mesmas credenciais lidas aqui.
+    String url() { return url; }
+    String usuario() { return usuario; }
+    String senha() { return senha; }
 
     private static String lerVariavel(String nome, List<String> faltando) {
         String valor = System.getenv(nome);
