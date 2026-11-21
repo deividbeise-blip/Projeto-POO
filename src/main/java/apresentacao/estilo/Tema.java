@@ -1,8 +1,5 @@
 package apresentacao.estilo;
 
-import com.formdev.flatlaf.FlatDarkLaf;
-import com.formdev.flatlaf.FlatLaf;
-import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
@@ -10,9 +7,14 @@ import java.awt.Font;
 import java.awt.Window;
 import java.util.function.Consumer;
 import java.util.prefs.Preferences;
+
 import javax.swing.JComponent;
 import javax.swing.UIManager;
 import javax.swing.plaf.ColorUIResource;
+
+import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.FlatLaf;
+import com.formdev.flatlaf.FlatLightLaf;
 
 /**
  * Identidade visual compartilhada pelas telas da aplicação: cores, fontes e espaçamentos.
@@ -107,6 +109,8 @@ public final class Tema {
     public static final int LARGURA_MENU = 240, ALTURA_ITEM_MENU = 44;
     /** Tamanho inicial e mínimo da janela principal: tudo precisa caber em 1280×720. */
     public static final int LARGURA_JANELA = 1280, ALTURA_JANELA = 720;
+    /** Largura mínima da lista nas telas de cadastro, em pixels; abaixo disso a tabela rola na horizontal. */
+    public static final int LARGURA_MINIMA_LISTA = 300;
     /** Tamanho da janela do recibo da venda. */
     public static final int LARGURA_RECIBO = 480, ALTURA_RECIBO = 420;
     /** Fonte do título da tela. */
