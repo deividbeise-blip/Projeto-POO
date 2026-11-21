@@ -114,7 +114,7 @@ public class Venda {
         }
         return pagamento.obterReciboDetalhado() + "\n" +
                 "Vendedor: " + vendedor.getNome() + "\n" +
-                "Comissão do vendedor: R$ " + String.format("%.2f", calcularComissao());
+                "Comissão do vendedor: " + Formatacao.moeda(calcularComissao());
     }
 
     /** Único ponto que escolhe a regra de comissão pelo tipo do veículo. */

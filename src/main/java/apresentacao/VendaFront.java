@@ -16,6 +16,7 @@ import apresentacao.comum.Validacao;
 import apresentacao.estilo.Componentes;
 import apresentacao.estilo.Tema;
 import dominio.modelo.Cliente;
+import dominio.modelo.Formatacao;
 import dominio.modelo.Pagamento;
 import dominio.modelo.PagamentoCartao;
 import dominio.modelo.PagamentoPix;
@@ -32,8 +33,6 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.NumberFormat;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 
@@ -65,7 +64,6 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
     private final VendaService vendaService;
     private final ClienteService clienteService;
     private final VeiculoService veiculoService;
-    private final NumberFormat moeda = NumberFormat.getCurrencyInstance(Locale.of("pt", "BR"));
     private final JComboBox<Cliente> clientes = Componentes.combo(new Cliente[0]);
     private final JComboBox<Veiculo> veiculos = Componentes.combo(new Veiculo[0]);
     private final JComboBox<Vendedor> vendedores = Componentes.combo(new Vendedor[0]);
@@ -79,7 +77,8 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
     private final JPasswordField cvv = new JPasswordField();
     private final JSpinner parcelas = new JSpinner(new SpinnerNumberModel(1, 1, PagamentoCartao.MAX_PARCELAS, 1));
     private final JLabel resumo = Componentes.rotulo("Selecione um veículo para ver os valores.");
-    private final JPanel camposPagamento = new JPanel(new CardLayout());
+    private final JLabel avisoDinheiro = Componentes.rotulo("Pagamento à vista, sem desconto. Não há dados a preencher.");
+    private JPanel cartaoPagamento;
     private final JButton finalizar = Componentes.botaoPrimario("Finalizar venda");
     private final DefaultTableModel historico = new DefaultTableModel(
             new String[]{"Data", "Cliente", "Veículo", "Vendedor", "Pagamento", "Valor"}, 0) {
@@ -111,10 +110,10 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
         finalizar.addActionListener(e -> finalizarVenda());
         veiculos.addActionListener(e -> atualizarResumo());
         formas.addActionListener(e -> {
-            Forma forma = (Forma) formas.getSelectedItem();
-            if (forma != null) ((CardLayout) camposPagamento.getLayout()).show(camposPagamento, forma.name());
+            mostrarCamposDaForma();
             atualizarResumo();
         });
+        mostrarCamposDaForma();
         parcelas.addChangeListener(e -> atualizarResumo());
         buscaCliente.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) { filtrarClientes(); }
@@ -125,7 +124,20 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
             @Override public Component getListCellRendererComponent(JList<?> lista, Object valor, int indice,
                     boolean selecionado, boolean foco) {
                 super.getListCellRendererComponent(lista, valor, indice, selecionado, foco);
-                if (valor instanceof Veiculo veiculo) setText(veiculo + " — " + moeda.format(veiculo.getPreco()));
+                if (valor instanceof Veiculo veiculo) {
+                    setText(veiculo.getMarca() + " " + veiculo.getModelo() + " (" + veiculo.getAno() + ") - Placa "
+                            + veiculo.getPlaca() + " - " + Formatacao.moeda(veiculo.getPreco()));
+                }
+                return this;
+            }
+        });
+        clientes.setRenderer(new DefaultListCellRenderer() {
+            @Override public Component getListCellRendererComponent(JList<?> lista, Object valor, int indice,
+                    boolean selecionado, boolean foco) {
+                super.getListCellRendererComponent(lista, valor, indice, selecionado, foco);
+                if (valor instanceof Cliente cliente) {
+                    setText(cliente.getNome() + " - CPF " + ClienteTableModel.formatarCpf(cliente.getCpf()));
+                }
                 return this;
             }
         });
@@ -147,29 +159,19 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
         Componentes.adicionarCampo(vendedor, 0, "Vendedor", vendedores);
         adicionarCartao(conteudo, "3. Vendedor", vendedor);
 
-        JPanel pix = Componentes.painelFormulario();
-        Componentes.adicionarCampo(pix, 0, "Tipo de chave", tipoChave);
-        Componentes.adicionarCampo(pix, 1, "Chave PIX", chavePix);
-        JPanel cartao = Componentes.painelFormulario();
-        Componentes.adicionarCampo(cartao, 0, "Número", numero);
-        Componentes.adicionarCampo(cartao, 1, "Titular", titular);
-        Componentes.adicionarCampo(cartao, 2, "Validade (MM/AA)", validade);
-        Componentes.adicionarCampo(cartao, 3, "CVV", cvv);
-        Componentes.adicionarCampo(cartao, 4, "Parcelas", parcelas);
-        camposPagamento.setOpaque(false);
-        camposPagamento.add(pix, Forma.PIX.name());
-        camposPagamento.add(cartao, Forma.CARTAO.name());
-        JPanel dinheiro = new JPanel(new BorderLayout());
-        dinheiro.setOpaque(false);
-        dinheiro.add(Componentes.rotulo("Pagamento à vista, sem desconto. Não há dados a preencher."), BorderLayout.NORTH);
-        camposPagamento.add(dinheiro, Forma.DINHEIRO.name());
-        JPanel pagamento = new JPanel(new BorderLayout(0, Tema.PEQUENO));
-        pagamento.setOpaque(false);
-        JPanel escolha = Componentes.painelFormulario();
-        Componentes.adicionarCampo(escolha, 0, "Forma de pagamento", formas);
-        pagamento.add(escolha, BorderLayout.NORTH);
-        pagamento.add(camposPagamento, BorderLayout.CENTER);
-        adicionarCartao(conteudo, "4. Pagamento", pagamento);
+        // Um único formulário: os campos de todas as formas dividem a mesma coluna de rótulos e
+        // de campos do combo; mostrarCamposDaForma() deixa visíveis só os da forma escolhida.
+        JPanel pagamento = Componentes.painelFormulario();
+        Componentes.adicionarCampo(pagamento, 0, "Forma de pagamento", formas);
+        Componentes.adicionarCampo(pagamento, 1, "Tipo de chave", tipoChave);
+        Componentes.adicionarCampo(pagamento, 2, "Chave PIX", chavePix);
+        Componentes.adicionarCampo(pagamento, 3, "Número", numero);
+        Componentes.adicionarCampo(pagamento, 4, "Titular", titular);
+        Componentes.adicionarCampo(pagamento, 5, "Validade (MM/AA)", validade);
+        Componentes.adicionarCampo(pagamento, 6, "CVV", cvv);
+        Componentes.adicionarCampo(pagamento, 7, "Parcelas", parcelas);
+        Componentes.adicionarCampo(pagamento, 8, "", avisoDinheiro);
+        cartaoPagamento = adicionarCartao(conteudo, "4. Pagamento", pagamento);
         JPanel painelResumo = new JPanel(new BorderLayout(Tema.MEDIO, Tema.MEDIO));
         painelResumo.setOpaque(false);
         painelResumo.add(resumo, BorderLayout.CENTER);
@@ -184,13 +186,35 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
         return painel;
     }
 
-    private void adicionarCartao(JPanel destino, String titulo, JPanel conteudo) {
+    private JPanel adicionarCartao(JPanel destino, String titulo, JPanel conteudo) {
         JPanel cartao = Componentes.painelCartao(titulo);
         cartao.add(conteudo, BorderLayout.CENTER);
         cartao.setAlignmentX(Component.LEFT_ALIGNMENT);
-        cartao.setMaximumSize(new Dimension(Integer.MAX_VALUE, cartao.getPreferredSize().height));
+        limitarAltura(cartao);
         destino.add(cartao);
         destino.add(Box.createVerticalStrut(Tema.PEQUENO));
+        return cartao;
+    }
+
+    /** O cartão não estica na vertical: fica com a altura do próprio conteúdo. */
+    private static void limitarAltura(JPanel cartao) {
+        cartao.setMaximumSize(new Dimension(Integer.MAX_VALUE, cartao.getPreferredSize().height));
+    }
+
+    /** Mostra logo abaixo do combo só os campos da forma de pagamento escolhida. */
+    private void mostrarCamposDaForma() {
+        Forma forma = (Forma) formas.getSelectedItem();
+        Componentes.mostrarCampo(tipoChave, forma == Forma.PIX);
+        Componentes.mostrarCampo(chavePix, forma == Forma.PIX);
+        for (JComponent campo : new JComponent[]{numero, titular, validade, cvv, parcelas}) {
+            Componentes.mostrarCampo(campo, forma == Forma.CARTAO);
+        }
+        Componentes.mostrarCampo(avisoDinheiro, forma == Forma.DINHEIRO);
+        if (cartaoPagamento != null) {
+            limitarAltura(cartaoPagamento);
+            cartaoPagamento.revalidate();
+            cartaoPagamento.repaint();
+        }
     }
 
     private JPanel criarHistorico() {
@@ -234,10 +258,9 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
         vendedores.setModel(new DefaultComboBoxModel<>(dados.vendedores().toArray(new Vendedor[0])));
         veiculos.setModel(new DefaultComboBoxModel<>(dados.veiculos().toArray(new Veiculo[0])));
         historico.setRowCount(0);
-        DateTimeFormatter data = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         for (ResumoVenda venda : dados.vendas()) {
-            historico.addRow(new Object[]{data.format(venda.data()), venda.cliente(), venda.veiculo(),
-                    venda.vendedor(), venda.formaPagamento(), moeda.format(venda.valor())});
+            historico.addRow(new Object[]{Formatacao.data(venda.data()), venda.cliente(), venda.veiculo(),
+                    venda.vendedor(), venda.formaPagamento(), Formatacao.moeda(venda.valor().doubleValue())});
         }
         atualizarResumo();
     }
@@ -266,9 +289,10 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
         BigDecimal total = preco.subtract(desconto);
         int quantidade = (Integer) parcelas.getValue();
         String detalhe = forma != Forma.CARTAO ? "" : "  |  " + quantidade + "x de "
-                + moeda.format(total.divide(BigDecimal.valueOf(quantidade), 2, RoundingMode.HALF_UP));
-        resumo.setText("<html>Preço: " + moeda.format(preco) + " &nbsp; | &nbsp; Desconto: "
-                + moeda.format(desconto) + " &nbsp; | &nbsp; Total: " + moeda.format(total) + detalhe + "</html>");
+                + Formatacao.moeda(total.divide(BigDecimal.valueOf(quantidade), 2, RoundingMode.HALF_UP).doubleValue());
+        resumo.setText("<html>Preço: " + Formatacao.moeda(preco.doubleValue()) + " &nbsp; | &nbsp; Desconto: "
+                + Formatacao.moeda(desconto.doubleValue()) + " &nbsp; | &nbsp; Total: "
+                + Formatacao.moeda(total.doubleValue()) + detalhe + "</html>");
     }
 
     private void finalizarVenda() {

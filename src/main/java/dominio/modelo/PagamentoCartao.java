@@ -156,14 +156,14 @@ public class PagamentoCartao extends Pagamento {
         recibo.append("===== Recibo de Pagamento (Cartão) =====\n");
         recibo.append("Titular: ").append(nomeTitular).append("\n");
         recibo.append("Cartão: ").append(numeroMascarado).append("\n");
-        recibo.append("Valor pago: ").append(getValorPago()).append("\n");
+        recibo.append("Valor pago: ").append(Formatacao.moeda(getValorPago())).append("\n");
         if (numeroParcelas > 1) {
             recibo.append("Parcelado em: ").append(numeroParcelas).append("x de ")
-                    .append(String.format("%.2f", valorParcela)).append("\n");
+                    .append(Formatacao.moeda(valorParcela)).append("\n");
         } else {
             recibo.append("Pagamento à vista\n");
         }
-        recibo.append("Data do pagamento: ").append(getDataPagamento()).append("\n");
+        recibo.append("Data do pagamento: ").append(Formatacao.data(getDataPagamento())).append("\n");
         recibo.append("=========================================");
         return recibo.toString();
     }
