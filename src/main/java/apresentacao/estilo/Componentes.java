@@ -149,6 +149,11 @@ public final class Componentes {
     public static <T> JComboBox<T> combo(T[] itens) {
         JComboBox<T> combo = new JComboBox<>(itens);
         combo.setFont(Tema.TEXTO_FONTE);
+        // A largura preferida não depende do item mais longo: um nome grande não pode
+        // alargar o formulário e espremer a lista. O texto completo aparece ao abrir o combo.
+        combo.setPrototypeDisplayValue(null);
+        int larguraCampo = campoTexto().getPreferredSize().width;
+        combo.setPreferredSize(new Dimension(larguraCampo, combo.getPreferredSize().height));
         return combo;
     }
 
@@ -249,5 +254,92 @@ public final class Componentes {
         titulo.setFont(Tema.SUBTITULO);
         painel.add(titulo, BorderLayout.NORTH);
         return painel;
+    }
+
+    /**
+     * Coloca a lista e o formulário lado a lado numa divisória ajustável.
+     * O formulário fica sempre com a largura de que precisa (nada dele é espremido ou sobreposto)
+     * e a lista fica com o resto do espaço. O usuário pode arrastar a divisória.
+     *
+     * @param lista      cartão com a busca e a tabela
+     * @param formulario cartão com os campos e os botões
+     * @return a divisória pronta para ser adicionada à tela
+     */
+    public static JSplitPane divisaoListaFormulario(JComponent lista, JComponent formulario) {
+        // O tamanho mínimo do lado do formulário é calculado na hora (e não na criação da tela),
+        // para valer depois que o tema e as fontes finais já foram aplicados.
+        JPanel ladoFormulario = new JPanel(new BorderLayout()) {
+            @Override
+            public Dimension getMinimumSize() {
+                return getPreferredSize();
+            }
+        };
+        ladoFormulario.setOpaque(false);
+        ladoFormulario.add(formulario, BorderLayout.CENTER);
+
+        lista.setMinimumSize(new Dimension(Tema.LARGURA_MINIMA_LISTA, 0));
+        lista.setPreferredSize(new Dimension(Tema.LARGURA_MINIMA_LISTA, lista.getPreferredSize().height));
+
+        JSplitPane divisao = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, lista, ladoFormulario);
+        divisao.setResizeWeight(1.0); // espaço sobrando vai todo para a lista
+        divisao.setContinuousLayout(true);
+        divisao.setDividerSize(Tema.MEDIO);
+        divisao.setBorder(null);
+        divisao.setOpaque(false);
+        // Ao abrir a tela (já com o tema final), recalcula a divisória pelo tamanho real do formulário.
+        divisao.addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0 && divisao.isShowing()) {
+                SwingUtilities.invokeLater(divisao::resetToPreferredSizes);
+            }
+        });
+        return divisao;
+    }
+
+    /**
+     * Envolve a tabela numa área de rolagem sem cortar o texto das colunas.
+     * Cada coluna recebe uma largura mínima: se a soma couber, as colunas ocupam toda a largura;
+     * se não couber, a tabela ganha rolagem horizontal em vez de mostrar "...". Passar o mouse
+     * sobre uma célula mostra o texto completo dela.
+     *
+     * @param tabela   a tabela já configurada
+     * @param larguras largura mínima de cada coluna, em pixels, na ordem das colunas
+     * @return a área de rolagem com a tabela
+     */
+    public static JScrollPane rolagemTabela(JTable tabela, int... larguras) {
+        javax.swing.table.TableColumnModel colunas = tabela.getColumnModel();
+        int quantidade = Math.min(larguras.length, colunas.getColumnCount());
+        int soma = 0;
+        for (int i = 0; i < quantidade; i++) {
+            colunas.getColumn(i).setMinWidth(larguras[i]);
+            colunas.getColumn(i).setPreferredWidth(larguras[i]);
+            soma += larguras[i];
+        }
+        int larguraTotal = soma;
+
+        JScrollPane rolagem = new JScrollPane(tabela);
+        rolagem.getViewport().addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                boolean cabe = rolagem.getViewport().getWidth() >= larguraTotal;
+                tabela.setAutoResizeMode(cabe ? JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS : JTable.AUTO_RESIZE_OFF);
+            }
+        });
+
+        tabela.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(java.awt.event.MouseEvent e) {
+                int linha = tabela.rowAtPoint(e.getPoint());
+                int coluna = tabela.columnAtPoint(e.getPoint());
+                String texto = null;
+                if (linha >= 0 && coluna >= 0) {
+                    Component celula = tabela.prepareRenderer(tabela.getCellRenderer(linha, coluna), linha, coluna);
+                    if (celula instanceof JLabel rotulo && !rotulo.getText().isBlank()) {
+                        texto = rotulo.getText();
+                    }
+                }
+                tabela.setToolTipText(texto);
+            }
+        });
+        return rolagem;
     }
 }

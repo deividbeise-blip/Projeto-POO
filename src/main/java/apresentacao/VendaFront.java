@@ -202,7 +202,7 @@ public class VendaFront extends JPanel implements TelaComDados<VendaFront.Dados>
         tabela.setFillsViewportHeight(true);
         tabela.setRowHeight(Tema.ALTURA_LINHA_TABELA);
         tabela.setAutoCreateRowSorter(true);
-        cartao.add(new JScrollPane(tabela), BorderLayout.CENTER);
+        cartao.add(Componentes.rolagemTabela(tabela, 95, 150, 170, 130, 110, 120), BorderLayout.CENTER);
         return cartao;
     }
 

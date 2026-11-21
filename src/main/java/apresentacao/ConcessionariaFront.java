@@ -2,15 +2,15 @@ package apresentacao;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
+
+
+
 import java.util.List;
 
-import javax.swing.BorderFactory;
+
 import javax.swing.JButton;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
+
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
@@ -61,24 +61,10 @@ public class ConcessionariaFront extends JPanel
     public ConcessionariaFront(ConcessionariaService concessionariaService) {
         this.concessionariaService = concessionariaService;
 
-        setLayout(new GridBagLayout());
-        setBorder(BorderFactory.createEmptyBorder(
-                Tema.MARGEM_TELA, Tema.MARGEM_TELA, Tema.MARGEM_TELA, Tema.MARGEM_TELA));
-
-        GridBagConstraints c = new GridBagConstraints();
-        c.fill = GridBagConstraints.BOTH;
-        c.weighty = 1;
-        c.gridy = 0;
-
-        c.gridx = 0;
-        c.weightx = 0.6;
-        c.insets = new Insets(0, 0, 0, Tema.MEDIO);
-        add(criarPainelLista(), c);
-
-        c.gridx = 1;
-        c.weightx = 0.4;
-        c.insets = new Insets(0, 0, 0, 0);
-        add(criarPainelFormulario(), c);
+        // A margem da tela já vem da TelaPrincipal; aqui só a divisão lista | formulário.
+        setLayout(new BorderLayout());
+        setOpaque(false);
+        add(Componentes.divisaoListaFormulario(criarPainelLista(), criarPainelFormulario()), BorderLayout.CENTER);
 
         novo();
     }
@@ -145,7 +131,7 @@ public class ConcessionariaFront extends JPanel
         JPanel conteudo = new JPanel(new BorderLayout(0, Tema.PEQUENO));
         conteudo.setOpaque(false);
         conteudo.add(campoBusca, BorderLayout.NORTH);
-        conteudo.add(new JScrollPane(tabela), BorderLayout.CENTER);
+        conteudo.add(Componentes.rolagemTabela(tabela, 180, 260), BorderLayout.CENTER);
         cartao.add(conteudo, BorderLayout.CENTER);
         return cartao;
     }
