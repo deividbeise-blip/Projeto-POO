@@ -1,6 +1,6 @@
 # Concessionária Grupo 2
 
-Sistema de gestão de uma concessionária de veículos, feito em **Java 25 + Swing** com persistência em **MySQL**,
+Sistema de gestão de uma concessionária de veículos, feito em **Java 21 + Swing** com persistência em **MySQL**,
 como Trabalho 2 de Programação Orientada a Objetos.
 
 - **Problema:** a concessionária precisa controlar o estoque de carros e motos, manter o cadastro de clientes,
@@ -21,7 +21,6 @@ como Trabalho 2 de Programação Orientada a Objetos.
 
 ## Integrantes
 
-<!-- CONFIRMAR: revisar os nomes completos -->
 - Deivid Beise
 - Matheus Fonseca
 - Lorenzo de Brum Schons
@@ -30,9 +29,9 @@ como Trabalho 2 de Programação Orientada a Objetos.
 ## Como executar
 
 ### Pré-requisitos
-- **JDK 25** (o `pom.xml` usa `maven.compiler.release` 25)
+- **JDK 21 ou superior**
 - **Maven 3.9+**
-- **MySQL 8** (local, XAMPP ou Docker)
+- **MySQL 8** (local ou Docker)
 
 ### 1. Banco de dados (criado automaticamente)
 Não é preciso rodar SQL à mão: **ao abrir, o app cria ou atualiza as tabelas sozinho** com o
@@ -127,18 +126,18 @@ concretas.
 
 | Pacote | O que contém |
 |--------|--------------|
-| `dominio.modelo` | Entidades e suas regras: `Cliente`, `Veiculo`, `Venda`, `Vendedor`, `Concessionaria`, `Pagamento` e subclasses, `StatusVeiculo`, `ResumoVenda`. |
+| `dominio.modelo` | Entidades e suas regras: `Cliente`, `Veiculo`, `Venda`, `Vendedor`, `Concessionaria`, `Pagamento` e subclasses, `StatusVeiculo`, `ResumoVenda`, e `Formatacao` (moeda e data no padrão brasileiro). |
 | `dominio.politica` | Regras substituíveis: `PoliticaDesconto` (`DescontoPix`, `SemDesconto`) e `PoliticaComissao` (`ComissaoCarro`, `ComissaoMoto`). |
 | `dominio.excecao` | Exceções de negócio: `VeiculoIndisponivelException`, `VendaInvalidaException`. |
 | `dominio.repositorio` | Portas de persistência (interfaces): um repositório por entidade, mais `DetalhePagamentoRepository`. |
 | `aplicacao.servico` | Casos de uso: `ClienteService`, `VeiculoService`, `VendaService`, `VendedorService`, `ConcessionariaService`. |
-| `aplicacao.dto` | Dados de entrada sem entidades: `DadosVenda`, `DadosPix`, `DadosCartao`, `DadosDinheiro`. |
+| `aplicacao.dto` | Dados de entrada sem entidades: `DadosVenda`, `DadosPagamento` (interface comum) e `DadosPix`, `DadosCartao`, `DadosDinheiro`. |
 | `aplicacao.pagamento` | `FormaPagamento` e suas implementações (PIX, cartão, dinheiro). |
 | `aplicacao` | `Transacao`: porta para executar várias gravações juntas. |
-| `infra.conexao` | `ConexaoBanco` (lê as variáveis de ambiente), `ConnectionFactory`, `TransacaoJdbc`. |
+| `infra.conexao` | `ConexaoBanco` (lê as variáveis de ambiente), `ConnectionFactory`, `TransacaoJdbc`, `MigradorBanco` (aplica as migrações do Flyway). |
 | `infra.dao` | DAOs JDBC que implementam os repositórios, mais `ExecutorSql` e `ErrosSql`. |
 | `infra.excecao` | `PersistenciaException`: erro de banco não verificado. |
-| `apresentacao` | Telas (`ClienteFront`, `VeiculoFront`, `VendaFront`, `ConcessionariaFront`, `VendedorFront`, `TelaPrincipal`) e os `TableModel`s. |
+| `apresentacao` | Telas (`ClienteFront`, `VeiculoFront`, `VendaFront`, `ConcessionariaFront`, `VendedorFront`, `TelaPrincipal`), os `TableModel`s e o `VeiculoCelulaRenderer` (preço e status coloridos na tabela de veículos). |
 | `apresentacao.comum` | Comportamento compartilhado das telas: `TarefaEmSegundoPlano`, `Feedback`, `Validacao`, `BarraStatus`, `TelaComDados`, `TelaComBotaoPrincipal`. |
 | `apresentacao.estilo` | Visual único: `Tema` (cores, fontes, espaçamentos) e `Componentes` (fábrica de botões, campos, cartões). |
 | `config` | `AppConfig`: o único lugar que cria DAOs e liga as dependências. |
@@ -201,18 +200,27 @@ concretas.
   "possui vendas" ou "não encontrado"; exceções de domínio para venda inválida e veículo indisponível.
 - **Regras em um lugar só:** as telas validam chamando as mesmas regras do domínio (`Cliente.validarCpf`,
   `PagamentoCartao.validarValidade`...), sem copiar a lógica.
+- **Formatação em um lugar só:** [`Formatacao`](src/main/java/dominio/modelo/Formatacao.java) é o único ponto
+  que formata moeda (`R$ 74.100,00`) e data (`21/11/2026`). Recibos, tela de vendas e tabela de veículos usam
+  essa classe em vez de cada um ter o seu `String.format`/`DecimalFormat`.
 
 ### Interface gráfica
 - **Visual único:** [`Tema`](src/main/java/apresentacao/estilo/Tema.java) tem todas as cores, fontes e
   espaçamentos; [`Componentes`](src/main/java/apresentacao/estilo/Componentes.java) cria botões, campos,
-  cartões e formulários alinhados. O tema base é o **FlatLaf** (`FlatLightLaf`).
+  cartões e formulários alinhados. O tema base é o **FlatLaf**, com **modo claro e escuro**
+  (`FlatLightLaf`/`FlatDarkLaf`): o botão no rodapé do menu (Alt+R) alterna entre eles e a escolha fica salva
+  com `Preferences`.
+- **Layout que se adapta:** lista e formulário ficam num `JSplitPane`; o formulário nunca é cortado e, se as
+  colunas não couberem, a tabela ganha rolagem horizontal em vez de esconder dados.
 - **Janela não trava:** todo acesso a banco passa por
   [`TarefaEmSegundoPlano`](src/main/java/apresentacao/comum/TarefaEmSegundoPlano.java) (SwingWorker), que
   desabilita o botão durante a operação.
 - **Feedback consistente:** [`Feedback`](src/main/java/apresentacao/comum/Feedback.java) mostra sucesso, erro
   e confirmação; [`Validacao`](src/main/java/apresentacao/comum/Validacao.java) marca o campo inválido com
   contorno vermelho e a mensagem embaixo dele.
-- **Teclado:** Alt+C/V/E/O/D no menu; Alt+N/S/X nos cadastros; Enter aciona o botão principal de cada tela
+- **Teclado:** Alt+C/V/E/O/D no menu e Alt+R para o modo escuro; Alt+N/S/X (Novo, Salvar, Excluir) nos
+  cadastros, mais Alt+M/T (manutenção, tornar disponível) em Veículos; em Vendas, Alt+N/H trocam entre
+  "Nova venda" e "Histórico" e Alt+F finaliza; Enter aciona o botão principal de cada tela
   (`TelaComBotaoPrincipal`); foco visível com anel de 2 px; rótulos ligados aos campos (`setLabelFor`) e nomes
   acessíveis nas buscas e tabelas.
 - Conferência manual tela por tela: [`docs/checklist-telas.md`](docs/checklist-telas.md).
@@ -248,4 +256,22 @@ concretas.
 
 ## Checklist do Trabalho 1
 
-<!-- PREENCHER -->
+| Conceito | Como este projeto cumpre o item |
+|---|---|
+| Classes e objetos Java | Classes de domínio como `Cliente`, `Veiculo` e `Venda` são instanciadas e manipuladas ao longo do fluxo de cadastro e venda. |
+| Atributos de classe Java | `Veiculo` armazena `marca`, `modelo`, `ano`, `placa`, `preco` e `status`, entre outros, como estado do objeto. |
+| Métodos de classe Java | `Veiculo.vender()`, `Venda.finalizarVenda()` e `Pagamento.obterReciboDetalhado()` são comportamentos das classes corretas. |
+| Construtores em Java | O construtor de `Veiculo` exige marca, modelo, ano, placa (formato `ABC1234` ou `ABC1D23`) e preço válidos, lançando `IllegalArgumentException` se algo estiver incorreto. |
+| Palavra-chave `this` | Usada nos construtores de `Cliente`, `Veiculo`, `Vendedor` e `Concessionaria` para diferenciar atributo de parâmetro (ex.: `this.ano = ano`, `this.nome = validarNome(nome)`). |
+| Modificadores Java | Atributos `private`/`private final`; não existe `setStatus` público em `Veiculo`. |
+| Encapsulamento em Java | O status do veículo só muda por `vender()`, `colocarEmManutencao()` e `tornarDisponivel()`, que impõem as transições válidas. |
+| Pacotes Java / API | Código em camadas (`dominio`, `aplicacao`, `infra`, `apresentacao`, `config`); domínio e aplicação não dependem do banco nem da tela. |
+| Herança em Java | `PagamentoPix`, `PagamentoCartao` e `PagamentoDinheiro` estendem a classe abstrata `Pagamento`. |
+| Polimorfismo em Java | A `Venda` usa qualquer pagamento pelo tipo `Pagamento` e chama `obterReciboDetalhado()` sem saber a subclasse. |
+| Palavra-chave `super` | Os construtores das subclasses chamam `super(venda, "PIX", valorBase, dataPagamento, politicaDesconto)` (idem com `"Cartão"` e `"Dinheiro"`). |
+| Abstração em Java | `Pagamento` é abstrata e declara o método abstrato `obterReciboDetalhado()`. |
+| Interfaces em Java | `PoliticaDesconto` (`DescontoPix`, `SemDesconto`) e `PoliticaComissao` (`ComissaoCarro`, `ComissaoMoto`). |
+| Enum em Java | `StatusVeiculo { DISPONIVEL, VENDIDO, EM_MANUTENCAO }` evita estados inválidos. |
+| Tratamento de exceções em Java | `VeiculoIndisponivelException` e `VendaInvalidaException` são lançadas nas regras de negócio e tratadas nas telas pelo `Feedback`. |
+| Interface gráfica com Swing | `TelaPrincipal` com menu lateral reúne `ClienteFront`, `VeiculoFront`, `VendaFront`, `ConcessionariaFront` e `VendedorFront`. |
+| Data e hora em Java | `LocalDate` nas datas de venda e pagamento; `YearMonth` valida a validade do cartão. |
