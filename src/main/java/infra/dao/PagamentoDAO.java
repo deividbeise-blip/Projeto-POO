@@ -7,14 +7,26 @@ import dominio.modelo.Venda;
 import dominio.repositorio.PagamentoRepository;
 import infra.conexao.ConnectionFactory;
 
+/**
+ * Grava a parte comum de qualquer pagamento na tabela pagamento,
+ * convertendo o nome da forma para o ENUM do banco.
+ */
 public class PagamentoDAO implements PagamentoRepository {
 
     private final ExecutorSql executor;
 
+    /** @param connectionFactory fábrica de conexões (a mesma da transação em andamento) */
     public PagamentoDAO(ConnectionFactory connectionFactory) {
         this.executor = new ExecutorSql(connectionFactory);
     }
 
+    /**
+     * Faz o INSERT e coloca no objeto o ID gerado. Cliente e veículo vêm da venda do pagamento.
+     *
+     * @param pagamento pagamento novo, ainda sem ID, ligado a uma venda já gravada
+     * @throws IllegalArgumentException se a forma de pagamento não existir no ENUM do banco
+     * @throws infra.excecao.PersistenciaException se o banco recusar a gravação
+     */
     @Override
     public void salvar(Pagamento pagamento) {
         Venda venda = pagamento.getVenda();
@@ -29,11 +41,11 @@ public class PagamentoDAO implements PagamentoRepository {
                     comando.setString(1, paraColunaEnum(pagamento.getFormaPagamento()));
                     comando.setDouble(2, pagamento.getValorPago());
                     comando.setDate(3, Date.valueOf(pagamento.getDataPagamento()));
-                    comando.setLong(4, venda.getCliente().getId_cliente());
-                    comando.setLong(5, venda.getVeiculo().getId_veiculo());
+                    comando.setLong(4, venda.getCliente().getIdCliente());
+                    comando.setLong(5, venda.getVeiculo().getIdVeiculo());
                 },
                 "Erro ao salvar pagamento no banco.");
-        pagamento.setId_pagamento(id);
+        pagamento.setIdPagamento(id);
     }
 
     /**

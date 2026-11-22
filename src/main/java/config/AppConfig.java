@@ -1,16 +1,28 @@
 package config;
 
+import aplicacao.dto.DadosCartao;
+import aplicacao.dto.DadosDinheiro;
+import aplicacao.dto.DadosPagamento;
+import aplicacao.dto.DadosPix;
+import aplicacao.pagamento.FormaPagamento;
+import aplicacao.pagamento.FormaPagamentoCartao;
+import aplicacao.pagamento.FormaPagamentoDinheiro;
+import aplicacao.pagamento.FormaPagamentoPix;
 import aplicacao.servico.ClienteService;
+import aplicacao.servico.ConcessionariaService;
 import aplicacao.servico.VeiculoService;
 import aplicacao.servico.VendaService;
+import aplicacao.servico.VendedorService;
+import dominio.politica.DescontoPix;
+import dominio.politica.SemDesconto;
 import dominio.repositorio.ClienteRepository;
 import dominio.repositorio.ConcessionariaRepository;
 import dominio.repositorio.PagamentoRepository;
 import dominio.repositorio.VeiculoRepository;
 import dominio.repositorio.VendaRepository;
 import dominio.repositorio.VendedorRepository;
-import aplicacao.Transacao;
 import infra.conexao.ConexaoBanco;
+import infra.conexao.MigradorBanco;
 import infra.conexao.TransacaoJdbc;
 import infra.dao.ClienteDAO;
 import infra.dao.ConcessionariaDAO;
@@ -21,9 +33,13 @@ import infra.dao.VeiculoDAO;
 import infra.dao.VendaDAO;
 import infra.dao.VendedorDAO;
 
+import java.util.Map;
+
 /**
  * Único lugar do sistema que conhece as implementações concretas (DAOs).
  * Monta os services com as dependências certas e entrega tudo pronto para as telas.
+ * Criar um AppConfig já lê as credenciais do banco: lança {@code IllegalStateException}
+ * se DB_URL, DB_USER ou DB_PASSWORD não estiverem definidas.
  */
 public class AppConfig {
 
@@ -37,23 +53,44 @@ public class AppConfig {
     private final VendaRepository vendaRepository = new VendaDAO(transacao);
     private final PagamentoRepository pagamentoRepository = new PagamentoDAO(transacao);
 
+    // Formas de pagamento aceitas: para uma nova, basta registrar mais uma linha aqui.
+    private final Map<Class<? extends DadosPagamento>, FormaPagamento<?, ?>> formasPagamento = Map.of(
+            DadosPix.class, new FormaPagamentoPix(new PagamentoPixDAO(transacao), new DescontoPix()),
+            DadosCartao.class, new FormaPagamentoCartao(new PagamentoCartaoDAO(transacao), new SemDesconto()),
+            DadosDinheiro.class, new FormaPagamentoDinheiro(new SemDesconto()));
+
     private final ClienteService clienteService = new ClienteService(clienteRepository);
-    private final VeiculoService veiculoService = new VeiculoService(veiculoRepository);
+    private final ConcessionariaService concessionariaService = new ConcessionariaService(concessionariaRepository);
+    private final VendedorService vendedorService = new VendedorService(vendedorRepository, concessionariaRepository);
+    private final VeiculoService veiculoService = new VeiculoService(veiculoRepository, concessionariaRepository);
     private final VendaService vendaService = new VendaService(
             clienteRepository,
+            vendedorRepository,
+            veiculoRepository,
             vendaRepository,
             pagamentoRepository,
-            new PagamentoPixDAO(transacao),
-            new PagamentoCartaoDAO(transacao),
-            veiculoRepository,
+            formasPagamento,
             transacao);
 
-    public ClienteService clienteService() { return clienteService; }
-    public VeiculoService veiculoService() { return veiculoService; }
-    public VendaService vendaService() { return vendaService; }
+    /**
+     * Cria ou atualiza as tabelas do banco (migrações Flyway). Chame uma vez ao iniciar,
+     * antes de criar o {@code AppConfig}. Fica aqui para as telas não dependerem de {@code infra}.
+     *
+     * @throws IllegalStateException se DB_URL, DB_USER ou DB_PASSWORD não estiverem definidas
+     * @throws infra.excecao.PersistenciaException se não conseguir conectar ou alguma migração falhar
+     */
+    public static void prepararBanco() {
+        new MigradorBanco(new ConexaoBanco()).migrar();
+    }
 
-    public ClienteRepository clienteRepository() { return clienteRepository; }
-    public ConcessionariaRepository concessionariaRepository() { return concessionariaRepository; }
-    public VeiculoRepository veiculoRepository() { return veiculoRepository; }
-    public VendedorRepository vendedorRepository() { return vendedorRepository; }
+    /** @return casos de uso de clientes */
+    public ClienteService clienteService() { return clienteService; }
+    /** @return casos de uso de concessionárias */
+    public ConcessionariaService concessionariaService() { return concessionariaService; }
+    /** @return casos de uso de vendedores */
+    public VendedorService vendedorService() { return vendedorService; }
+    /** @return casos de uso de veículos */
+    public VeiculoService veiculoService() { return veiculoService; }
+    /** @return casos de uso de vendas */
+    public VendaService vendaService() { return vendaService; }
 }

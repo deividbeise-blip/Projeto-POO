@@ -16,6 +16,11 @@ public class ConexaoBanco implements ConnectionFactory {
     private final String usuario;
     private final String senha;
 
+    /**
+     * Lê as credenciais das variáveis de ambiente. Não abre conexão ainda.
+     *
+     * @throws IllegalStateException se DB_URL, DB_USER ou DB_PASSWORD estiver ausente ou vazia
+     */
     public ConexaoBanco() {
         List<String> faltando = new ArrayList<>();
         this.url = lerVariavel("DB_URL", faltando);
@@ -29,11 +34,21 @@ public class ConexaoBanco implements ConnectionFactory {
         }
     }
 
+    /**
+     * Abre uma conexão nova pelo {@link DriverManager} a cada chamada.
+     *
+     * @return conexão nova com o MySQL
+     * @throws SQLException se o banco estiver fora do ar ou as credenciais forem inválidas
+     */
     @Override
     public Connection getConnection() throws SQLException {
         return DriverManager.getConnection(url, usuario, senha);
     }
 
+    // Acesso só dentro de infra.conexao: o MigradorBanco usa as mesmas credenciais lidas aqui.
+    String url() { return url; }
+    String usuario() { return usuario; }
+    String senha() { return senha; }
 
     private static String lerVariavel(String nome, List<String> faltando) {
         String valor = System.getenv(nome);
