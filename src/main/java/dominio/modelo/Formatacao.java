@@ -22,9 +22,21 @@ public final class Formatacao {
      * @return o texto com "R$", separador de milhar e duas casas decimais
      */
     public static String moeda(double valor) {
+        return "R$ " + valor(valor);
+    }
+
+    /**
+     * Formata só o número, sem "R$": 85000.5 -> "85.000,50". Usado para preencher campos de valor.
+     *
+     * @param valor o valor em reais
+     * @return o texto com separador de milhar e duas casas decimais
+     */
+    public static String valor(double valor) {
         // NumberFormat não é thread-safe; criar um por chamada é barato.
-        // O Java separa "R$" do número com espaço não separável; troca por espaço comum.
-        return NumberFormat.getCurrencyInstance(BRASIL).format(valor).replace(' ', ' ');
+        NumberFormat formato = NumberFormat.getNumberInstance(BRASIL);
+        formato.setMinimumFractionDigits(2);
+        formato.setMaximumFractionDigits(2);
+        return formato.format(valor);
     }
 
     /**

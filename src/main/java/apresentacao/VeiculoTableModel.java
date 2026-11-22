@@ -1,14 +1,12 @@
 package apresentacao;
 
 import java.awt.Color;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import javax.swing.table.AbstractTableModel;
 
 import apresentacao.estilo.Tema;
+import dominio.modelo.Formatacao;
 import dominio.modelo.StatusVeiculo;
 import dominio.modelo.Veiculo;
 
@@ -26,8 +24,6 @@ public class VeiculoTableModel extends AbstractTableModel {
 
     private static final String[] COLUNAS =
             {"Marca", "Modelo", "Ano", "Placa", "Preço", "Tipo", "Status", "Concessionária"};
-
-    private static final Locale BRASIL = Locale.forLanguageTag("pt-BR");
 
     private List<Veiculo> veiculos = new ArrayList<>();
 
@@ -128,27 +124,24 @@ public class VeiculoTableModel extends AbstractTableModel {
     }
 
     /**
-     * Formata no padrão brasileiro: 85000.0 -> "R$ 85.000,00".
+     * Formata no padrão brasileiro: 85000.0 -> "R$ 85.000,00" (ver {@link Formatacao#moeda(double)}).
      *
      * @param preco o valor
      * @return o texto com "R$", ou vazio se for nulo
      */
     public static String formatarPreco(Double preco) {
-        return preco == null ? "" : "R$ " + formatarValor(preco);
+        return preco == null ? "" : Formatacao.moeda(preco);
     }
 
     /**
-     * Formata só o número, sem "R$": 85000.5 -> "85.000,50". Usado para preencher o campo do formulário.
+     * Formata só o número, sem "R$": 85000.5 -> "85.000,50" (ver {@link Formatacao#valor(double)}).
+     * Usado para preencher o campo do formulário.
      *
      * @param preco o valor
      * @return o texto, ou vazio se for nulo
      */
     public static String formatarValor(Double preco) {
-        if (preco == null) {
-            return "";
-        }
-        // DecimalFormat não é thread-safe; criar um por chamada é barato e só roda na thread da tela.
-        return new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(BRASIL)).format(preco);
+        return preco == null ? "" : Formatacao.valor(preco);
     }
 
     /**
