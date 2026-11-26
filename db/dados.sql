@@ -15,13 +15,13 @@ INSERT INTO vendedor (id_vendedor, name_vendedor, cpf_vendedor, comissao_percent
 
 -- 6 veículos: 2 motos, 1 em manutenção e 1 já vendido (o da venda abaixo).
 INSERT INTO veiculo (id_veiculo, marca_veiculo, modelo_veiculo, ano_veiculo, placa_veiculo,
-                     preco_veiculo, status_veiculo, moto, concessionario_veiculo) VALUES
-  (1, 'Toyota',     'Corolla XEi',     2024, 'IQA1B23', 145000.00, 'Vendido',       0, 1),
-  (2, 'Chevrolet',  'Onix LT',         2023, 'IQB2C34',  89900.00, 'Disponivel',    0, 1),
-  (3, 'Volkswagen', 'T-Cross Comfort', 2025, 'IQC3D45', 139990.00, 'Em_Manutencao', 0, 1),
-  (4, 'Fiat',       'Strada Freedom',  2024, 'IRD4E56', 112500.00, 'Disponivel',    0, 2),
-  (5, 'Honda',      'CG 160 Fan',      2024, 'IRE5F67',  16490.00, 'Disponivel',    1, 2),
-  (6, 'Yamaha',     'Fazer FZ25',      2023, 'IRF6G78',  23990.00, 'Disponivel',    1, 1);
+                     preco_veiculo, status_veiculo, tipo, concessionario_veiculo) VALUES
+  (1, 'Toyota',     'Corolla XEi',     2024, 'IQA1B23', 145000.00, 'Vendido',       'CARRO', 1),
+  (2, 'Chevrolet',  'Onix LT',         2023, 'IQB2C34',  89900.00, 'Disponivel',    'CARRO', 1),
+  (3, 'Volkswagen', 'T-Cross Comfort', 2025, 'IQC3D45', 139990.00, 'Em_Manutencao', 'CARRO', 1),
+  (4, 'Fiat',       'Strada Freedom',  2024, 'IRD4E56', 112500.00, 'Disponivel',    'CARRO', 2),
+  (5, 'Honda',      'CG 160 Fan',      2024, 'IRE5F67',  16490.00, 'Disponivel',    'MOTO',  2),
+  (6, 'Yamaha',     'Fazer FZ25',      2023, 'IRF6G78',  23990.00, 'Disponivel',    'MOTO',  1);
 
 INSERT INTO cliente (id_cliente, name_cliente, cpf, email, phone) VALUES
   (1, 'Mariana Alves',  '12345678901', 'mariana.alves@email.com',  '55999881122'),

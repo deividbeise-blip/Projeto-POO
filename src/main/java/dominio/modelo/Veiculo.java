@@ -3,13 +3,17 @@ package dominio.modelo;
 import java.time.LocalDate;
 
 import dominio.excecao.VeiculoIndisponivelException;
+import dominio.politica.PoliticaComissao;
 
 /**
- * Veículo (carro ou moto) do estoque de uma concessionária.
+ * Veículo do estoque de uma concessionária. É abstrato: cada tipo concreto
+ * ({@link Carro}, {@link Moto}...) é uma subclasse que diz o próprio nome
+ * ({@link #getTipo()}) e a própria regra de comissão ({@link #politicaComissao()}).
+ * Assim, um tipo novo não exige mudar {@link Venda}, serviços, DAO nem telas.
  * Os dados nascem validados; o status só muda pelos métodos de transição
  * ({@link #vender()}, {@link #colocarEmManutencao()}, {@link #tornarDisponivel()}).
  */
-public class Veiculo {
+public abstract class Veiculo {
     /** Ano mais antigo aceito no cadastro. */
     public static final int ANO_MINIMO = 1900;
 
@@ -24,10 +28,10 @@ public class Veiculo {
     private final Double preco;
     private StatusVeiculo status;
     private final Concessionaria concessionaria;
-    private final Boolean moto;   // true = moto, false = carro
 
     /**
-     * Construtor de cadastro: só cria objetos válidos; quem grava no banco é o DAO/serviço.
+     * Construtor de cadastro, chamado pelas subclasses: só cria objetos válidos;
+     * quem grava no banco é o DAO/serviço.
      *
      * @param marca marca do veículo
      * @param modelo modelo do veículo
@@ -36,11 +40,10 @@ public class Veiculo {
      * @param preco preço de venda, em reais, maior que zero
      * @param status situação inicial (normalmente DISPONIVEL)
      * @param concessionaria loja dona do veículo
-     * @param moto true para moto, false para carro (define a regra de comissão)
      * @throws IllegalArgumentException se algum dado for inválido ou nulo
      */
-    public Veiculo(String marca, String modelo, Integer ano, String placa, Double preco,
-                   StatusVeiculo status, Concessionaria concessionaria, Boolean moto) {
+    protected Veiculo(String marca, String modelo, Integer ano, String placa, Double preco,
+                      StatusVeiculo status, Concessionaria concessionaria) {
         validarMarca(marca);
         validarModelo(modelo);
         validarAno(ano);
@@ -52,9 +55,6 @@ public class Veiculo {
         if (concessionaria == null) {
             throw new IllegalArgumentException("O veículo precisa pertencer a uma concessionária.");
         }
-        if (moto == null) {
-            throw new IllegalArgumentException("Informe se o veículo é moto ou carro.");
-        }
 
         this.marca = marca.trim();
         this.modelo = modelo.trim();
@@ -63,13 +63,13 @@ public class Veiculo {
         this.preco = preco;
         this.status = status;
         this.concessionaria = concessionaria;
-        this.moto = moto;
     }
 
     /**
-     * Construtor de carga: usado pelo VeiculoDAO ao ler um registro existente. Aplica as mesmas validações.
+     * Construtor de carga, chamado pelas subclasses: usado ao ler um registro existente
+     * (ou ao editar um). Aplica as mesmas validações.
      *
-     * @param idVeiculo ID vindo do banco
+     * @param idVeiculo ID vindo do banco; pode ser null para um veículo ainda não gravado
      * @param marca marca do veículo
      * @param modelo modelo do veículo
      * @param ano ano de fabricação
@@ -77,12 +77,11 @@ public class Veiculo {
      * @param preco preço de venda, em reais
      * @param status situação gravada no banco
      * @param concessionaria loja dona do veículo
-     * @param moto true para moto, false para carro
      * @throws IllegalArgumentException se algum dado for inválido ou nulo
      */
-    public Veiculo(Long idVeiculo, String marca, String modelo, Integer ano, String placa, Double preco,
-                   StatusVeiculo status, Concessionaria concessionaria, Boolean moto) {
-        this(marca, modelo, ano, placa, preco, status, concessionaria, moto);
+    protected Veiculo(Long idVeiculo, String marca, String modelo, Integer ano, String placa, Double preco,
+                      StatusVeiculo status, Concessionaria concessionaria) {
+        this(marca, modelo, ano, placa, preco, status, concessionaria);
         this.idVeiculo = idVeiculo;
     }
 
@@ -186,8 +185,22 @@ public class Veiculo {
     public StatusVeiculo getStatus() { return status; }
     /** @return a loja dona do veículo; nunca null */
     public Concessionaria getConcessionaria() { return concessionaria; }
-    /** @return true se for moto, false se for carro */
-    public Boolean isMoto() { return moto; }
+
+    /**
+     * Regra de comissão do vendedor para este tipo de veículo. Cada subclasse escolhe a sua,
+     * e a {@link Venda} só chama este método, sem saber se é carro, moto ou outro tipo.
+     *
+     * @return a política de comissão do tipo; nunca null
+     */
+    public abstract PoliticaComissao politicaComissao();
+
+    /**
+     * Nome do tipo do veículo, mostrado na tela (ex.: "Carro", "Moto"). Em maiúsculas,
+     * é também o valor gravado na coluna {@code tipo} do banco e a chave no {@link RegistroTiposVeiculo}.
+     *
+     * @return o nome do tipo; nunca null
+     */
+    public abstract String getTipo();
 
     // ---- Transições de status controladas (não existe setStatus público) ----
 

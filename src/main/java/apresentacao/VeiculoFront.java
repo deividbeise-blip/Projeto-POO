@@ -6,6 +6,7 @@ import java.awt.FlowLayout;
 
 import java.awt.GridLayout;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -43,8 +44,6 @@ import dominio.modelo.Veiculo;
 public class VeiculoFront extends JPanel
         implements TelaComDados<VeiculoFront.Dados>, TelaComBotaoPrincipal {
 
-    private static final String CARRO = "Carro";
-    private static final String MOTO = "Moto";
     private static final String TODOS_OS_TIPOS = "Todos os tipos";
     private static final String TODOS_OS_STATUS = "Todos os status";
 
@@ -179,7 +178,10 @@ public class VeiculoFront extends JPanel
         comboFiltroStatus.getAccessibleContext().setAccessibleName("Filtrar por status");
         comboFiltroStatus.addActionListener(e -> aplicarFiltro());
 
-        comboFiltroTipo = Componentes.combo(new String[]{TODOS_OS_TIPOS, CARRO, MOTO});
+        // Os tipos vêm do serviço (registro do AppConfig): um tipo novo aparece aqui sem mudar a tela.
+        List<String> tipos = textosTipos();
+        tipos.add(0, TODOS_OS_TIPOS);
+        comboFiltroTipo = Componentes.combo(tipos.toArray(new String[0]));
         comboFiltroTipo.getAccessibleContext().setAccessibleName("Filtrar por tipo");
         comboFiltroTipo.addActionListener(e -> aplicarFiltro());
 
@@ -228,7 +230,7 @@ public class VeiculoFront extends JPanel
         campoPlaca = Componentes.campoTexto();
         campoPreco = Componentes.campoTexto();
         campoPreco.putClientProperty("JTextField.placeholderText", "Ex.: 85.000,00");
-        comboTipo = Componentes.combo(new String[]{CARRO, MOTO});
+        comboTipo = Componentes.combo(textosTipos().toArray(new String[0]));
         comboConcessionaria = Componentes.combo(new Concessionaria[0]);
 
         JPanel formulario = Componentes.painelFormulario();
@@ -304,11 +306,11 @@ public class VeiculoFront extends JPanel
     /** Combina status, tipo e busca (placa, marca ou modelo) sobre a lista já carregada. */
     private void aplicarFiltro() {
         StatusVeiculo status = FILTRO_STATUS[comboFiltroStatus.getSelectedIndex()];
-        Object tipo = comboFiltroTipo.getSelectedItem();
-        Boolean moto = CARRO.equals(tipo) ? Boolean.FALSE : MOTO.equals(tipo) ? Boolean.TRUE : null;
+        // Índice 0 é "Todos os tipos" (null = sem filtro de tipo).
+        String tipo = comboFiltroTipo.getSelectedIndex() <= 0 ? null : (String) comboFiltroTipo.getSelectedItem();
         String texto = campoBusca.getText().trim().toLowerCase();
 
-        if (status == null && moto == null && texto.isEmpty()) {
+        if (status == null && tipo == null && texto.isEmpty()) {
             ordenador.setRowFilter(null);
             return;
         }
@@ -317,7 +319,7 @@ public class VeiculoFront extends JPanel
             public boolean include(Entry<? extends VeiculoTableModel, ? extends Integer> entrada) {
                 Veiculo veiculo = entrada.getModel().getVeiculo(entrada.getIdentifier());
                 return (status == null || veiculo.getStatus() == status)
-                        && (moto == null || moto.equals(veiculo.isMoto()))
+                        && (tipo == null || tipo.equalsIgnoreCase(veiculo.getTipo()))
                         && (texto.isEmpty()
                             || veiculo.getPlaca().toLowerCase().contains(texto)
                             || veiculo.getMarca().toLowerCase().contains(texto)
@@ -337,7 +339,9 @@ public class VeiculoFront extends JPanel
         campoAno.setText("");
         campoPlaca.setText("");
         campoPreco.setText("");
-        comboTipo.setSelectedItem(CARRO);
+        if (comboTipo.getItemCount() > 0) {
+            comboTipo.setSelectedIndex(0);   // o primeiro tipo registrado é o padrão
+        }
         limparErros();
         atualizarHabilitados();
         campoMarca.requestFocusInWindow();
@@ -357,7 +361,7 @@ public class VeiculoFront extends JPanel
         campoAno.setText(String.valueOf(veiculo.getAno()));
         campoPlaca.setText(veiculo.getPlaca());
         campoPreco.setText(VeiculoTableModel.formatarValor(veiculo.getPreco()));
-        comboTipo.setSelectedItem(VeiculoTableModel.textoTipo(veiculo.isMoto()));
+        comboTipo.setSelectedItem(VeiculoTableModel.textoTipo(veiculo.getTipo()));
         selecionarConcessionaria(veiculo.getConcessionaria().getIdConcessionaria());
         atualizarHabilitados();
     }
@@ -402,13 +406,13 @@ public class VeiculoFront extends JPanel
         Integer ano = converterAno(campoAno.getText());
         String placa = campoPlaca.getText();
         Double preco = converterPreco(campoPreco.getText());
-        boolean moto = MOTO.equals(comboTipo.getSelectedItem());
+        String tipo = (String) comboTipo.getSelectedItem();
         Concessionaria concessionaria = (Concessionaria) comboConcessionaria.getSelectedItem();
 
         TarefaEmSegundoPlano.executar(botaoSalvar,
                 () -> id == null
-                        ? veiculoService.cadastrar(marca, modelo, ano, placa, preco, moto, concessionaria)
-                        : veiculoService.atualizar(id, marca, modelo, ano, placa, preco, moto, concessionaria),
+                        ? veiculoService.cadastrar(marca, modelo, ano, placa, preco, tipo, concessionaria)
+                        : veiculoService.atualizar(id, marca, modelo, ano, placa, preco, tipo, concessionaria),
                 veiculo -> {
                     Feedback.sucesso(this, id == null
                             ? "Veículo cadastrado com sucesso."
@@ -509,6 +513,15 @@ public class VeiculoFront extends JPanel
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Preço inválido. Use, por exemplo, 85.000,00.");
         }
+    }
+
+    /** @return os tipos aceitos pelo serviço, já no texto da tela (ex.: ["Carro", "Moto"]) */
+    private List<String> textosTipos() {
+        List<String> textos = new ArrayList<>();
+        for (String tipo : veiculoService.tiposDisponiveis()) {
+            textos.add(VeiculoTableModel.textoTipo(tipo));
+        }
+        return textos;
     }
 
     /** Seleciona no combo a concessionária com esse ID (ou a primeira, se não achar). */

@@ -126,7 +126,7 @@ concretas.
 
 | Pacote | O que contém |
 |--------|--------------|
-| `dominio.modelo` | Entidades e suas regras: `Cliente`, `Veiculo`, `Venda`, `Vendedor`, `Concessionaria`, `Pagamento` e subclasses, `StatusVeiculo`, `ResumoVenda`, e `Formatacao` (moeda e data no padrão brasileiro). |
+| `dominio.modelo` | Entidades e suas regras: `Cliente`, `Veiculo` (abstrato, com `Carro` e `Moto`), `RegistroTiposVeiculo` e `CriadorVeiculo` (criação de veículos pelo tipo), `Venda`, `Vendedor`, `Concessionaria`, `Pagamento` e subclasses, `StatusVeiculo`, `ResumoVenda`, e `Formatacao` (moeda e data no padrão brasileiro). |
 | `dominio.politica` | Regras substituíveis: `PoliticaDesconto` (`DescontoPix`, `SemDesconto`) e `PoliticaComissao` (`ComissaoCarro`, `ComissaoMoto`). |
 | `dominio.excecao` | Exceções de negócio: `VeiculoIndisponivelException`, `VendaInvalidaException`. |
 | `dominio.repositorio` | Portas de persistência (interfaces): um repositório por entidade, mais `DetalhePagamentoRepository`. |
@@ -161,9 +161,16 @@ concretas.
     git show --stat b4aec43   # lista só DTO, modelo, forma de pagamento, AppConfig e VendaFront
     git diff aadc459 b4aec43 -- src/main/java/aplicacao/servico/VendaService.java   # saída vazia
     ```
-  - **`PoliticaComissao`** ([`ComissaoCarro`](src/main/java/dominio/politica/ComissaoCarro.java),
-    [`ComissaoMoto`](src/main/java/dominio/politica/ComissaoMoto.java)): um tipo novo de veículo ganha uma
-    política nova, sem reescrever o cálculo da `Venda`.
+  - **Tipos de veículo por herança.** [`Veiculo`](src/main/java/dominio/modelo/Veiculo.java) é abstrato:
+    [`Carro`](src/main/java/dominio/modelo/Carro.java) e [`Moto`](src/main/java/dominio/modelo/Moto.java)
+    dizem o próprio tipo (`getTipo()`) e escolhem a própria política de comissão (`politicaComissao()`,
+    devolvendo [`ComissaoCarro`](src/main/java/dominio/politica/ComissaoCarro.java) ou
+    [`ComissaoMoto`](src/main/java/dominio/politica/ComissaoMoto.java)). A `Venda` só chama
+    `veiculo.politicaComissao()`, e `VeiculoService`, `VeiculoDAO` e `VeiculoFront` criam e listam veículos pelo
+    [`RegistroTiposVeiculo`](src/main/java/dominio/modelo/RegistroTiposVeiculo.java), montado no `AppConfig`.
+    Um `Caminhao` novo seria só `Caminhao extends Veiculo` + `ComissaoCaminhao` + uma linha no
+    [`AppConfig`](src/main/java/config/AppConfig.java) (`.registrar("CAMINHAO", Caminhao::new)`): nada muda na
+    `Venda`, no serviço, no DAO, na tela nem no banco (a coluna `tipo` já aceita qualquer nome).
   - **`PoliticaDesconto`** ([`DescontoPix`](src/main/java/dominio/politica/DescontoPix.java),
     [`SemDesconto`](src/main/java/dominio/politica/SemDesconto.java)): uma promoção nova é só outra classe,
     entregue pelo `AppConfig` à forma de pagamento.
@@ -266,10 +273,10 @@ concretas.
 | Modificadores Java | Atributos `private`/`private final`; não existe `setStatus` público em `Veiculo`. |
 | Encapsulamento em Java | O status do veículo só muda por `vender()`, `colocarEmManutencao()` e `tornarDisponivel()`, que impõem as transições válidas. |
 | Pacotes Java / API | Código em camadas (`dominio`, `aplicacao`, `infra`, `apresentacao`, `config`); domínio e aplicação não dependem do banco nem da tela. |
-| Herança em Java | `PagamentoPix`, `PagamentoCartao` e `PagamentoDinheiro` estendem a classe abstrata `Pagamento`. |
-| Polimorfismo em Java | A `Venda` usa qualquer pagamento pelo tipo `Pagamento` e chama `obterReciboDetalhado()` sem saber a subclasse. |
+| Herança em Java | `PagamentoPix`, `PagamentoCartao` e `PagamentoDinheiro` estendem a classe abstrata `Pagamento`; `Carro` e `Moto` estendem a classe abstrata `Veiculo`. |
+| Polimorfismo em Java | A `Venda` usa qualquer pagamento pelo tipo `Pagamento` e chama `obterReciboDetalhado()` sem saber a subclasse; do mesmo jeito, chama `veiculo.politicaComissao()` sem saber se o `Veiculo` é `Carro` ou `Moto`. |
 | Palavra-chave `super` | Os construtores das subclasses chamam `super(venda, "PIX", valorBase, dataPagamento, politicaDesconto)` (idem com `"Cartão"` e `"Dinheiro"`). |
-| Abstração em Java | `Pagamento` é abstrata e declara o método abstrato `obterReciboDetalhado()`. |
+| Abstração em Java | `Pagamento` é abstrata e declara o método abstrato `obterReciboDetalhado()`; `Veiculo` é abstrata e declara `politicaComissao()` e `getTipo()`, implementados por `Carro` e `Moto`. |
 | Interfaces em Java | `PoliticaDesconto` (`DescontoPix`, `SemDesconto`) e `PoliticaComissao` (`ComissaoCarro`, `ComissaoMoto`). |
 | Enum em Java | `StatusVeiculo { DISPONIVEL, VENDIDO, EM_MANUTENCAO }` evita estados inválidos. |
 | Tratamento de exceções em Java | `VeiculoIndisponivelException` e `VendaInvalidaException` são lançadas nas regras de negócio e tratadas nas telas pelo `Feedback`. |
