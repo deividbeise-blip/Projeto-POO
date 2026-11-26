@@ -1,4 +1,4 @@
-# Concessionária Grupo 2
+# Concessionária Grupo 9
 
 Sistema de gestão de uma concessionária de veículos, feito em **Java 21 + Swing** com persistência em **MySQL**,
 como Trabalho 2 de Programação Orientada a Objetos.
