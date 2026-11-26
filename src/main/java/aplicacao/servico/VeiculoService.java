@@ -4,6 +4,7 @@ import java.util.List;
 
 import dominio.excecao.VeiculoIndisponivelException;
 import dominio.modelo.Concessionaria;
+import dominio.modelo.RegistroTiposVeiculo;
 import dominio.modelo.StatusVeiculo;
 import dominio.modelo.Veiculo;
 import dominio.repositorio.ConcessionariaRepository;
@@ -12,20 +13,25 @@ import dominio.repositorio.VeiculoRepository;
 /**
  * Casos de uso de veículos: cadastrar, editar, excluir, trocar status e listar.
  * As regras de dados ficam no construtor de {@link Veiculo}; as regras de "quem pode
- * ser editado/excluído" ficam aqui.
+ * ser editado/excluído" ficam aqui. O veículo concreto (carro, moto...) é criado só pelo
+ * {@link RegistroTiposVeiculo}, então um tipo novo não exige mudar esta classe.
  */
 public class VeiculoService {
     private final VeiculoRepository veiculoRepository;
     private final ConcessionariaRepository concessionariaRepository;
+    private final RegistroTiposVeiculo tiposVeiculo;
 
     /**
      * @param veiculoRepository        onde os veículos são gravados e lidos
      * @param concessionariaRepository usado para listar as concessionárias do formulário
+     * @param tiposVeiculo             tipos de veículo aceitos e como criar cada um
      */
     public VeiculoService(VeiculoRepository veiculoRepository,
-                          ConcessionariaRepository concessionariaRepository) {
+                          ConcessionariaRepository concessionariaRepository,
+                          RegistroTiposVeiculo tiposVeiculo) {
         this.veiculoRepository = veiculoRepository;
         this.concessionariaRepository = concessionariaRepository;
+        this.tiposVeiculo = tiposVeiculo;
     }
 
     /**
@@ -38,15 +44,15 @@ public class VeiculoService {
      * @param ano            ano do veículo
      * @param placa          placa do veículo
      * @param preco          preço de venda
-     * @param moto           {@code true} se for moto, {@code false} se for carro
+     * @param tipo           tipo do veículo, um de {@link #tiposDisponiveis()} (ex.: "CARRO" ou "Carro")
      * @param concessionaria concessionária à qual o veículo pertence
      * @return o veículo gravado, já com ID
-     * @throws IllegalArgumentException se algum dado for inválido
+     * @throws IllegalArgumentException se o tipo for desconhecido ou algum dado for inválido
      */
     public Veiculo cadastrar(String marca, String modelo, Integer ano, String placa,
-                             Double preco, boolean moto, Concessionaria concessionaria) {
-        Veiculo veiculo = new Veiculo(marca, modelo, ano, placa, preco,
-                StatusVeiculo.DISPONIVEL, concessionaria, moto);
+                             Double preco, String tipo, Concessionaria concessionaria) {
+        Veiculo veiculo = tiposVeiculo.criar(tipo, null, marca, modelo, ano, placa, preco,
+                StatusVeiculo.DISPONIVEL, concessionaria);
         veiculoRepository.salvar(veiculo);
         return veiculo;
     }
@@ -78,6 +84,15 @@ public class VeiculoService {
         return veiculoRepository.listarDisponiveis();
     }
 
+    /**
+     * Tipos de veículo aceitos, para os combos de tipo e de filtro da tela.
+     *
+     * @return os nomes dos tipos em maiúsculas (ex.: ["CARRO", "MOTO"]), na ordem de registro
+     */
+    public List<String> tiposDisponiveis() {
+        return tiposVeiculo.tiposDisponiveis();
+    }
+
     /** @return as concessionárias cadastradas, para o combo do formulário */
     public List<Concessionaria> listarConcessionarias() {
         return concessionariaRepository.listar();
@@ -92,19 +107,19 @@ public class VeiculoService {
      * @param ano            novo ano
      * @param placa          nova placa
      * @param preco          novo preço
-     * @param moto           {@code true} se for moto, {@code false} se for carro
+     * @param tipo           tipo do veículo, um de {@link #tiposDisponiveis()} (ex.: "CARRO" ou "Carro")
      * @param concessionaria concessionária à qual o veículo pertence
      * @return o veículo atualizado
-     * @throws IllegalArgumentException se nenhum veículo foi informado, se ele não existe
-     *                                  ou se algum dado for inválido
+     * @throws IllegalArgumentException se nenhum veículo foi informado, se ele não existe,
+     *                                  se o tipo for desconhecido ou se algum dado for inválido
      * @throws IllegalStateException    se o veículo já foi vendido
      */
     public Veiculo atualizar(Long id, String marca, String modelo, Integer ano, String placa,
-                             Double preco, boolean moto, Concessionaria concessionaria) {
+                             Double preco, String tipo, Concessionaria concessionaria) {
         Veiculo atual = buscarEditavel(id, "Selecione um veículo para editar.",
                 "Veículo vendido não pode ser editado.");
-        Veiculo veiculo = new Veiculo(id, marca, modelo, ano, placa, preco,
-                atual.getStatus(), concessionaria, moto);
+        Veiculo veiculo = tiposVeiculo.criar(tipo, id, marca, modelo, ano, placa, preco,
+                atual.getStatus(), concessionaria);
         veiculoRepository.atualizar(veiculo);
         return veiculo;
     }

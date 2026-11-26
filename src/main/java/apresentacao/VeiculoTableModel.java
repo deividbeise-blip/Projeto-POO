@@ -3,6 +3,7 @@ package apresentacao;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import javax.swing.table.AbstractTableModel;
 
 import apresentacao.estilo.Tema;
@@ -116,7 +117,7 @@ public class VeiculoTableModel extends AbstractTableModel {
             case 2 -> veiculo.getAno();
             case 3 -> veiculo.getPlaca();
             case COLUNA_PRECO -> veiculo.getPreco();
-            case 5 -> textoTipo(veiculo.isMoto());
+            case 5 -> veiculo.getTipo();
             case COLUNA_STATUS -> veiculo.getStatus();
             case 7 -> veiculo.getConcessionaria().getNome();
             default -> null;
@@ -145,13 +146,19 @@ public class VeiculoTableModel extends AbstractTableModel {
     }
 
     /**
-     * Texto do tipo do veículo.
+     * Texto de um tipo de veículo para o usuário: só a primeira letra maiúscula
+     * ("CARRO" vira "Carro"), igual a {@code Veiculo.getTipo()} da subclasse.
+     * Usado nos combos, que recebem os tipos do serviço em maiúsculas.
      *
-     * @param moto valor de {@code Veiculo.isMoto()}
-     * @return "Moto" ou "Carro"
+     * @param tipo nome do tipo, em qualquer caixa (ex.: "CARRO")
+     * @return o texto para a tela, ou vazio se for nulo ou vazio
      */
-    public static String textoTipo(Boolean moto) {
-        return Boolean.TRUE.equals(moto) ? "Moto" : "Carro";
+    public static String textoTipo(String tipo) {
+        if (tipo == null || tipo.isBlank()) {
+            return "";
+        }
+        String limpo = tipo.trim();
+        return limpo.substring(0, 1).toUpperCase(Locale.ROOT) + limpo.substring(1).toLowerCase(Locale.ROOT);
     }
 
     /**

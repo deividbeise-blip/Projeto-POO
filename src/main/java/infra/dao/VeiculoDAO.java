@@ -3,8 +3,10 @@ package infra.dao;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Locale;
 
 import dominio.modelo.Concessionaria;
+import dominio.modelo.RegistroTiposVeiculo;
 import dominio.modelo.StatusVeiculo;
 import dominio.modelo.Veiculo;
 import dominio.repositorio.VeiculoRepository;
@@ -14,6 +16,8 @@ import infra.excecao.PersistenciaException;
 /**
  * Acesso à tabela veiculo. As leituras já trazem a concessionária por JOIN
  * e o status é convertido entre o ENUM do banco e {@link StatusVeiculo}.
+ * A coluna {@code tipo} guarda {@link Veiculo#getTipo()} em maiúsculas (ex.: "CARRO"), e a leitura
+ * cria a subclasse certa pelo {@link RegistroTiposVeiculo}, sem if/switch por tipo.
  */
 public class VeiculoDAO implements VeiculoRepository {
 
@@ -22,17 +26,22 @@ public class VeiculoDAO implements VeiculoRepository {
     // Uma consulta só: o JOIN traz a concessionária junto, sem consulta extra por linha.
     private static final String SELECT_COM_CONCESSIONARIA = """
             SELECT v.id_veiculo, v.marca_veiculo, v.modelo_veiculo, v.ano_veiculo, v.placa_veiculo,
-                   v.preco_veiculo, v.status_veiculo, v.moto,
+                   v.preco_veiculo, v.status_veiculo, v.tipo,
                    c.id_concessionaria, c.name_concessionaria, c.address_concessionaria
             FROM veiculo v
             JOIN concessionaria c ON c.id_concessionaria = v.concessionario_veiculo
             """;
 
     private final ExecutorSql executor;
+    private final RegistroTiposVeiculo tiposVeiculo;
 
-    /** @param connectionFactory fábrica de conexões (a mesma da transação em andamento) */
-    public VeiculoDAO(ConnectionFactory connectionFactory) {
+    /**
+     * @param connectionFactory fábrica de conexões (a mesma da transação em andamento)
+     * @param tiposVeiculo      tipos de veículo aceitos, usados para criar o objeto certo ao ler do banco
+     */
+    public VeiculoDAO(ConnectionFactory connectionFactory, RegistroTiposVeiculo tiposVeiculo) {
         this.executor = new ExecutorSql(connectionFactory);
+        this.tiposVeiculo = tiposVeiculo;
     }
 
     /**
@@ -47,7 +56,7 @@ public class VeiculoDAO implements VeiculoRepository {
         long id = executor.inserir(
                 """
                 INSERT INTO veiculo
-                (marca_veiculo, modelo_veiculo, ano_veiculo, placa_veiculo, preco_veiculo, status_veiculo, moto, concessionario_veiculo)
+                (marca_veiculo, modelo_veiculo, ano_veiculo, placa_veiculo, preco_veiculo, status_veiculo, tipo, concessionario_veiculo)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 comando -> {
@@ -57,7 +66,7 @@ public class VeiculoDAO implements VeiculoRepository {
                     comando.setString(4, veiculo.getPlaca());
                     comando.setDouble(5, veiculo.getPreco());
                     comando.setString(6, paraColunaEnum(veiculo.getStatus()));
-                    comando.setBoolean(7, veiculo.isMoto());
+                    comando.setString(7, paraColunaTipo(veiculo));
                     comando.setLong(8, veiculo.getConcessionaria().getIdConcessionaria());
                 },
                 "Erro ao salvar veículo no banco.");
@@ -92,7 +101,7 @@ public class VeiculoDAO implements VeiculoRepository {
         return executor.consultarUm(
                 SELECT_COM_CONCESSIONARIA + " WHERE v.id_veiculo = ?",
                 comando -> comando.setLong(1, id),
-                VeiculoDAO::mapear,
+                this::mapear,
                 "Erro ao buscar veículo no banco.");
     }
 
@@ -104,7 +113,7 @@ public class VeiculoDAO implements VeiculoRepository {
     public List<Veiculo> listarDisponiveis() {
         return executor.consultar(
                 SELECT_COM_CONCESSIONARIA + " WHERE v.status_veiculo = 'Disponivel'",
-                VeiculoDAO::mapear,
+                this::mapear,
                 "Erro ao listar veículos disponíveis.");
     }
 
@@ -116,7 +125,7 @@ public class VeiculoDAO implements VeiculoRepository {
     public List<Veiculo> listarTodos() {
         return executor.consultar(
                 SELECT_COM_CONCESSIONARIA,
-                VeiculoDAO::mapear,
+                this::mapear,
                 "Erro ao listar veículos.");
     }
 
@@ -155,7 +164,7 @@ public class VeiculoDAO implements VeiculoRepository {
                 """
                 UPDATE veiculo
                 SET marca_veiculo = ?, modelo_veiculo = ?, ano_veiculo = ?, placa_veiculo = ?,
-                    preco_veiculo = ?, status_veiculo = ?, moto = ?, concessionario_veiculo = ?
+                    preco_veiculo = ?, status_veiculo = ?, tipo = ?, concessionario_veiculo = ?
                 WHERE id_veiculo = ?
                 """,
                 comando -> {
@@ -165,20 +174,25 @@ public class VeiculoDAO implements VeiculoRepository {
                     comando.setString(4, veiculo.getPlaca());
                     comando.setDouble(5, veiculo.getPreco());
                     comando.setString(6, paraColunaEnum(veiculo.getStatus()));
-                    comando.setBoolean(7, veiculo.isMoto());
+                    comando.setString(7, paraColunaTipo(veiculo));
                     comando.setLong(8, veiculo.getConcessionaria().getIdConcessionaria());
                     comando.setLong(9, veiculo.getIdVeiculo());
                 },
                 "Erro ao atualizar veículo no banco.");
     }
 
-    private static Veiculo mapear(ResultSet resultado) throws SQLException {
+    /**
+     * Monta o veículo da linha lida. O tipo desconhecido (valor da coluna sem tipo registrado)
+     * vira {@link IllegalArgumentException}, lançada pelo registro.
+     */
+    private Veiculo mapear(ResultSet resultado) throws SQLException {
         Concessionaria concessionaria = new Concessionaria(
                 resultado.getLong("id_concessionaria"),
                 resultado.getString("name_concessionaria"),
                 resultado.getString("address_concessionaria"));
 
-        return new Veiculo(
+        return tiposVeiculo.criar(
+                resultado.getString("tipo"),
                 resultado.getLong("id_veiculo"),
                 resultado.getString("marca_veiculo"),
                 resultado.getString("modelo_veiculo"),
@@ -186,8 +200,12 @@ public class VeiculoDAO implements VeiculoRepository {
                 resultado.getString("placa_veiculo"),
                 resultado.getDouble("preco_veiculo"),
                 paraEnumJava(resultado.getString("status_veiculo")),
-                concessionaria,
-                resultado.getBoolean("moto"));
+                concessionaria);
+    }
+
+    /** Valor da coluna tipo: o nome do tipo em maiúsculas (ex.: "Carro" vira "CARRO"). */
+    private static String paraColunaTipo(Veiculo veiculo) {
+        return veiculo.getTipo().toUpperCase(Locale.ROOT);
     }
 
     /**
