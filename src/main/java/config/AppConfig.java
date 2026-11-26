@@ -13,6 +13,9 @@ import aplicacao.servico.ConcessionariaService;
 import aplicacao.servico.VeiculoService;
 import aplicacao.servico.VendaService;
 import aplicacao.servico.VendedorService;
+import dominio.modelo.Carro;
+import dominio.modelo.Moto;
+import dominio.modelo.RegistroTiposVeiculo;
 import dominio.politica.DescontoPix;
 import dominio.politica.SemDesconto;
 import dominio.repositorio.ClienteRepository;
@@ -46,9 +49,15 @@ public class AppConfig {
     // Uma única fábrica de conexões, que também controla a transação: todos os DAOs a recebem.
     private final TransacaoJdbc transacao = new TransacaoJdbc(new ConexaoBanco());
 
+    // Tipos de veículo aceitos: para um novo (ex.: Caminhao), basta registrar mais uma linha aqui.
+    // Fica antes dos DAOs porque o VeiculoDAO o recebe no construtor.
+    private final RegistroTiposVeiculo tiposVeiculo = new RegistroTiposVeiculo()
+            .registrar("CARRO", Carro::new)
+            .registrar("MOTO", Moto::new);
+
     private final ClienteRepository clienteRepository = new ClienteDAO(transacao);
     private final ConcessionariaRepository concessionariaRepository = new ConcessionariaDAO(transacao);
-    private final VeiculoRepository veiculoRepository = new VeiculoDAO(transacao);
+    private final VeiculoRepository veiculoRepository = new VeiculoDAO(transacao, tiposVeiculo);
     private final VendedorRepository vendedorRepository = new VendedorDAO(transacao);
     private final VendaRepository vendaRepository = new VendaDAO(transacao);
     private final PagamentoRepository pagamentoRepository = new PagamentoDAO(transacao);
@@ -62,7 +71,8 @@ public class AppConfig {
     private final ClienteService clienteService = new ClienteService(clienteRepository);
     private final ConcessionariaService concessionariaService = new ConcessionariaService(concessionariaRepository);
     private final VendedorService vendedorService = new VendedorService(vendedorRepository, concessionariaRepository);
-    private final VeiculoService veiculoService = new VeiculoService(veiculoRepository, concessionariaRepository);
+    private final VeiculoService veiculoService = new VeiculoService(
+            veiculoRepository, concessionariaRepository, tiposVeiculo);
     private final VendaService vendaService = new VendaService(
             clienteRepository,
             vendedorRepository,

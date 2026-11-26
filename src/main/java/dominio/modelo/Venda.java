@@ -2,10 +2,6 @@ package dominio.modelo;
 
 import dominio.excecao.VeiculoIndisponivelException;
 import dominio.excecao.VendaInvalidaException;
-import dominio.politica.ComissaoCarro;
-import dominio.politica.ComissaoMoto;
-import dominio.politica.PoliticaComissao;
-
 import java.time.LocalDate;
 
 /**
@@ -94,12 +90,13 @@ public class Venda {
     public double getValorFinal() { return valorFinal; }
 
     /**
-     * Comissão do vendedor sobre o valor final, com a regra do tipo de veículo (carro ou moto).
+     * Comissão do vendedor sobre o valor final, com a regra que o próprio veículo escolhe
+     * ({@link Veiculo#politicaComissao()}): a venda não precisa saber se é carro, moto ou outro tipo.
      *
      * @return valor da comissão, em reais
      */
     public double calcularComissao() {
-        return vendedor.calcularComissao(valorFinal, politicaComissao());
+        return vendedor.calcularComissao(valorFinal, veiculo.politicaComissao());
     }
 
     /**
@@ -115,11 +112,6 @@ public class Venda {
         return pagamento.obterReciboDetalhado() + "\n" +
                 "Vendedor: " + vendedor.getNome() + "\n" +
                 "Comissão do vendedor: " + Formatacao.moeda(calcularComissao());
-    }
-
-    /** Único ponto que escolhe a regra de comissão pelo tipo do veículo. */
-    private PoliticaComissao politicaComissao() {
-        return veiculo.isMoto() ? new ComissaoMoto() : new ComissaoCarro();
     }
 
     /** @return true se há pagamento, valor final positivo e vendedor e pagamento válidos */
